@@ -35,6 +35,13 @@ myTests = testFunction "Square" (\x -> x^2) [ (1, 1)
                                             , (5, 25)
                                             ]
 ```
+Since ```testFunction``` only accepts unary functions, there is an additional convenience function ```testFunction2``` provided to generate tests for binary functions. This way you don't need to zip your arguments together and uncurry your function, as long as it only has 2 arguments:
+```
+myTests = testFunction2 "Add" (+) [ ((1, 1), 2)
+                                  , ((2, 2), 4)
+                                  , ((10, 0), 10)
+                                  ]
+```
 
 ## Running Tests
 
