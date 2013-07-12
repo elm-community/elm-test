@@ -26,9 +26,14 @@ a @=? b = assertEqual a b
 a @/=? b = assertNotEqual a b
 a ~=? b = defaultTest <| assertEqual a b
 ```
-And finally, a test generator. It requires a name (otherwise things could get too confusing!), a function, a list of inputs to that function, and a list of expected outputs. It will generate a list of tests for you:
+And finally, a test generator. It requires a name (otherwise things could get too confusing!), a function to test, a list of tuples. The first item in the tuple is the function input, and the second item in the tuple is the expected output. It will generate a list of tests for you:
 ```
-myTests = generateFunctionTests "Square" (\x -> x^2) [1..5] [1,4,9,16,25]
+myTests = testFunction "Square" (\x -> x^2) [ (1, 1)
+                                            , (2, 4)
+                                            , (3, 9)
+                                            , (4, 16)
+                                            , (5, 25)
+                                            ]
 ```
 
 ## Running Tests
@@ -48,4 +53,4 @@ main = runPrettyTests myTests
 
 ## Demo
 
-For a quick demo, you can copy and paste the entire ElmTest.elm file into [elm-lang.org's online editor](http://elm-lang.org/try/)
+For a quick demo, you can copy and paste the entire contents of the ElmTest.elm file into [elm-lang.org's online editor](http://elm-lang.org/try/)
