@@ -35,12 +35,23 @@ testList : [String] -> [a] -> [a] -> [Test]
 testList names xs ys = map (\(name, ass) -> if (name == []) then defaultTest ass else test name ass) <| 
                            zip names <| assertionList xs ys
 
--- Given a function name, a function, a list of inputs, and a list of expected outputs,
+-- Given a function name, a unary function, a list of inputs, and a list of expected outputs,
 -- generate a list of test cases
-generateFunctionTests : String -> (a -> b) -> [a] -> [b] -> [Test]
-generateFunctionTests name' f inputs expecteds =
-    let outputs    = map f inputs
+testFunction : String -> (a -> b) -> [(a, b)] -> [Test]
+testFunction name' f args =
+    let inputs     = map fst args
+        expecteds  = map snd args
+        outputs    = map f inputs
         names      = map (\n -> name' ++ " " ++ (show n)) inputs in
+    testList names outputs expecteds
+
+-- Like testFunction, but tests a binary function
+testFunction2 : String -> (a -> b -> c) -> [((a, b), c)] -> [Test]
+testFunction2 name' f args =
+    let inputs = map fst args
+        expecteds = map snd args
+        outputs = map (uncurry f) inputs
+        names = map (\n -> name' ++ " " ++ (show n)) inputs in
     testList names outputs expecteds
 
 -- Assertions
@@ -141,7 +152,11 @@ main = runPrettyTests <| [ (2^3) ~=? 1
                          , test "test head" (assertEqual 1 (head [1..10]))
                          ]
                          ++
-                         (generateFunctionTests "Square" 
-                                                (\x -> if (x < 4) then x^2 else x^3)
-                                                [1..5]
-                                                [1,4,9,16,25])
+                         (testFunction "Square" 
+                                       (\x -> if (x < 4) then x^2 else x^3)
+                                       [ (1, 1)
+                                       , (2, 4)
+                                       , (3, 9)
+                                       , (4, 16)
+                                       , (5, 25)
+                                       ])
