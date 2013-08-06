@@ -6,7 +6,7 @@ import open Either
 --------
 
 -- Basic test data constructor
-data Test = TestCase String Assertion
+data Test = TestCase String (Assertion a)
 
 -- Utility function for getting the name of a Test Case
 name : Test -> String
@@ -17,11 +17,11 @@ name (TestCase name _) = name
 a ~=? b = defaultTest <| assertEqual a b
 
 -- Basic function to create a Test Case
-test : String -> Assertion -> Test
+test : String -> Assertion a -> Test
 test name a = TestCase name a
 
 -- Automatically determines a name for the created test (use this if you're lazy)    
-defaultTest : Assertion -> Test
+defaultTest : Assertion a -> Test
 defaultTest a =
     let name = case a of
                    AssertEqual a b    -> (show a) ++ " == " ++ (show b)
@@ -61,28 +61,28 @@ testFunction2 name' f args =
 data Assertion a = AssertEqual a a | AssertNotEqual a a | AssertTrue a | AssertFalse a 
 
 -- Convenience operator for quickly constructing an Assert Equals assertion
-(@=?) : a -> a -> Assertion
+(@=?) : a -> a -> Assertion a
 a @=? b = assertEqual a b
 
 -- Convenience operator for quickly constructing an Assert Not Equals assertion
-(@/=?) : a -> a -> Assertion
+(@/=?) : a -> a -> Assertion a
 a @/=? b = assertNotEqual a b
 
 -- Basic function to create an Assert True assertion
-assert : a -> Assertion
+assert : a -> Assertion a
 assert a = AssertTrue a
 
 -- Basic function to create an Assert Equals assertion
-assertEqual : a -> a -> Assertion
+assertEqual : a -> a -> Assertion a
 assertEqual a b = AssertEqual a b
 
 -- Given a list of values and another list of expected values, generate a list of
 -- Assert Equal assertions
-assertionList : [a] -> [a] -> [Assertion]
+assertionList : [a] -> [a] -> [Assertion a]
 assertionList xs ys = map (\(a, b) -> assertEqual a b) <| zip xs ys
 
 -- Basic function to create an Assert Not Equals assertion
-assertNotEqual : a -> a -> Assertion
+assertNotEqual : a -> a -> Assertion a
 assertNotEqual a b = AssertNotEqual a b
 
 -- Results
@@ -142,21 +142,3 @@ runPrettyTests tests =
     (flow right <| [ flow down <| map (\t -> plainText <| (name t) ++ ":   ") tests
                    , flow down <| 
                         map (\(c, t) -> color c <| container w (heightOf t) middle t) pretties ])
-
--- Example Usage
-----------------
-
-main = runPrettyTests <| [ (2^3) ~=? 1
-                         , 3 ~=? 3
-                         , defaultTest (True @=? True)
-                         , test "test head" (assertEqual 1 (head [1..10]))
-                         ]
-                         ++
-                         (testFunction "Square" 
-                                       (\x -> if (x < 4) then x^2 else x^3)
-                                       [ (1, 1)
-                                       , (2, 4)
-                                       , (3, 9)
-                                       , (4, 16)
-                                       , (5, 25)
-                                       ])
