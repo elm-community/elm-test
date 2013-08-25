@@ -1,4 +1,4 @@
-module ElmTest where
+module Public.ElmTest.ElmTest where
 
 import open Either
 
