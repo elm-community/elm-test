@@ -11,7 +11,6 @@ main = runPrettyTests <| [ (2^3) ~=? 1
                          , test "test head" (assertEqual 1 (head [1..10]))
                          ]
                          ++
-                         (generateFunctionTests "Square" 
-                                                (\x -> if (x < 4) then x^2 else x^3)
-                                                [1..5]
-                                                [1,4,9,16,25])
+                         (testFunction "Square"
+                                       (\x -> if (x < 4) then x^2 else x^3)
+                                       (zip [1..5] [1,4,9,16,25]))
