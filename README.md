@@ -60,4 +60,4 @@ main = runPrettyTests myTests
 
 ## Demo
 
-For a quick demo, you can copy and paste the entire contents of the ElmTest.elm file into [elm-lang.org's online editor](http://elm-lang.org/try/), or check it out on [Share-Elm](http://share-elm.com/sprout/51eb5eb5e4b07e418296d0af)
+For a quick demo, you can compile the Example.elm file, or check it out on [Share-Elm](http://share-elm.com/sprout/5239705ae4b00f123dfa60e2)
