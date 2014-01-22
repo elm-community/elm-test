@@ -6,7 +6,6 @@ data Assertion = AssertTrue     (() -> Bool)
                | AssertEqual    (() -> Bool) String String
                | AssertNotEqual (() -> Bool) String String
 
-
 {-|  Convenience operator for constructing an Assert Equals assertion.-}
 (@=?) : a -> a -> Assertion
 a @=? b = assertEqual a b
