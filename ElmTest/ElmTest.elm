@@ -1,4 +1,4 @@
-module Public.ElmTest.ElmTest where
+module ElmTest where
 
 import open Either
 
@@ -6,7 +6,7 @@ import open Either
 --------
 
 -- Basic test data constructor
-data Test = TestCase String (Assertion a)
+data Test = TestCase String Assertion
 
 -- Utility function for getting the name of a Test Case
 name : Test -> String
@@ -53,37 +53,6 @@ testFunction2 name' f args =
         outputs = map (uncurry f) inputs
         names = map (\n -> name' ++ " " ++ (show n)) inputs in
     testList names outputs expecteds
-
--- Assertions
--------------
-
--- The fundamental component of a Test Case
-data Assertion a = AssertEqual a a | AssertNotEqual a a | AssertTrue a | AssertFalse a 
-
--- Convenience operator for quickly constructing an Assert Equals assertion
-(@=?) : a -> a -> Assertion a
-a @=? b = assertEqual a b
-
--- Convenience operator for quickly constructing an Assert Not Equals assertion
-(@/=?) : a -> a -> Assertion a
-a @/=? b = assertNotEqual a b
-
--- Basic function to create an Assert True assertion
-assert : a -> Assertion a
-assert a = AssertTrue a
-
--- Basic function to create an Assert Equals assertion
-assertEqual : a -> a -> Assertion a
-assertEqual a b = AssertEqual a b
-
--- Given a list of values and another list of expected values, generate a list of
--- Assert Equal assertions
-assertionList : [a] -> [a] -> [Assertion a]
-assertionList xs ys = map (\(a, b) -> assertEqual a b) <| zip xs ys
-
--- Basic function to create an Assert Not Equals assertion
-assertNotEqual : a -> a -> Assertion a
-assertNotEqual a b = AssertNotEqual a b
 
 -- Results
 ----------
