@@ -13,15 +13,14 @@ pretty m =
 -- A wrapper around both runTests and pretty, runs a list of tests and renders the results        
 runDisplay : [Test] -> Element
 runDisplay tests =
-    let results  = map run tests
-        pretties = map pretty results
+    let r        = report tests
+        pretties = map pretty r.results
         w        = (maximum <| map (\r -> widthOf <| snd r) pretties) + 20
-        (passes, fails) = partition pass results
-        passed   = length passes
-        failed   = length fails
+        passed   = length r.passes
+        failed   = length r.failures
         name (TestCase n _) = n
     in
-    (flow right <| [ text . bold . toText <| (show (length results)) ++ " tests executed: "
+    (flow right <| [ text . bold . toText <| (show (length r.results)) ++ " tests executed: "
                    , text . Text.color green . toText <| (show passed) ++ " passed; "
                    , text . Text.color red . toText <| (show failed) ++ " failed"
                    ])
