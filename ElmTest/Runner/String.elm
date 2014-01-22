@@ -22,7 +22,8 @@ pretty (TestCase name _) r =
       Nothing  -> name ++ ": passed."
       Just msg -> name ++ ": FAILED. " ++ msg
 
-runDisplay : [Test] -> String
+-- | Returns the report as a string and True if all tests pass, False otherwise
+runDisplay : [Test] -> (Bool, String)
 runDisplay ts = 
     let r = report ts
         passed = length r.passes
@@ -33,7 +34,8 @@ runDisplay ts =
                   , show failed    ++ " tests failed"
                   ]
         --- TODO: implement results printing
-        results = if failed == 0
+        pass   = failed == 0
+        results = if pass
                   then []
                   else zipWith pretty ts r.results
-    in vcat <| summary :: results
+    in (pass, vcat <| summary :: results)

@@ -1,10 +1,7 @@
-module Main where
+module Test where
 
 import open ElmTest.Assertion
 import open ElmTest.Test
-import open ElmTest.Run
-import ElmTest.Runner.Element as Element
-import ElmTest.Runner.String  as String
 
 -- Example Usage
 ----------------
@@ -17,12 +14,3 @@ tests = [ (2^3) ~=? 1
        -- (testFunction "Square"
        --                                 (\x -> if (x < 4) then x^2 else x^3)
        --                                 (zip [1..5] [1,4,9,16,25]))
-
-prettyOut : Element
-prettyOut = Element.runDisplay tests
-
-uglyOut : String
-uglyOut = String.runDisplay tests
-
-main : Element
-main = above (plainText uglyOut) prettyOut
