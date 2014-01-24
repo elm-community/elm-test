@@ -1,3 +1,24 @@
+Testing from the Command Line
+=============================
+
+This fork includes a shell script that is a proof of concept for
+testing elm from the command line without using a web browser.
+
+To run the example:
+```bash
+$ ./mkScript.sh ScriptExample
+$ node ScriptExample.js
+  4 tests executed
+  3 tests passed
+  1 tests failed
+8 == 1: FAILED. Expected: 8; got: 1
+3 == 3: passed.
+True: passed.
+test head: passed.
+```
+
+and exits with return code 1.
+
 Elm-Test
 ========
 
