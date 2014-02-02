@@ -3,13 +3,14 @@
 , "description":
   "Unit Testing Framework in the style of HUnit.
 
-Run Elm Tests, with harnesses for printing reports as Elements or Strings for command-line based output.
+Run Elm Tests, with harnesses for printing reports in the browser or the command-line.
 "
 , "license": "MIT"
 , "repository": "https://github.com/maxsnew/Elm-Test.git"
 , "exposed-modules": [ "ElmTest.Assertion"
                        , "ElmTest.Run"
                        , "ElmTest.Test"
+                       , "ElmTest.Runner.Console"
                        , "ElmTest.Runner.Element"
                        , "ElmTest.Runner.String" 
                      ]

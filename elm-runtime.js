@@ -1563,6 +1563,28 @@ Elm.Native.Text.make = function(elm) {
         asText : asText,
     };
 };
+Elm.Native.Trampoline = {};
+Elm.Native.Trampoline.make = function(elm) {
+    elm.Native = elm.Native || {};
+    elm.Native.Trampoline = elm.Native.Trampoline || {};
+    if (elm.Native.Trampoline.values) return elm.Native.Trampoline.values;
+
+    // trampoline : Trampoline a -> a
+    trampoline = function(t) {
+        var tramp = t;
+        while(true) {
+            switch(tramp.ctor) {
+            case "Done":
+                return tramp._0;
+            case "Continue":
+                tramp = tramp._0({ctor: "_Tuple0"});
+                continue;
+            }
+        }
+    }
+
+    return elm.Native.Trampoline.values = { trampoline: trampoline };
+};
 Elm.Native.Transform2D = {};
 Elm.Native.Transform2D.make = function(elm) {
 
@@ -2418,15 +2440,12 @@ Elm.Native.Mouse.make = function(elm) {
     y.defaultNumberOfKids = 0;
 
     var isDown    = Signal.constant(false);
-    var isClicked = Signal.constant(false);
     var clicks = Signal.constant(Utils.Tuple0);
 
     var node = elm.display === ElmRuntime.Display.FULLSCREEN ? document : elm.node;
 
-    elm.addListener([isClicked.id, clicks.id], node, 'click', function click() {
-        elm.notify(isClicked.id, true);
+    elm.addListener([clicks.id], node, 'click', function click() {
         elm.notify(clicks.id, Utils.Tuple0);
-        elm.notify(isClicked.id, false);
     });
     elm.addListener([isDown.id], node, 'mousedown', function down() {
         elm.notify(isDown.id, true);
@@ -2442,11 +2461,11 @@ Elm.Native.Mouse.make = function(elm) {
         position: position,
         x:x,
         y:y,
-        isClicked: isClicked,
         isDown: isDown,
         clicks: clicks
     };
-};Elm.Native.Random = {};
+};
+Elm.Native.Random = {};
 Elm.Native.Random.make = function(elm) {
 
     elm.Native = elm.Native || {};
@@ -2614,12 +2633,6 @@ Elm.Native.Signal.make = function(elm) {
     input.kids.push(this);
   }
 
-  function dropWhen(s1,b,s2) {
-    var pairs = lift2( F2(function(x,y){return {x:x,y:y};}), s1, s2 );
-    var dropped = new DropIf(function(p){return p.x;},{x:true,y:b},pairs);
-    return lift(function(p){return p.y;}, dropped);
-  }
-
   function timestamp(a) {
     function update() { return Utils.Tuple2(Date.now(), a.value); }
     return new LiftN(update, [a]);
@@ -2712,9 +2725,6 @@ Elm.Native.Signal.make = function(elm) {
     keepIf : F3(function(pred,base,sig) {
       return new DropIf(function(x) {return !pred(x);},base,sig); }),
     dropIf : F3(function(pred,base,sig) { return new DropIf(pred,base,sig); }),
-    keepWhen : F3(function(s1,b,s2) {
-      return dropWhen(lift(function(b){return !b;},s1), b, s2); }),
-    dropWhen : F3(dropWhen),
     dropRepeats : function(s) { return new DropRepeats(s);},
     sampleOn : F2(sampleOn),
     timestamp : timestamp
@@ -5214,7 +5224,6 @@ Elm.Mouse.make = function (_elm) {
    var Signal = Elm.Signal.make(_elm);
    var _op = {};
    var clicks = Native.Mouse.clicks;
-   var isClicked = Native.Mouse.isClicked;
    var isDown = Native.Mouse.isDown;
    var y = Native.Mouse.y;
    var x = Native.Mouse.x;
@@ -5224,7 +5233,6 @@ Elm.Mouse.make = function (_elm) {
                        ,x: x
                        ,y: y
                        ,isDown: isDown
-                       ,isClicked: isClicked
                        ,clicks: clicks};
    return _elm.Mouse.values;
 };Elm.Prelude = Elm.Prelude || {};
@@ -5411,7 +5419,11 @@ Elm.Signal.make = function (_elm) {
    _E = _N.Error.make(_elm),
    _J = _N.JavaScript.make(_elm),
    $moduleName = "Signal";
+   var Basics = Elm.Basics.make(_elm);
    var List = Elm.List.make(_elm);
+   var Maybe = Elm.Maybe.make(_elm);
+   var Native = Native || {};
+   Native.Error = Elm.Native.Error.make(_elm);
    var Native = Native || {};
    Native.Signal = Elm.Native.Signal.make(_elm);
    var _op = {};
@@ -5430,10 +5442,33 @@ Elm.Signal.make = function (_elm) {
    });
    var sampleOn = Native.Signal.sampleOn;
    var dropRepeats = Native.Signal.dropRepeats;
-   var dropWhen = Native.Signal.dropWhen;
-   var keepWhen = Native.Signal.keepWhen;
    var dropIf = Native.Signal.dropIf;
    var keepIf = Native.Signal.keepIf;
+   var keepWhen = F3(function (bs,
+   def,
+   sig) {
+      return A2(_op["<~"],
+      Basics.snd,
+      A3(keepIf,
+      Basics.fst,
+      {ctor: "_Tuple2"
+      ,_0: false
+      ,_1: def},
+      A2(_op["~"],
+      A2(_op["<~"],
+      F2(function (v0,v1) {
+         return {ctor: "_Tuple2"
+                ,_0: v0
+                ,_1: v1};
+      }),
+      A2(sampleOn,sig,bs)),
+      sig)));
+   });
+   var dropWhen = function (bs) {
+      return keepWhen(A2(_op["<~"],
+      Basics.not,
+      bs));
+   };
    var countIf = Native.Signal.countIf;
    var count = Native.Signal.count;
    var combine = A2(List.foldr,
@@ -5729,6 +5764,33 @@ Elm.Touch.make = function (_elm) {
                        ,taps: taps
                        ,Touch: Touch};
    return _elm.Touch.values;
+};Elm.Trampoline = Elm.Trampoline || {};
+Elm.Trampoline.make = function (_elm) {
+   _elm.Trampoline = _elm.Trampoline || {};
+   if (_elm.Trampoline.values)
+   return _elm.Trampoline.values;
+   var _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   _E = _N.Error.make(_elm),
+   _J = _N.JavaScript.make(_elm),
+   $moduleName = "Trampoline";
+   var Native = Native || {};
+   Native.Trampoline = Elm.Native.Trampoline.make(_elm);
+   var _op = {};
+   var trampoline = Native.Trampoline.trampoline;
+   var Continue = function (a) {
+      return {ctor: "Continue"
+             ,_0: a};
+   };
+   var Done = function (a) {
+      return {ctor: "Done",_0: a};
+   };
+   _elm.Trampoline.values = {_op: _op
+                            ,trampoline: trampoline
+                            ,Done: Done
+                            ,Continue: Continue};
+   return _elm.Trampoline.values;
 };Elm.Transform2D = Elm.Transform2D || {};
 Elm.Transform2D.make = function (_elm) {
    _elm.Transform2D = _elm.Transform2D || {};
@@ -7132,14 +7194,14 @@ function addReceivers(ports) {
         ports.log.subscribe(function(v) { console.log(v) });
     }
     if ('stdout' in ports) {
-        var process = process || {};
+        var process = typeof process !== 'undefined' ? process : {};
         var handler = process.stdout
             ? function(v) { process.stdout.write(v); }
             : function(v) { console.log(v); };
         ports.stdout.subscribe(handler);
     }
     if ('stderr' in ports) {
-        var process = process || {};
+        var process = typeof process !== 'undefined' ? process : {};
         var handler = process.stderr
             ? function(v) { process.stderr.write(v); }
             : function(v) { console.log('Error:' + v); };
@@ -7249,7 +7311,7 @@ ElmRuntime.filterDeadInputs = function(inputs) {
 
 // define the draw function
 var vendors = ['ms', 'moz', 'webkit', 'o'];
-var win = window || {};
+var win = typeof window !== 'undefined' ? window : {};
 for (var i = 0; i < vendors.length && !win.requestAnimationFrame; ++i) {
     win.requestAnimationFrame = win[vendors[i]+'RequestAnimationFrame'];
     win.cancelAnimationFrame  = win[vendors[i]+'CancelAnimationFrame'] ||
