@@ -2,22 +2,24 @@ module ElmTest.Test where
 
 import open ElmTest.Assertion
 
+{-| The units of a test suite, named tests.
+
+# Test
+@docs test, (~=?), defaultTest, Test
+ -}
+
 -- Basic test data constructor
 data Test = TestCase String Assertion
 
--- -- Utility function for getting the name of a Test Case
--- name : Test -> String
--- name (TestCase name _) = name
-
--- Convenience operator for quickly constructing Assert Equals tests
+{- Convenience operator for quickly constructing Assert Equals tests. -}
 (~=?) : a -> a -> Test
 a ~=? b = defaultTest <| assertEqual a b
 
--- Basic function to create a Test Case
+{- Basic function to create a Test Case -}
 test : String -> Assertion -> Test
 test name a = TestCase name a
 
--- Automatically determines a name for the created test (use this if you're lazy)    
+{- Automatically determines a name for the created test (use this if you're lazy). -}
 defaultTest : Assertion -> Test
 defaultTest a =
     let name = case a of

@@ -1,8 +1,16 @@
-module ElmTest.Runner.String where
+module ElmTest.Runner.String (runDisplay) where
 
+{-| Run a test suite and display it as a string.
+
+# Run
+@docs runDisplay
+
+-}
+    
 import open ElmTest.Run
 import open ElmTest.Test
 
+-- | Some pretty printing stuff. Should be factored into a pretty printing library.    
 vcat : [String] -> String
 vcat = concat . intersperse "\n"
 

@@ -1,5 +1,12 @@
-module ElmTest.Runner.Element where
+module ElmTest.Runner.Element (runDisplay) where
 
+{-| Run a test suite and display it as an Element
+
+# Run
+@docs runDisplay
+
+-}
+    
 import open ElmTest.Run
 import open ElmTest.Test
 
