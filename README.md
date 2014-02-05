@@ -61,3 +61,24 @@ main = runPrettyTests myTests
 ## Demo
 
 For a quick demo, you can compile the Example.elm file, or check it out on [Share-Elm](http://share-elm.com/sprout/5239705ae4b00f123dfa60e2)
+
+## Testing from the Command Line
+
+This repo includes a shell script that automates the process of
+creating a script for testing elm from the command line without using
+a web browser.
+
+To run the example:
+```bash
+$ ./mkScript.sh ScriptExample
+$ node ScriptExample.js
+  4 tests executed
+  3 tests passed
+  1 tests failed
+8 == 1: FAILED. Expected: 8; got: 1
+3 == 3: passed.
+True: passed.
+test head: passed.
+```
+
+and exits with return code 1.
