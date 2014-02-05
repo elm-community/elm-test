@@ -1,12 +1,12 @@
 module ElmTest.Test where
 
-import open ElmTest.Assertion
-
 {-| The units of a test suite, named tests.
 
 # Test
 @docs test, (~=?), defaultTest, Test
  -}
+
+import open ElmTest.Assertion
 
 -- Basic test data constructor
 data Test = TestCase String Assertion
