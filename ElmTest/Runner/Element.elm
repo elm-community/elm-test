@@ -17,7 +17,7 @@ pretty m =
       Nothing  -> (green, plainText "Pass.")
       Just msg -> (red,   plainText msg)
         
--- A wrapper around both runTests and pretty, runs a list of tests and renders the results        
+{- A wrapper around both runTests and pretty, runs a list of tests and renders the results -}
 runDisplay : [Test] -> Element
 runDisplay tests =
     let r        = report tests
