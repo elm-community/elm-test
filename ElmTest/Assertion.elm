@@ -35,7 +35,7 @@ assertEqual a b = AssertEqual (\_ -> a == b) (show a) (show b)
 
 {-| Given a list of values and another list of expected values,
 generate a list of Assert Equal assertions. -}
-assertionList : [a] -> [a] -> [Assertion a]
+assertionList : [a] -> [a] -> [Assertion]
 assertionList xs ys = zipWith assertEqual xs ys
 
 {- Basic function to create an Assert Not Equals assertion. -}

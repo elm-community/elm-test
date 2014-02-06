@@ -3,7 +3,9 @@ module ScriptExample where
 import Test
 import ElmTest.Runner.Console as Console
 
-sigs : Console.ConsoleSignals
+sigs : { stdout : Signal String
+       , exit   : Signal (Maybe Int)
+       }
 sigs = Console.runDisplay Test.tests
 
 port stdout : Signal String
