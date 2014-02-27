@@ -91,7 +91,7 @@ main : Element
 main = plainText results
 ```
 
-There is one more version of this function. `runDisplay : [Test] -> {stdout : Signal String, exit : Signal (Maybe Int)}` which lives in `ElmTest.Runner.Console`. This is designed to work with [Max New's Elm IO library](https://github.com/maxsnew/IO/). Documentation on how to do this will appear soon!
+There is one more version of this function. `runDisplay : [Test] -> IO ()` which lives in `ElmTest.Runner.Console`. This is designed to work with [Max New's Elm IO library](https://github.com/maxsnew/IO/). See the below section on **Testing from the Command Line** for details.
 
 ## Demo
 
@@ -99,13 +99,19 @@ For a quick demo, you can compile the `ElementExample.elm` file, or continue to 
 
 ## Testing from the Command Line
 
-This repo includes a shell script that automates the process of
-creating a script for testing elm from the command line without using
-a web browser.
-
-To run the example:
+This library is also designed for interoperability with the Elm IO library from Max New. This interoperability is still somewhat experimental, so to make things easier, I recommend building the IO library [from this branch](https://github.com/maxsnew/IO/tree/generalize). Once that's done, there's still a bit of setup to be done before you can continue. From the root directory of this repository, run:
 ```bash
-$ ./mkScript.sh ScriptExample
+$ elm-get install evancz/automaton
+```
+At this point, when elm-get asks you if you want to add Automaton to your `elm-dependencies.json` file, you can select either yes or no. If you select yes, there will be an error but it won't affect further steps. Continue with:
+```bash
+$ npm install jsdom
+```
+(On Windows, `jsdom` is somewhat difficult to install. [Refer to this blog post](http://www.steveworkman.com/node-js/2012/installing-jsdom-on-windows/) for detailed instructions)
+
+And now you're ready to actually run the example:
+```bash
+$ elm-io ScriptExample.elm ScriptExample.js
 $ node ScriptExample.js
   4 tests executed
   3 tests passed
@@ -115,5 +121,14 @@ $ node ScriptExample.js
 True: passed.
 test head: passed.
 ```
+And that's it! Once `elm-io` is set up like this, you can run tests on the command line from any directory, in any Elm project. Just make sure to pull in the `evancz/automaton` and `jsdom` dependencies. Two current restrictions are that the module name of the file you wish to compile must be `Main`, and the following boilerplate must be added to this `Main` module:
+```haskell
+port requests : Signal [{ mPut  : Maybe String
+                        , mExit : Maybe Int
+                        , mGet  : Bool
+                        }]
+port requests = Run.run responses --<Name of the function of type IO () which runs your tests>
 
-and exits with return code 1.
+port responses : Signal (Maybe String)
+```
+You can examine `ScriptExample.elm` to see exactly how these are required.
