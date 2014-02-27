@@ -1,15 +1,19 @@
-module ScriptExample where
+module Main where
+
+import open IO.IO
+import IO.Runner as Run
 
 import Test
 import ElmTest.Runner.Console as Console
 
-sigs : { stdout : Signal String
-       , exit   : Signal (Maybe Int)
-       }
+sigs : IO ()
 sigs = Console.runDisplay Test.tests
 
-port stdout : Signal String
-port stdout = sigs.stdout
+-- | Can't use a type alias in ports, yet :/
+port requests : Signal [{ mPut  : Maybe String
+                        , mExit : Maybe Int
+                        , mGet  : Bool
+                        }]
+port requests = Run.run responses sigs
 
-port exit : Signal (Maybe Int)
-port exit = sigs.exit
+port responses : Signal (Maybe String)
