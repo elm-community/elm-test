@@ -102,6 +102,12 @@ For a quick demo, you can compile the `ElementExample.elm` file, or continue to 
 This library is also designed for interoperability with the Elm IO library from Max New. This interoperability is still somewhat experimental, so to make things easier, I recommend building the IO library [from this branch](https://github.com/maxsnew/IO/tree/generalize). Once that's done, there's still a bit of setup to be done before you can continue. From the root directory of this repository, run:
 ```bash
 $ elm-get install evancz/automaton
+Cloning repo evancz/automaton
+Checking out version 0.1.0.1
+Should I add this library to your elm_dependencies.json file? (y/n): n
+Okay, but if you decide to make this library visible to the compiler
+later, add the dependency to your elm_dependencies.json file.
+Success!
 ```
 At this point, when elm-get asks you if you want to add Automaton to your `elm-dependencies.json` file, you can select either yes or no. If you select yes, there will be an error but it won't affect further steps. Continue with:
 ```bash
@@ -112,6 +118,18 @@ $ npm install jsdom
 And now you're ready to actually run the example:
 ```bash
 $ elm-io ScriptExample.elm ScriptExample.js
+[2 of 10] Compiling ElmTest.Assertion   ( ElmTest/Assertion.elm )
+[3 of 10] Compiling ElmTest.Test        ( ElmTest/Test.elm )
+[4 of 10] Compiling ElmTest.Run         ( ElmTest/Run.elm )
+[5 of 10] Compiling ElmTest.Runner.String ( ElmTest/Runner/String.elm )
+[6 of 10] Compiling ElmTest.Runner.Console ( ElmTest/Runner/Console.elm )
+[7 of 10] Compiling Test                ( Test.elm )
+[8 of 10] Compiling Automaton           ( elm_dependencies\evancz-automaton\0.1.0.1\Automaton.elm )
+[9 of 10] Compiling IO.Runner           ( C:\Users\Alex\AppData\Roaming\cabal\ElmIO-0.1.0.0\IO/Runner.elm )
+[10 of 10] Compiling Main                ( ScriptExample.elm )
+Generating JavaScript ... Done
+Making exe
+
 $ node ScriptExample.js
   4 tests executed
   3 tests passed
