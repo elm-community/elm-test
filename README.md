@@ -145,7 +145,7 @@ port requests : Signal [{ mPut  : Maybe String
                         , mExit : Maybe Int
                         , mGet  : Bool
                         }]
-port requests = Run.run responses --<Name of the function of type IO () which runs your tests>
+port requests = Run.run responses -- <Name of the function of type IO () which runs your tests>
 
 port responses : Signal (Maybe String)
 ```
