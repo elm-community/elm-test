@@ -124,8 +124,8 @@ $ elm-io ScriptExample.elm ScriptExample.js
 [5 of 10] Compiling ElmTest.Runner.String ( ElmTest/Runner/String.elm )
 [6 of 10] Compiling ElmTest.Runner.Console ( ElmTest/Runner/Console.elm )
 [7 of 10] Compiling Test                ( Test.elm )
-[8 of 10] Compiling Automaton           ( elm_dependencies\evancz-automaton\0.1.0.1\Automaton.elm )
-[9 of 10] Compiling IO.Runner           ( C:\Users\Alex\AppData\Roaming\cabal\ElmIO-0.1.0.0\IO/Runner.elm )
+[8 of 10] Compiling Automaton           ( elm_dependencies/evancz-automaton/0.1.0.1/Automaton.elm )
+[9 of 10] Compiling IO.Runner           ( .../cabal/ElmIO-0.1.0.0/IO/Runner.elm )
 [10 of 10] Compiling Main                ( ScriptExample.elm )
 Generating JavaScript ... Done
 Making exe
