@@ -1,10 +1,6 @@
 { "version": "0.1"
 , "summary": "Unit Testing Support with Element/String outputs."
-, "description":
-  "Unit Testing Framework in the style of HUnit.
-
-Run Elm Tests, with harnesses for printing reports in the browser or the command-line.
-"
+, "description": "Unit Testing Framework in the style of HUnit.\n\nRun Elm Tests, with harnesses for printing reports in the browser or the command-line."
 , "license": "MIT"
 , "repository": "https://github.com/deadfoxygrandpa/Elm-Test.git"
 , "exposed-modules": [ "ElmTest.Assertion"
