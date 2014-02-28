@@ -99,17 +99,15 @@ For a quick demo, you can compile the `ElementExample.elm` file, or continue to 
 
 ## Testing from the Command Line
 
-This library is also designed for interoperability with the Elm IO library from Max New. This interoperability is still somewhat experimental, so to make things easier, I recommend building the IO library [from this branch](https://github.com/maxsnew/IO/tree/generalize). Once that's done, there's still a bit of setup to be done before you can continue. From the root directory of this repository, run:
+This library is also designed for interoperability with the nodejs-based Elm IO library from Max New. This interoperability is still somewhat experimental, so to make things easier, I recommend building the IO library [from the generalize branch](https://github.com/maxsnew/IO/tree/generalize). Once that's done, there's still a bit of setup to be done before you can continue. From the root directory of this repository, run:
 ```bash
 $ elm-get install evancz/automaton
 Cloning repo evancz/automaton
 Checking out version 0.1.0.1
-Should I add this library to your elm_dependencies.json file? (y/n): n
-Okay, but if you decide to make this library visible to the compiler
-later, add the dependency to your elm_dependencies.json file.
+Should I add this library to your elm_dependencies.json file? (y/n): y
 Success!
 ```
-At this point, when elm-get asks you if you want to add Automaton to your `elm-dependencies.json` file, you can select either yes or no. If you select yes, there will be an error but it won't affect further steps. Continue with:
+Continue with:
 ```bash
 $ npm install jsdom
 ```
