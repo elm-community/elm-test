@@ -3,7 +3,7 @@ module ElmTest.Assertion where
 {-| The basic component of a test case, an assertion.
 
 # Assert
-@docs assertT, assert, assertEqual, assertNotEqual, (@=?), (@/=?)
+@docs assertT, assert, assertEqual, assertNotEqual
 
 -}    
 
@@ -12,14 +12,6 @@ data Assertion = AssertTrue     (() -> Bool)
                | AssertFalse    (() -> Bool)
                | AssertEqual    (() -> Bool) String String
                | AssertNotEqual (() -> Bool) String String
-
-{-| Convenience operator for constructing an Assert Equals assertion.-}
-(@=?) : a -> a -> Assertion
-a @=? b = assertEqual a b
-
-{-| Convenience operator for constructing an Assert Not Equals assertion. -}
-(@/=?) : a -> a -> Assertion
-a @/=? b = assertNotEqual a b
 
 {-| Basic function to create an Assert True assertion. Delays execution until tests are run. -}
 assertT : (() -> Bool) -> Assertion
