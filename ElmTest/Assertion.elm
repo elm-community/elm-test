@@ -3,11 +3,10 @@ module ElmTest.Assertion where
 {-| The basic component of a test case, an assertion.
 
 # Assert
-@docs assertT, assert, assertEqual, assertNotEqual, Assertion
+@docs assertT, assert, assertEqual, assertNotEqual
 
 -}    
 
-{-| The fundamental component of a Test Case, a thunk to be tested and associated metadata -}
 data Assertion = AssertTrue     (() -> Bool)
                | AssertFalse    (() -> Bool)
                | AssertEqual    (() -> Bool) String String

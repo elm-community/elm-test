@@ -3,13 +3,12 @@ module ElmTest.Test where
 {-| The units of a test suite, named tests.
 
 # Test
-@docs test, equals, defaultTest, Test
+@docs test, equals, defaultTest
  
 -}
 
 import open ElmTest.Assertion
 
-{-| Basic test data constructor -}
 data Test = TestCase String Assertion
 
 {-| Convenience function for quickly constructing Assert Equals tests. -}

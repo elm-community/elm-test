@@ -4,18 +4,14 @@ module ElmTest.Run where
 the output, instead look at the ```runDisplay``` series in ElmTest.Runner
 
 # Run
-@docs run, report, pass, fail, Result, Report
+@docs run, report, pass, fail
 
 -}  
 
 import open ElmTest.Assertion
 import open ElmTest.Test
 
-{-| The type representing a test result. Nothing denotes "Pass" and Just String
-contains the error message in the event of a failure -}
 type Result = Maybe String
-
-{-| The type representing the results of a list of tests -}
 type Report = { results : [Result]
               , passes : [Result]
               , failures : [Result] }
