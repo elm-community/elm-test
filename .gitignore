@@ -5,3 +5,5 @@ cache/
 *.elmo
 node_modules/
 elm_dependencies/
+docs/
+*.js
