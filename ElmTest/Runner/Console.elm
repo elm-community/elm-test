@@ -7,25 +7,13 @@ module ElmTest.Runner.Console (runDisplay) where
 
 -}
 
-import IO.IO as IO
+import open as IO
     
 import open ElmTest.Test
 import ElmTest.Runner.String as RString
 
-{-| Run a test suite, printing results to the stdout signal and then signalling exit.
-Returns a 0 exit code if the test suite passed and a 1 exit code otherwise.
-
-The output signals here should be hooked up to your stdout and exit
-ports. Elm supports has a built-in handler for a stdout port but
-you'll need to define one for exit. The following implementation will
-work with this exit signal provided:
-```javascript
-var exit = function(code) {
-  if (!(code === null)) {
-     process.exit(code);
-  }
-}
-```
+{-| Run a list of tests in the IO type from [Max New's Elm IO library](https://github.com/maxsnew/IO/).
+Requires this library to work. Results are printed to console once all tests have completed.
 -}               
-runDisplay : [Test] -> IO.IO ()
-runDisplay tests = IO.putStrLn . snd . RString.runDisplay <| tests
+runDisplay : [Test] -> IO ()
+runDisplay tests = putStrLn . snd . RString.runDisplay <| tests

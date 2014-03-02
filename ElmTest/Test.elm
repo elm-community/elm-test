@@ -9,18 +9,18 @@ module ElmTest.Test where
 
 import open ElmTest.Assertion
 
--- Basic test data constructor
+{-| Basic test data constructor -}
 data Test = TestCase String Assertion
 
-{- Convenience function for quickly constructing Assert Equals tests. -}
+{-| Convenience function for quickly constructing Assert Equals tests. -}
 equals : a -> a -> Test
 equals a b = defaultTest <| assertEqual a b
 
-{- Basic function to create a Test Case -}
+{-| Basic function to create a Test Case -}
 test : String -> Assertion -> Test
 test name a = TestCase name a
 
-{- Automatically determines a name for the created test (use this if you're lazy). -}
+{-| Automatically determines a name for the created test (use this if you're lazy). -}
 defaultTest : Assertion -> Test
 defaultTest a =
     let name = case a of

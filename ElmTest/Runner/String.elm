@@ -30,7 +30,7 @@ pretty (TestCase name _) r =
       Nothing  -> name ++ ": passed."
       Just msg -> name ++ ": FAILED. " ++ msg
 
-{-| Returns the report as a string and True if all tests pass, False otherwise -}
+{-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
 runDisplay : [Test] -> (Bool, String)
 runDisplay ts = 
     let r = report ts

@@ -3,11 +3,11 @@ module ElmTest.Assertion where
 {-| The basic component of a test case, an assertion.
 
 # Assert
-@docs assertT, assert, assertEqual, assertNotEqual
+@docs assertT, assert, assertEqual, assertNotEqual, Assertion
 
 -}    
 
--- The fundamental component of a Test Case, a thunk to be tested and associated metadata
+{-| The fundamental component of a Test Case, a thunk to be tested and associated metadata -}
 data Assertion = AssertTrue     (() -> Bool)
                | AssertFalse    (() -> Bool)
                | AssertEqual    (() -> Bool) String String
@@ -30,6 +30,6 @@ generate a list of Assert Equal assertions. -}
 assertionList : [a] -> [a] -> [Assertion]
 assertionList xs ys = zipWith assertEqual xs ys
 
-{- Basic function to create an Assert Not Equals assertion. -}
+{-| Basic function to create an Assert Not Equals assertion. -}
 assertNotEqual : a -> a -> Assertion
 assertNotEqual a b = AssertNotEqual (\_ -> a /= b) (show a) (show b)
