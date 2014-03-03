@@ -1,5 +1,4 @@
 language: haskell
-before_install: node test.js
 install:
   - cabal install elm
   - sudo ln -s ~/.cabal/bin/elm /usr/local/bin/elm
