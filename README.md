@@ -103,7 +103,7 @@ For a quick demo, you can compile the `ElementExample.elm` file, or continue to 
 
 ## Testing from the Command Line
 
-This library is also designed for interoperability with the nodejs-based Elm IO library from Max New. This interoperability is still somewhat experimental, so to make things easier, I recommend building the IO library [from the generalize branch](https://github.com/maxsnew/IO/tree/generalize). Once that's done, there's still a bit of setup to be done before you can continue. From the root directory of this repository, run:
+This library is also designed for interoperability with the nodejs-based Elm IO library from Max New. This interoperability is still somewhat experimental, so to make things easier, I recommend building the IO library [from the 0.1 tag](https://github.com/maxsnew/IO/tree/0.1). Once that's done, there's still a bit of setup to be done before you can continue. From the root directory of this repository, run:
 ```bash
 $ elm-get install evancz/automaton
 Cloning repo evancz/automaton
@@ -153,3 +153,60 @@ port responses : Signal (Maybe String)
 ```
 You can examine `ScriptExample.elm` to see exactly how these are required. For a detailed log capturing the entire
 setup process for the command line example, see: [ScriptExample.md](https://github.com/deadfoxygrandpa/Elm-Test/blob/master/ScriptExample.md).
+
+Since `elm-io` version 0.1, it's not possible to ignore most of this boilerplate in favor of defining a
+`console : IO ()` function, which effectively replaces the `main : Signal Element` function in normal
+graphical Elm programs. Compile with `elm-io --default-ports Tests.elm tests.js`, replacing `Tests.elm`
+with the filename of your Elm source file, and `tests.js` with the desired output script name to be
+run with node. With this `--default-ports` flag, a valid console-run test file is:
+```haskell
+module Main where
+
+import ElmTest.Runner.Console (runDisplay)
+import open ElmTest.Test
+
+tests : [Test]
+tests = [ 5 `equals` 5
+        , test "Addition" (assertEqual (3 + 7) 10)
+        ]
+
+console = runDisplay tests
+```
+That's it! Make sure `evancz/automaton` and `jsdom` are installed in the project directory, then
+compile like `elm-io --default-ports Tests.elm tests.js`. Run `node tests.js` and you will get:
+```
+2 tests executed
+2 tests passed
+0 tests failed
+```
+with exit code 0. If any tests fail, the process will exit with exit code 1.
+
+## Integrating With Travis CI
+
+With Elm-Test and Elm IO, it is now possible to run continuous integration tests with Travis CI on
+your Elm projects. Just set up Travis CI for your repository as normal, write tests with Elm-Test,
+and include a `.travis.yml` file based on this template:
+```
+language: haskell
+install:
+  - cabal install elm-get
+  - sudo ln -s ~/.cabal/bin/elm /usr/local/bin/elm
+  - sudo ln -s ~/.cabal/bin/elm-get /usr/local/bin/elm-get
+  - git clone git://github.com/maxsnew/IO
+  - cd IO
+  - git checkout tags/0.1
+  - cabal install
+  - sudo ln -s ~/.cabal/bin/elm-io /usr/local/bin/elm-io
+  - cd ..
+  - echo "y" | elm-get install evancz/automaton
+  - echo "y" | elm-get install deadfoxygrandpa/Elm-Test
+  - npm install jsdom
+before_script: elm-io --default-ports Tests/Tests.elm tests.js
+script: node tests.js
+```
+If your tests are in `Tests/Tests.elm` then this `.travis.yml` file will work out o the box, with no
+changes necessary. 
+
+This repository itself is using almost this exact Travis CI configuration as a proof of concept. It doesn't
+make a lot of sense to do extensive testing of the library using itself, but the exact same techniques 
+can be applied to any Elm project.

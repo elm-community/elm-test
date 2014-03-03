@@ -5,7 +5,7 @@ install:
   - sudo ln -s ~/.cabal/bin/elm-get /usr/local/bin/elm-get
   - git clone git://github.com/maxsnew/IO
   - cd IO
-  - git checkout generalize
+  - git checkout tags/0.1
   - cabal install
   - sudo ln -s ~/.cabal/bin/elm-io /usr/local/bin/elm-io
   - cd ..

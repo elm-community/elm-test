@@ -1,6 +1,7 @@
 module Main where
 
 import ElmTest.Runner.Console (runDisplay)
+
 import open ElmTest.Test
 import ElmTest.Run as R
 import ElmTest.Assertion as A
