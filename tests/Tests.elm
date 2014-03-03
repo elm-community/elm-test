@@ -5,7 +5,7 @@ import open ElmTest.Test
 
 tests : [Test]
 tests = [ 5 `equals` 5
-        , 10 `equals` 10
+        , 10 `equals` 9
         ]
 
 console = runDisplay tests
