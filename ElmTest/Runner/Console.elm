@@ -7,7 +7,7 @@ module ElmTest.Runner.Console (runDisplay) where
 
 -}
 
-import IO.IO as IO
+import open IO.IO
     
 import open ElmTest.Test
 import ElmTest.Runner.String as RString
@@ -16,4 +16,4 @@ import ElmTest.Runner.String as RString
 Requires this library to work. Results are printed to console once all tests have completed.
 -}               
 runDisplay : [Test] -> IO ()
-runDisplay tests = putStrLn . snd . RString.runDisplay <| tests
+runDisplay tests = (putStrLn . snd . RString.runDisplay <| tests) >> exit 0
