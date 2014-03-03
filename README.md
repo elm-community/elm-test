@@ -14,6 +14,10 @@ For convenience, there is a function to create a name for you based on the input
 -- Test name will be "5 == 5"
 myTest = defaultTest (assertEqual 5 5)
 ```
+As well as a function to create an assertEqual tests, again deriving a name based on the inputs:
+```
+myTest = 5 `equals` 5
+```
 There are four different types of assertions:
 ```haskell
 AssertTrue
@@ -147,4 +151,5 @@ port requests = Run.run responses -- <Name of the function of type IO () which r
 
 port responses : Signal (Maybe String)
 ```
-You can examine `ScriptExample.elm` to see exactly how these are required.
+You can examine `ScriptExample.elm` to see exactly how these are required. For a detailed log capturing the entire
+setup process for the command line example, see: [ScriptExample.md](https://github.com/deadfoxygrandpa/Elm-Test/blob/master/ScriptExample.md).
