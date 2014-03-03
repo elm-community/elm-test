@@ -11,5 +11,5 @@ install:
   - cd ..
   - echo "y" | elm-get install evancz/automaton
   - npm install jsdom
-before_script: elm-io --default-ports tests/Tests.elm tests.js
+before_script: elm-io --default-ports Tests/Tests.elm tests.js
 script: node tests.js
