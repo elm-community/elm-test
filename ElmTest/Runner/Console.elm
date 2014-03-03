@@ -7,7 +7,7 @@ module ElmTest.Runner.Console (runDisplay) where
 
 -}
 
-import open as IO
+import IO.IO as IO
     
 import open ElmTest.Test
 import ElmTest.Runner.String as RString
