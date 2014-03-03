@@ -1,4 +1,4 @@
-{ "version": "0.2"
+{ "version": "0.2.1"
 , "summary": "Unit Testing Support with Element/String outputs."
 , "description": "Unit Testing Framework in the style of HUnit.\n\nRun Elm Tests, with harnesses for printing reports in the browser or the command-line."
 , "license": "MIT"
