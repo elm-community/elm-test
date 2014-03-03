@@ -16,4 +16,9 @@ import ElmTest.Runner.String as RString
 Requires this library to work. Results are printed to console once all tests have completed.
 -}               
 runDisplay : [Test] -> IO ()
-runDisplay tests = (putStrLn . snd . RString.runDisplay <| tests) >> exit 0
+runDisplay tests = 
+    let (allPassed, results) = RString.runDisplay tests
+    in putStrLn results >>
+       case allPassed of
+            True  -> exit 0
+            False -> exit 1

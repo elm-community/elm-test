@@ -1,4 +1,5 @@
 language: haskell
+before_install: node test.js
 install:
   - cabal install elm
   - sudo ln -s ~/.cabal/bin/elm /usr/local/bin/elm
@@ -13,4 +14,4 @@ install:
   - echo "y" | elm-get install evancz/automaton
   - npm install jsdom
 before_script: elm-io --default-ports tests/Tests.elm tests.js
-script: nodejs tests.js
+script: node tests.js
