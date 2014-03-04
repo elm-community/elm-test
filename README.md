@@ -1,4 +1,4 @@
-Elm-Test
+Elm-Test [![Build Status](https://travis-ci.org/deadfoxygrandpa/Elm-Test.png?branch=master)](https://travis-ci.org/deadfoxygrandpa/Elm-Test)
 ========
 
 A unit testing framework for Elm
