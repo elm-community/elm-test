@@ -7,8 +7,8 @@ module ElmTest.Runner.Element (runDisplay) where
 
 -}
     
-import open ElmTest.Run
-import open ElmTest.Test
+import ElmTest.Run (..)
+import ElmTest.Test (..)
 
 -- Given a result, render it in plainText and return a pass/fail color 
 pretty : Result -> (Color, Element)

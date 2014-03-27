@@ -1,7 +1,7 @@
 module Test where
 
-import open ElmTest.Assertion
-import open ElmTest.Test
+import ElmTest.Assertion (..)
+import ElmTest.Test (..)
 
 -- Example Usage
 ----------------

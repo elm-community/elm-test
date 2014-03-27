@@ -7,7 +7,7 @@ module ElmTest.Test where
  
 -}
 
-import open ElmTest.Assertion
+import ElmTest.Assertion (..)
 
 data Test = TestCase String Assertion
 

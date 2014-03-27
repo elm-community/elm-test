@@ -8,8 +8,8 @@ the output, instead look at the ```runDisplay``` series in ElmTest.Runner
 
 -}  
 
-import open ElmTest.Assertion
-import open ElmTest.Test
+import ElmTest.Assertion (..)
+import ElmTest.Test (..)
 
 type Result = Maybe String
 type Report = { results : [Result]

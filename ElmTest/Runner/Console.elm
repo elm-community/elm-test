@@ -7,9 +7,9 @@ module ElmTest.Runner.Console (runDisplay) where
 
 -}
 
-import open IO.IO
+import IO.IO (..)
     
-import open ElmTest.Test
+import ElmTest.Test (..)
 import ElmTest.Runner.String as RString
 
 {-| Run a list of tests in the IO type from [Max New's Elm IO library](https://github.com/maxsnew/IO/).

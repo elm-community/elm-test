@@ -7,8 +7,8 @@ module ElmTest.Runner.String (runDisplay) where
 
 -}
     
-import open ElmTest.Run
-import open ElmTest.Test
+import ElmTest.Run (..)
+import ElmTest.Test (..)
 
 -- | Some pretty printing stuff. Should be factored into a pretty printing library.    
 vcat : [String] -> String
