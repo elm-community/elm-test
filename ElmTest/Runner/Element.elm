@@ -27,9 +27,9 @@ runDisplay tests =
         failed   = length r.failures
         name (TestCase n _) = n
     in
-    (flow right <| [ text . bold . toText <| (show (length r.results)) ++ " tests executed: "
-                   , text . Text.color green . toText <| (show passed) ++ " passed; "
-                   , text . Text.color red . toText <| (show failed) ++ " failed"
+    (flow right <| [ centered . bold . toText <| (show (length r.results)) ++ " tests executed: "
+                   , centered . Text.color green . toText <| (show passed) ++ " passed; "
+                   , centered . Text.color red . toText <| (show failed) ++ " failed"
                    ])
     `above`
     (flow right <| [ flow down <| map (\t -> plainText <| (name t) ++ ":   ") tests
