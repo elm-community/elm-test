@@ -1,10 +1,9 @@
 module Main where
 
-import ElmTest.Runner.Console (runDisplay)
-
-import ElmTest.Test (..)
-import ElmTest.Run as R
 import ElmTest.Assertion as A
+import ElmTest.Run as R
+import ElmTest.Runner.Console (runDisplay)
+import ElmTest.Test (..)
 
 tests : [Test]
 tests = [ (R.run (0 `equals` 0)) `equals` Nothing
