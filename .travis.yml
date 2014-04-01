@@ -9,7 +9,7 @@ install:
   - cabal install
   - sudo ln -s ~/.cabal/bin/elm-io /usr/local/bin/elm-io
   - cd ..
-  - echo "n" | elm-get install evancz/automaton
+  - echo "y" | elm-get install evancz/automaton
   - npm install jsdom
 before_script: elm-io --default-ports Tests/Tests.elm tests.js
 script: node tests.js
