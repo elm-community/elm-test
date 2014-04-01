@@ -5,11 +5,11 @@ install:
   - sudo ln -s ~/.cabal/bin/elm-get /usr/local/bin/elm-get
   - git clone git://github.com/maxsnew/IO
   - cd IO
-  - git checkout tags/0.1
+  - git checkout tags/0.1.1
   - cabal install
   - sudo ln -s ~/.cabal/bin/elm-io /usr/local/bin/elm-io
   - cd ..
-  - echo "y" | elm-get install evancz/automaton
+  - echo "n" | elm-get install evancz/automaton
   - npm install jsdom
 before_script: elm-io --default-ports Tests/Tests.elm tests.js
 script: node tests.js
