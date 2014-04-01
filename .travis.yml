@@ -1,5 +1,6 @@
 language: haskell
 install:
+  - cabal install language-ecmascript-0.15.4
   - cabal install elm-get
   - sudo ln -s ~/.cabal/bin/elm /usr/local/bin/elm
   - sudo ln -s ~/.cabal/bin/elm-get /usr/local/bin/elm-get
