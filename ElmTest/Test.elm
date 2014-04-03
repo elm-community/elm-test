@@ -11,6 +11,16 @@ import ElmTest.Assertion (..)
 
 data Test = TestCase String Assertion | Suite String [Test]
 
+nameOf : Test -> String
+nameOf test = case test of
+                TestCase n _ -> n
+                Suite    n _ -> n
+
+numberOf : Test -> Int
+numberOf test = case test of
+                    TestCase _ _  -> 1
+                    Suite    _ ts -> sum . map numberOf <| ts
+
 {-| Convenience function for quickly constructing Assert Equals tests. -}
 equals : a -> a -> Test
 equals a b = defaultTest <| assertEqual a b

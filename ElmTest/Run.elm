@@ -8,14 +8,13 @@ the output, instead look at the ```runDisplay``` series in ElmTest.Runner
 
 -}
 
-import Maybe
-
 import ElmTest.Assertion (..)
 import ElmTest.Test (..)
 
-data Result = Pass | Fail String | Report { results : [Result]
-                                          , passes : [Result]
-                                          , failures : [Result] }
+data Result = Pass | Fail String | Report { results  : [Result]
+                                          , passes   : [Result]
+                                          , failures : [Result]
+                                          }
 
 {-| Run a test and get a Result -}
 run : Test -> Result
@@ -31,27 +30,18 @@ run test =
                                      AssertFalse t        -> runAssertion t <| "not False"
         Suite _ tests -> let results = map run tests
                              (passes, fails) = partition pass results
-                         in Report { results = results
-                                   , passes  = passes
+                         in Report { results  = results
+                                   , passes   = passes
                                    , failures = fails
                                    }
 
 {-| Transform a Result into a Bool. True if the result represents a pass, otherwise False -}
 pass : Result -> Bool
 pass m = case m of
-           Pass   -> True
-           Fail _  -> False
-           Report {results, passes, failures} -> if (length failures > 0) then False else True
+           Pass     -> True
+           Fail _   -> False
+           Report r -> if (length (.failures r) > 0) then False else True
 
 {-| Transform a Result into a Bool. True if the result represents a fail, otherwise False -}
 fail : Result -> Bool
 fail = not . pass
-
-{-| Run a list of tests and get a Report -}
---report : [Test] -> Report
---report ts = let results         = map run ts
---                (passes, fails) = partition pass results
---            in { results = results
---               , passes  = passes
---               , failures = fails
---               }

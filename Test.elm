@@ -20,4 +20,4 @@ tests2 = [ (2^3) `equals` 8
          ]
 
 suite = Suite "suite" tests
-suite2 = Suite "suite2" [suite, Suite "suite3" tests2]
+suite2 = Suite "suite2" [suite, Suite "suite3" tests2, 3 `equals` 3]

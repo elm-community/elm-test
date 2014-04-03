@@ -12,4 +12,4 @@ uglyOut : String
 uglyOut = snd <| String.runDisplay Test.suite2
 
 main : Element
-main = above (plainText uglyOut) prettyOut
+main = above (plainText <| uglyOut ++ "\n\n\n\n\n") prettyOut
