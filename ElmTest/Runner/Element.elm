@@ -14,13 +14,16 @@ import ElmTest.Test (..)
 pretty : Result -> (Color, Element)
 pretty m =
     case m of
-      Nothing  -> (green, plainText "Pass.")
-      Just msg -> (red,   plainText msg)
+      Pass  -> (green, plainText "Pass.")
+      Fail msg -> (red,   plainText msg)
+      Report {results, passes, failures} -> (purple, plainText "report")
 
 {-| Runs a list of tests and renders the results as an Element -}
-runDisplay : [Test] -> Element
+runDisplay : Test -> Element
 runDisplay tests =
-    let r        = report tests
+    let r        = case run tests of
+                      Report r -> r
+                      _        -> {results = [], passes = [], failures = []}
         pretties = map pretty r.results
         w        = (maximum <| map (\r -> widthOf <| snd r) pretties) + 20
         passed   = length r.passes
@@ -34,6 +37,6 @@ runDisplay tests =
                    , centered . Text.color red . toText <| (show failed) ++ " failed"
                    ])
     `above`
-    (flow right <| [ flow down <| map (\t -> plainText <| (name t) ++ ":   ") tests
+    (flow right <| [ flow down <| map (\t -> plainText <| (name t) ++ ":   ") [tests]
                    , flow down <|
                         map (\(c, t) -> color c <| container w (heightOf t) middle t) pretties ])

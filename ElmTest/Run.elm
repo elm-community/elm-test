@@ -13,41 +13,45 @@ import Maybe
 import ElmTest.Assertion (..)
 import ElmTest.Test (..)
 
-type Result = Maybe String
-type Report = { results : [Result]
-              , passes : [Result]
-              , failures : [Result] }
+data Result = Pass | Fail String | Report { results : [Result]
+                                          , passes : [Result]
+                                          , failures : [Result] }
 
 {-| Run a test and get a Result -}
 run : Test -> Result
 run test =
     case test of
         TestCase _ assertion -> let runAssertion t m = if t ()
-                                                       then Nothing
-                                                       else Just m
+                                                       then Pass
+                                                       else Fail m
                                 in case assertion of
                                      AssertEqual t a b    -> runAssertion t <| "Expected: " ++ a ++ "; got: " ++ b
                                      AssertNotEqual t a b -> runAssertion t <| a ++ " equals " ++ b
                                      AssertTrue  t        -> runAssertion t <| "not True"
                                      AssertFalse t        -> runAssertion t <| "not False"
-        Suite _ tests -> let results = Maybe.justs . map run <| tests
-                         in  Just . concat . intersperse "\n" <| results
+        Suite _ tests -> let results = map run tests
+                             (passes, fails) = partition pass results
+                         in Report { results = results
+                                   , passes  = passes
+                                   , failures = fails
+                                   }
 
 {-| Transform a Result into a Bool. True if the result represents a pass, otherwise False -}
 pass : Result -> Bool
 pass m = case m of
-           Nothing -> True
-           Just _  -> False
+           Pass   -> True
+           Fail _  -> False
+           Report {results, passes, failures} -> if (length failures > 0) then False else True
 
 {-| Transform a Result into a Bool. True if the result represents a fail, otherwise False -}
 fail : Result -> Bool
 fail = not . pass
 
 {-| Run a list of tests and get a Report -}
-report : [Test] -> Report
-report ts = let results         = map run ts
-                (passes, fails) = partition pass results
-            in { results = results
-               , passes  = passes
-               , failures = fails
-               }
+--report : [Test] -> Report
+--report ts = let results         = map run ts
+--                (passes, fails) = partition pass results
+--            in { results = results
+--               , passes  = passes
+--               , failures = fails
+--               }
