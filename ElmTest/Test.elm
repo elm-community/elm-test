@@ -4,12 +4,12 @@ module ElmTest.Test where
 
 # Test
 @docs test, equals, defaultTest
- 
+
 -}
 
 import ElmTest.Assertion (..)
 
-data Test = TestCase String Assertion
+data Test = TestCase String Assertion | Suite String [Test]
 
 {-| Convenience function for quickly constructing Assert Equals tests. -}
 equals : a -> a -> Test

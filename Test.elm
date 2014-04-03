@@ -11,3 +11,5 @@ tests = [ (2^3) `equals` 1
         , defaultTest (assert True)
         , test "test head" (assertEqual 1 (head [1..10]))
         ]
+
+suite = Suite "suite" tests
