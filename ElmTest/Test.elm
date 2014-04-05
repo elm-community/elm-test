@@ -16,10 +16,15 @@ nameOf test = case test of
                 TestCase n _ -> n
                 Suite    n _ -> n
 
-numberOf : Test -> Int
-numberOf test = case test of
-                    TestCase _ _  -> 1
-                    Suite    _ ts -> sum . map numberOf <| ts
+numberOfTests : Test -> Int
+numberOfTests test = case test of
+                        TestCase _ _  -> 1
+                        Suite    _ ts -> sum . map numberOfTests <| ts
+
+numberOfSuites : Test -> Int
+numberOfSuites test = case test of
+                        TestCase _ _  -> 0
+                        Suite    _ ts -> 1 + (sum . map numberOfSuites <| ts)
 
 {-| Convenience function for quickly constructing Assert Equals tests. -}
 equals : a -> a -> Test

@@ -24,28 +24,11 @@ indent : Int -> String -> String
 indent n = let indents = replicate n ' '
            in vcat . map (String.append indents) . String.lines
 
-pretty : Test -> Result -> String
-pretty test r =
-    let name = nameOf test
-    in case r of
-         Pass     -> name ++ ": passed."
-         Fail msg -> name ++ ": FAILED. " ++ msg
-         Report r -> name ++ ": " ++ (vcat <| map (pretty test) r.results)
-
-nPassed : Result -> (Int, Int)
-nPassed result = case result of
-                    Pass -> (0, 1)
-                    Fail _ -> (0, 0)
-                    Report r -> let (x, y) = unzip . map nPassed <| r.passes
-                                in  (sum x + 1, sum y)
-
-nFailed : Result -> (Int, Int)
-nFailed result = case result of
-                    Pass -> (0, 0)
-                    Fail _ -> (0, 1)
-                    Report r -> let (x, y) = unzip . map nFailed <| r.failures
-                                    failed = sum y
-                                in  (sum x + (if failed > 0 then 1 else 0), failed)
+pretty : String -> Result -> String
+pretty name r = case r of
+                    Pass     -> name ++ ": passed."
+                    Fail msg -> name ++ ": FAILED. " ++ msg
+                    Report r -> name ++ ": " ++ (vcat <| map (pretty name) r.results)
 
 {-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
 runDisplay : Test -> (Bool, String)
@@ -58,16 +41,18 @@ runDisplay t =
         tests = case t of
                     TestCase n a -> [TestCase n a]
                     Suite n ts -> ts
-        (passedSuites, passedTests) = nPassed result
-        (failedSuites, failedTests) = nFailed result
+        passedTests' = passedTests result
+        passedSuites' = passedSuites result
+        failedTests' = failedTests result
+        failedSuites' = failedSuites result
         summary = vcat . map (indent 2) <| [
-                    show (numberOf t) ++ " tests executed"
-                  , show passedSuites ++ " suites passed, containing " ++ show passedTests ++ " tests"
-                  , show failedSuites ++ " suites failed, containing " ++ show failedTests ++ " failed tests"
+                    show (numberOfSuites t) ++ " suites run, containing " ++ show (numberOfTests t) ++ " tests"
+                  , show passedSuites' ++ " suites passed, containing " ++ show passedTests' ++ " tests"
+                  , show failedSuites' ++ " suites failed, containing " ++ show failedTests' ++ " failed tests"
                   ]
         --- TODO: implement results printing
-        pass   = failedSuites == 0
+        pass   = failedTests' == 0
         results = if pass
                   then []
-                  else zipWith pretty tests r.results
+                  else zipWith (pretty . nameOf) tests r.results
     in (pass, vcat <| summary :: results)
