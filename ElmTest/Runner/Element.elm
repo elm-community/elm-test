@@ -14,15 +14,15 @@ import ElmTest.Test (..)
 pretty : Result -> (Color, Element)
 pretty m =
     case m of
-      Pass  -> (green, plainText "Pass.")
-      Fail msg -> (red,   plainText msg)
-      Report {results, passes, failures} -> (purple, plainText "report")
+      Pass _  -> (green, plainText "Pass.")
+      Fail _ msg -> (red,   plainText msg)
+      Report _ {results, passes, failures} -> (purple, plainText "report")
 
 {-| Runs a list of tests and renders the results as an Element -}
 runDisplay : Test -> Element
 runDisplay tests =
     let r        = case run tests of
-                      Report r -> r
+                      Report _ r -> r
                       _        -> {results = [], passes = [], failures = []}
         pretties = map pretty r.results
         w        = (maximum <| map (\r -> widthOf <| snd r) pretties) + 20
