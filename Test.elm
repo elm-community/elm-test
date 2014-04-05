@@ -25,5 +25,6 @@ passingTest = test "passing test" <| assertEqual 0 0
 failingTest : Test
 failingTest = test "failing test" <| assertEqual 1 0
 
-suite = Suite "suite" tests
-suite2 = Suite "root" [suite, Suite "suite3" tests2, 3 `equals` 3, Suite "suite4" tests2]
+suite = Suite "Some tests" tests2
+suite2 = Suite "A Test Suite" [suite, Suite "Some other tests" tests2, Suite "More tests!" tests2, 3 `equals` 3, Suite "Even more!!" tests2]
+suite3 = Suite "A Test Suite" [suite, Suite "Some other tests" tests, Suite "More tests!" tests2, 3 `equals` 3, Suite "Even more!!" tests2]
