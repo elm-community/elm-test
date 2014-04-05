@@ -30,8 +30,8 @@ pretty n result =
         msg = case result of
                 Pass name     -> name ++ ": passed."
                 Fail name msg -> name ++ ": FAILED. " ++ msg
-                Report name r -> "Suite " ++ name ++ ": "
-                              ++ if passed then "all tests passed" else "failed\n"
+                Report name r -> "Test Suite: " ++ name ++ ": "
+                              ++ if passed then "all tests passed" else "FAILED\n"
                               ++ (vcat <| map (pretty (n + 2)) r.results)
     in  indent n msg
 
