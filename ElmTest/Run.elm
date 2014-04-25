@@ -6,9 +6,7 @@ the output, instead look at the ```runDisplay``` series in ElmTest.Runner
 # Run
 @docs run, report, pass, fail
 
--}
-
-import Trampoline (..)
+-}  
 
 import ElmTest.Assertion (..)
 import ElmTest.Test (..)
@@ -20,9 +18,9 @@ type Report = { results : [Result]
 
 {-| Run a test and get a Result -}
 run : Test -> Result
-run (TestCase _ assertion) =
+run (TestCase _ assertion) = 
     let runAssertion t m = if t ()
-                           then Nothing
+                           then Nothing 
                            else Just m
     in case assertion of
          AssertEqual t a b    -> runAssertion t <| "Expected: " ++ a ++ "; got: " ++ b
@@ -43,18 +41,8 @@ fail = not . pass
 {-| Run a list of tests and get a Report -}
 report : [Test] -> Report
 report ts = let results         = map run ts
-                (passes, fails) = partitionTrampoline pass results
+                (passes, fails) = partition pass results
             in { results = results
                , passes  = passes
                , failures = fails
                }
-
-partitionTrampoline : (a -> Bool) -> [a] -> ([a], [a])
-partitionTrampoline f list = trampoline (partitionTrampoline' ([], []) f list)
-
-partitionTrampoline' : ([a], [a]) -> (a -> Bool) -> [a] -> Trampoline ([a], [a])
-partitionTrampoline' ((xs, ys) as accum) f list =
-    case list of
-        []      -> Done accum
-        (z::zs) -> let accum' = if f z then (z::xs, ys) else (xs, z::ys)
-                   in  Continue (\() -> partitionTrampoline' accum' f zs)
