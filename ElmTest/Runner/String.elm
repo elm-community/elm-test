@@ -1,4 +1,4 @@
-module ElmTest.Runner.String (runDisplay) where
+module ElmTest.Runner.String (runDisplay, run) where
 
 {-| Run a test suite and display it as a string.
 
@@ -7,7 +7,7 @@ module ElmTest.Runner.String (runDisplay) where
 
 -}
 
-import ElmTest.Run (..)
+import ElmTest.Run as Run
 import ElmTest.Test (..)
 
 -- | Some pretty printing stuff. Should be factored into a pretty printing library.
@@ -24,28 +24,27 @@ indent : Int -> String -> String
 indent n = let indents = replicate n ' '
            in vcat . map (String.append indents) . String.lines
 
-pretty : Int -> Result -> String
+pretty : Int -> Run.Result -> (String, Run.Result)
 pretty n result =
-    let passed = pass result
+    let passed = Run.pass result
         msg = case result of
-                Pass name     -> name ++ ": passed."
-                Fail name msg -> name ++ ": FAILED. " ++ msg
-                Report name r -> "Test Suite: " ++ name ++ ": "
-                              ++ if passed then "all tests passed" else "FAILED\n"
-                              ++ (vcat <| map (pretty (n + 2)) r.results)
-    in  indent n msg
+                Run.Pass name     -> name ++ ": passed."
+                Run.Fail name msg -> name ++ ": FAILED. " ++ msg
+                Run.Report name r -> "Test Suite: " ++ name ++ ": "
+                                  ++ if passed then "all tests passed" else "FAILED\n"
+                                  ++ (vcat <| map (fst . pretty (n + 2)) r.results)
+    in  (indent n msg, result)
 
-{-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
-runDisplay : Test -> (Bool, String)
-runDisplay t =
-    let result = run t
+run : Test -> [(String, Run.Result)]
+run t =
+    let result = Run.run t
         tests = case t of
                     TestCase n a -> [TestCase n a]
                     Suite n ts -> ts
-        passedTests' = passedTests result
-        passedSuites' = passedSuites result
-        failedTests' = failedTests result
-        failedSuites' = failedSuites result
+        passedTests'  = Run.passedTests result
+        passedSuites' = Run.passedSuites result
+        failedTests'  = Run.failedTests result
+        failedSuites' = Run.failedSuites result
         summary = vcat . map (indent 2) <| [
                     show (numberOfSuites t) ++ " suites run, containing " ++ show (numberOfTests t) ++ " tests"
                   , if failedTests' == 0
@@ -56,8 +55,15 @@ runDisplay t =
                     else show failedSuites' ++ " suites and " ++ show failedTests' ++ " tests failed"
                   ]
         --- TODO: implement results printing
-        pass   = failedTests' == 0
-        results' = if pass
-                  then ""
-                  else (pretty 0) result
-    in (pass, vcat <| summary :: [results'])
+        allPassed   = if failedTests' == 0 then Run.Pass "" else Run.Fail "" ""
+        results' = case allPassed of
+                      Run.Pass _ -> ("", allPassed)
+                      _          -> (pretty 0) result
+    in (summary, allPassed) :: [results']
+
+{-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
+runDisplay : Test -> (Bool, String)
+runDisplay t =
+    let (allPassed :: results) = run t
+        pass' = Run.pass (snd allPassed)
+    in  (pass', vcat <| map fst results)
