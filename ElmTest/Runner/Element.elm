@@ -38,4 +38,4 @@ runDisplay tests =
         elements = if results == [("", allPassed)]
                    then []
                    else map (color black . container (maxWidth + 2) (maxHeight + 2) midLeft . width maxWidth) results'
-    in  flow down <| plainText summary :: elements
+    in  flow down <| plainText summary :: spacer 1 10 :: elements
