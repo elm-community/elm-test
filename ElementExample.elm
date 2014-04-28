@@ -9,10 +9,10 @@ prettyOut : Element
 prettyOut = Element.runDisplay Test.suite3
 
 uglyOut : String
-uglyOut = snd <| String.runDisplay Test.suite2
+uglyOut = String.runDisplay Test.suite2
 
 uglyOut' : String
-uglyOut' = snd <| String.runDisplay Test.suite3
+uglyOut' = String.runDisplay Test.suite3
 
 main : Element
 main = flow down [ plainText "All tests in this suite will pass:\n\n"

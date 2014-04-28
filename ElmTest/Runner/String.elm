@@ -65,8 +65,7 @@ run t =
     in (summary, allPassed) :: results'
 
 {-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
-runDisplay : Test -> (Bool, String)
+runDisplay : Test -> String
 runDisplay t =
-    let ((summary, allPassed) :: results) = run t
-        pass' = Run.pass allPassed
-    in  (pass', vcat <| (summary ++ "\n") :: map fst results)
+    let ((summary, _) :: results) = run t
+    in  vcat <| (summary ++ "\n") :: map fst results
