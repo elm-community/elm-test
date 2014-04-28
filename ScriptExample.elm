@@ -7,7 +7,7 @@ import Test
 import ElmTest.Runner.Console as Console
 
 sigs : IO ()
-sigs = Console.runDisplay Test.tests
+sigs = Console.runDisplay Test.suite3
 
 -- | Can't use a type alias in ports, yet :/
 port requests : Signal [{ mPut  : Maybe String

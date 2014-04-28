@@ -6,7 +6,7 @@ import ElmTest.Runner.Element as Element
 import ElmTest.Runner.String  as String
 
 prettyOut : Element
-prettyOut = Element.runDisplay Test.suite2
+prettyOut = Element.runDisplay Test.suite3
 
 uglyOut : String
 uglyOut = snd <| String.runDisplay Test.suite2
