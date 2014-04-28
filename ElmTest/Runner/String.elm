@@ -24,16 +24,15 @@ indent : Int -> String -> String
 indent n = let indents = replicate n ' '
            in vcat . map (String.append indents) . String.lines
 
-pretty : Int -> Run.Result -> (String, Run.Result)
+pretty : Int -> Run.Result -> [(String, Run.Result)]
 pretty n result =
     let passed = Run.pass result
-        msg = case result of
-                Run.Pass name     -> name ++ ": passed."
-                Run.Fail name msg -> name ++ ": FAILED. " ++ msg
-                Run.Report name r -> "Test Suite: " ++ name ++ ": "
-                                  ++ if passed then "all tests passed" else "FAILED\n"
-                                  ++ (vcat <| map (fst . pretty (n + 2)) r.results)
-    in  (indent n msg, result)
+    in  case result of
+            Run.Pass name     -> [(indent n <| name ++ ": passed.", result)]
+            Run.Fail name msg -> [(indent n <| name ++ ": FAILED. " ++ msg, result)]
+            Run.Report name r -> let msg = "Test Suite: " ++ name ++ ": "
+                                        ++ if passed then "all tests passed" else "FAILED\n"
+                                 in  (indent n msg, result) :: concatMap (pretty (n + 2)) r.results
 
 run : Test -> [(String, Run.Result)]
 run t =
@@ -57,13 +56,13 @@ run t =
         --- TODO: implement results printing
         allPassed   = if failedTests' == 0 then Run.Pass "" else Run.Fail "" ""
         results' = case allPassed of
-                      Run.Pass _ -> ("", allPassed)
-                      _          -> (pretty 0) result
-    in (summary, allPassed) :: [results']
+                      Run.Pass _ -> [("", allPassed)]
+                      _          -> pretty 0 result
+    in (summary, allPassed) :: results'
 
 {-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
 runDisplay : Test -> (Bool, String)
 runDisplay t =
-    let (allPassed :: results) = run t
-        pass' = Run.pass (snd allPassed)
-    in  (pass', vcat <| map fst results)
+    let ((summary, allPassed) :: results) = run t
+        pass' = Run.pass allPassed
+    in  (pass', vcat <| summary :: map fst results)
