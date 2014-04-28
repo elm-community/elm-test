@@ -1,4 +1,4 @@
-module ElmTest.Runner.String (runDisplay) where
+module ElmTest.Runner.String (runDisplay, run) where
 
 {-| Run a test suite and display it as a string.
 
@@ -6,16 +6,16 @@ module ElmTest.Runner.String (runDisplay) where
 @docs runDisplay
 
 -}
-    
-import ElmTest.Run (..)
+
+import ElmTest.Run as Run
 import ElmTest.Test (..)
 
--- | Some pretty printing stuff. Should be factored into a pretty printing library.    
+-- | Some pretty printing stuff. Should be factored into a pretty printing library.
 vcat : [String] -> String
 vcat = concat . intersperse "\n"
 
 replicate : Int -> Char -> String
-replicate n c = let go n = if n <= 0 
+replicate n c = let go n = if n <= 0
                            then []
                            else c :: go (n - 1)
                 in String.fromList . go <| n
@@ -24,26 +24,49 @@ indent : Int -> String -> String
 indent n = let indents = replicate n ' '
            in vcat . map (String.append indents) . String.lines
 
-pretty : Test -> Result -> String
-pretty (TestCase name _) r = 
-    case r of
-      Nothing  -> name ++ ": passed."
-      Just msg -> name ++ ": FAILED. " ++ msg
+pretty : Int -> Run.Result -> [(String, Run.Result)]
+pretty n result =
+    let passed = Run.pass result
+    in  case result of
+            Run.Pass name     -> [(indent n <| name ++ ": passed.", result)]
+            Run.Fail name msg -> [(indent n <| name ++ ": FAILED. " ++ msg, result)]
+            Run.Report name r -> let msg = "Test Suite: " ++ name ++ ": "
+                                        ++ if passed then "all tests passed" else "FAILED"
+                                     allPassed = Run.failedTests result == 0
+                                     subResults = if allPassed
+                                                  then []
+                                                  else concatMap (pretty (n + 2)) r.results
+                                 in  (indent n msg, result) :: subResults
 
-{-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
-runDisplay : [Test] -> (Bool, String)
-runDisplay ts = 
-    let r = report ts
-        passed = length r.passes
-        failed = length r.failures
+run : Test -> [(String, Run.Result)]
+run t =
+    let result = Run.run t
+        tests = case t of
+                    TestCase n a -> [TestCase n a]
+                    Suite n ts -> ts
+        passedTests'  = Run.passedTests result
+        passedSuites' = Run.passedSuites result
+        failedTests'  = Run.failedTests result
+        failedSuites' = Run.failedSuites result
         summary = vcat . map (indent 2) <| [
-                    show (length ts) ++ " tests executed"
-                  , show passed    ++ " tests passed"
-                  , show failed    ++ " tests failed"
+                    show (numberOfSuites t) ++ " suites run, containing " ++ show (numberOfTests t) ++ " tests"
+                  , if failedTests' == 0
+                    then "All tests passed"
+                    else show passedSuites' ++ " suites and " ++ show passedTests' ++ " tests passed"
+                  , if failedTests' == 0
+                    then ""
+                    else show failedSuites' ++ " suites and " ++ show failedTests' ++ " tests failed"
                   ]
         --- TODO: implement results printing
-        pass   = failed == 0
-        results = if pass
-                  then []
-                  else zipWith pretty ts r.results
-    in (pass, vcat <| summary :: results)
+        allPassed   = if failedTests' == 0 then Run.Pass "" else Run.Fail "" ""
+        results' = case allPassed of
+                      Run.Pass _ -> [("", allPassed)]
+                      _          -> pretty 0 result
+    in (summary, allPassed) :: results'
+
+{-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
+runDisplay : Test -> (Bool, String)
+runDisplay t =
+    let ((summary, allPassed) :: results) = run t
+        pass' = Run.pass allPassed
+    in  (pass', vcat <| (summary ++ "\n") :: map fst results)
