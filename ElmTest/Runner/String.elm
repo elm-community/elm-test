@@ -31,8 +31,12 @@ pretty n result =
             Run.Pass name     -> [(indent n <| name ++ ": passed.", result)]
             Run.Fail name msg -> [(indent n <| name ++ ": FAILED. " ++ msg, result)]
             Run.Report name r -> let msg = "Test Suite: " ++ name ++ ": "
-                                        ++ if passed then "all tests passed" else "FAILED\n"
-                                 in  (indent n msg, result) :: concatMap (pretty (n + 2)) r.results
+                                        ++ if passed then "all tests passed" else "FAILED"
+                                     allPassed = Run.failedTests result == 0
+                                     subResults = if allPassed
+                                                  then []
+                                                  else concatMap (pretty (n + 2)) r.results
+                                 in  (indent n msg, result) :: subResults
 
 run : Test -> [(String, Run.Result)]
 run t =
@@ -65,4 +69,4 @@ runDisplay : Test -> (Bool, String)
 runDisplay t =
     let ((summary, allPassed) :: results) = run t
         pass' = Run.pass allPassed
-    in  (pass', vcat <| summary :: map fst results)
+    in  (pass', vcat <| (summary ++ "\n") :: map fst results)
