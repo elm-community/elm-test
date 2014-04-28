@@ -4,7 +4,7 @@ module ElmTest.Run where
 the output, instead look at the ```runDisplay``` series in ElmTest.Runner
 
 # Run
-@docs run, report, pass, fail
+@docs run, pass, fail
 
 -}
 
