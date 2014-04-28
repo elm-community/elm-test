@@ -3,7 +3,7 @@ module ElmTest.Test where
 {-| The units of a test suite, named tests.
 
 # Test
-@docs test, equals, defaultTest
+@docs test, equals, defaultTest, suite
 
 -}
 
@@ -43,3 +43,9 @@ defaultTest a =
                  AssertEqual _ a b    -> a ++ " == " ++ b
                  AssertNotEqual _ a b -> a ++ " /= " ++ b
     in test name a
+
+{-| Convert a list of `Test`s to a `Suite`. Test suites are used to group tests into
+logical units, simplifying the management and running of many tests. The `String` is the
+name of the `Suite`.  -}
+suite : String -> [Test] -> Test
+suite = Suite

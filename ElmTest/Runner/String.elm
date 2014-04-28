@@ -64,7 +64,7 @@ run t =
                       _          -> pretty 0 result
     in (summary, allPassed) :: results'
 
-{-| Runs a list of tests. Returns the report as a String and True if all tests pass, False otherwise -}
+{-| Runs a test or test suite. Returns the report as a String -}
 runDisplay : Test -> String
 runDisplay t =
     let ((summary, _) :: results) = run t
