@@ -11,6 +11,6 @@
       , "ElmTest.Runner.Element"
       , "ElmTest.Runner.String"
       ]
-, "elm-version": "0.12"
+, "elm-version": "0.12.1"
 , "dependencies": {}
 }
