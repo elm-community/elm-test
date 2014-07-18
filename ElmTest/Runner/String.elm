@@ -7,6 +7,8 @@ module ElmTest.Runner.String (runDisplay, run) where
 
 -}
 
+import String
+
 import ElmTest.Run as Run
 import ElmTest.Test (..)
 
