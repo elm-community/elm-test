@@ -162,13 +162,10 @@ Test Suite: A Test Suite: FAILED
 ```
 And that's it! Once `elm-io` is set up like this, you can run tests on the command line from any directory, in any Elm project. Just make sure to pull in the `evancz/automaton` and `jsdom` dependencies. Two current restrictions are that the module name of the file you wish to compile must be `Main`, and the following boilerplate must be added to this `Main` module:
 ```haskell
-port requests : Signal [{ mPut  : Maybe String
-                        , mExit : Maybe Int
-                        , mGet  : Bool
-                        }]
-port requests = Run.run responses -- <Name of the function of type IO () which runs your tests>
+port requests : Signal Request
+port requests = Run.run responses console -- <Replace console with name of the function of type IO () which runs your tests>
 
-port responses : Signal (Maybe String)
+port responses : Signal Response
 ```
 You can examine `ScriptExample.elm` to see exactly how these are required. For a detailed log capturing the entire
 setup process for the command line example, see: [ScriptExample.md](https://github.com/deadfoxygrandpa/Elm-Test/blob/master/ScriptExample.md).
