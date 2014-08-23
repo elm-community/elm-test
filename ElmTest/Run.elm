@@ -46,26 +46,26 @@ pass m = case m of
 
 {-| Transform a Result into a Bool. True if the result represents a fail, otherwise False -}
 fail : Result -> Bool
-fail = not . pass
+fail = not << pass
 
 passedTests : Result -> Int
 passedTests result = case result of
                         Pass _     -> 1
                         Fail _ _   -> 0
-                        Report n r -> sum . map passedTests <| r.results
+                        Report n r -> sum << map passedTests <| r.results
 
 failedTests : Result -> Int
 failedTests result = case result of
                         Pass _     -> 0
                         Fail _ _   -> 1
-                        Report n r -> sum . map failedTests <| r.results
+                        Report n r -> sum << map failedTests <| r.results
 
 passedSuites : Result -> Int
 passedSuites result = case result of
                         Report n r -> let passed = if length r.failures == 0
                                                    then 1
                                                    else 0
-                                      in  passed + (sum . map passedSuites <| r.results)
+                                      in  passed + (sum << map passedSuites <| r.results)
                         _ -> 0
 
 failedSuites : Result -> Int
@@ -73,5 +73,5 @@ failedSuites result = case result of
                         Report n r -> let failed = if length r.failures > 0
                                                    then 1
                                                    else 0
-                                      in  failed + (sum . map failedSuites <| r.results)
+                                      in  failed + (sum << map failedSuites <| r.results)
                         _ -> 0

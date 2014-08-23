@@ -1,6 +1,7 @@
 module Main where
 
 import IO.IO (..)
+import IO.Runner (Request, Response)
 import IO.Runner as Run
 
 import Test
@@ -10,10 +11,7 @@ sigs : IO ()
 sigs = Console.runDisplay Test.suite3
 
 -- | Can't use a type alias in ports, yet :/
-port requests : Signal [{ mPut  : Maybe String
-                        , mExit : Maybe Int
-                        , mGet  : Bool
-                        }]
+port requests : Signal Request
 port requests = Run.run responses sigs
 
-port responses : Signal (Maybe String)
+port responses : Signal Response

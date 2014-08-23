@@ -22,7 +22,7 @@ pretty (s, result) =
             Run.Pass _   -> color green <| flow right [spacer w 1, plainText s, spacer w' 1]
             Run.Fail _ _ -> color red <| flow right [spacer w 1, plainText s, spacer w' 1]
             Run.Report _ _ -> let c = if Run.failedTests result > 0 then red else green
-                              in  color c <| flow right [spacer w 1, leftAligned . bold . toText <| s, spacer w' 1]
+                              in  color c <| flow right [spacer w 1, leftAligned << bold << toText <| s, spacer w' 1]
 
 indent : String -> Int
 indent s = let trimmed = String.trimLeft s
@@ -33,9 +33,9 @@ runDisplay : Test -> Element
 runDisplay tests =
     let ((summary, allPassed) :: results) = String.run tests
         results' = map pretty results
-        maxWidth = maximum . map widthOf <| results'
-        maxHeight = maximum . map heightOf <| results'
+        maxWidth = maximum << map widthOf <| results'
+        maxHeight = maximum << map heightOf <| results'
         elements = if results == [("", allPassed)]
                    then []
-                   else map (color black . container (maxWidth + 2) (maxHeight + 2) midLeft . width maxWidth) results'
+                   else map (color black << container (maxWidth + 2) (maxHeight + 2) midLeft << width maxWidth) results'
     in  flow down <| plainText summary :: spacer 1 10 :: elements

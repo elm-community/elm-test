@@ -14,17 +14,17 @@ import ElmTest.Test (..)
 
 -- | Some pretty printing stuff. Should be factored into a pretty printing library.
 vcat : [String] -> String
-vcat = concat . intersperse "\n"
+vcat = concat << intersperse "\n"
 
 replicate : Int -> Char -> String
 replicate n c = let go n = if n <= 0
                            then []
                            else c :: go (n - 1)
-                in String.fromList . go <| n
+                in String.fromList << go <| n
 
 indent : Int -> String -> String
 indent n = let indents = replicate n ' '
-           in vcat . map (String.append indents) . String.lines
+           in vcat << map (String.append indents) << String.lines
 
 pretty : Int -> Run.Result -> [(String, Run.Result)]
 pretty n result =
@@ -50,7 +50,7 @@ run t =
         passedSuites' = Run.passedSuites result
         failedTests'  = Run.failedTests result
         failedSuites' = Run.failedSuites result
-        summary = vcat . map (indent 2) <| [
+        summary = vcat << map (indent 2) <| [
                     show (numberOfSuites t) ++ " suites run, containing " ++ show (numberOfTests t) ++ " tests"
                   , if failedTests' == 0
                     then "All tests passed"
