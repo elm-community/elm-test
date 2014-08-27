@@ -1,18 +1,14 @@
 language: haskell
 install:
-  - cabal install attoparsec-0.11.3.4
-  - cabal install scientific-0.2.0.2
-  - cabal install syb-0.3.7
-  - cabal install elm-get
-  - sudo ln -s ~/.cabal/bin/elm /usr/local/bin/elm
-  - sudo ln -s ~/.cabal/bin/elm-get /usr/local/bin/elm-get
+  - git clone git://github.com/elm-lang/Elm
   - git clone git://github.com/maxsnew/IO
   - cd IO
-  - git checkout tags/0.1.1
+  - cabal sandbox init
+  - cabal sandbox add-source ../Elm
   - cabal install
-  - sudo ln -s ~/.cabal/bin/elm-io /usr/local/bin/elm-io
+  - sudo cp .cabal-sandbox/bin/elm    /usr/local/bin/elm
+  - sudo cp .cabal-sandbox/bin/elm-io /usr/local/bin/elm-io
   - cd ..
-  - echo "y" | elm-get install evancz/automaton
   - npm install jsdom
 before_script: elm-io --default-ports Tests/Tests.elm tests.js
 script: node tests.js
