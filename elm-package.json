@@ -9,6 +9,7 @@
     "exposed-modules":
       [ "ElmTest.Assertion"
       , "ElmTest.Test"
+      , "ElmTest.Run"
       , "ElmTest.Runner.Console"
       , "ElmTest.Runner.Element"
       , "ElmTest.Runner.String"

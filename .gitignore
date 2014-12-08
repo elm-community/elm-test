@@ -1,9 +1,4 @@
 *~
-build/
-cache/
-*.elmi
-*.elmo
 node_modules/
-elm_dependencies/
+elm-stuff/
 docs/
-*.js

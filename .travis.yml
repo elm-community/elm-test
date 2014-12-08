@@ -1,14 +1,18 @@
 language: haskell
 install:
-  - git clone git://github.com/elm-lang/Elm
-  - git clone git://github.com/maxsnew/IO
-  - cd IO
+  - git clone https://github.com/elm-lang/elm-compiler.git
+  - git clone https://github.com/elm-lang/elm-package.git
+  - git clone https://github.com/elm-lang/elm-make.git
+  - cd elm-make
   - cabal sandbox init
-  - cabal sandbox add-source ../Elm
+  - cabal sandbox add-source ../elm-compiler
+  - cabal sandbox add-source ../elm-package
   - cabal install
-  - sudo cp .cabal-sandbox/bin/elm    /usr/local/bin/elm
-  - sudo cp .cabal-sandbox/bin/elm-io /usr/local/bin/elm-io
   - cd ..
+  - curl https://raw.githubusercontent.com/maxsnew/IO/master/elm-io.sh > elm-io.sh
   - npm install jsdom
-before_script: elm-io --default-ports Tests/Tests.elm tests.js
-script: node tests.js
+  - ./elm-make/.cabal-sandbox/bin/elm-package install -y
+before_script: 
+  - ./elm-make/.cabal-sandbox/bin/elm-make --yes --output raw-test.js Tests/Tests.elm
+  - bash elm-io.sh raw-test.js test.js
+script: node test.js

@@ -71,8 +71,8 @@ passedSuites result = case result of
 
 failedSuites : Result -> Int
 failedSuites result = case result of
-                        Report n r -> let failed = if length r.failures > 0
+                        Report n r -> let failed = if List.length r.failures > 0
                                                    then 1
                                                    else 0
-                                      in  failed + (sum << map failedSuites <| r.results)
+                                      in  failed + (List.sum << List.map failedSuites <| r.results)
                         _ -> 0
