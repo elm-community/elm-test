@@ -1,5 +1,5 @@
 {
-    "version": "1.0.1",
+    "version": "1.0.2",
     "summary": "Unit Testing Support with Element/String outputs.",
     "repository": "https://github.com/deadfoxygrandpa/Elm-Test.git",
     "license": "MIT",
