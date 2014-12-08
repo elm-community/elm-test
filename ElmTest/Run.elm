@@ -10,12 +10,13 @@ the output, instead look at the ```runDisplay``` series in ElmTest.Runner
 
 import ElmTest.Assertion (..)
 import ElmTest.Test (..)
+import List
 
-data Result = Pass String
+type Result = Pass String
             | Fail String String
-            | Report String { results  : [Result]
-                            , passes   : [Result]
-                            , failures : [Result]
+            | Report String { results  : List Result
+                            , passes   : List Result
+                            , failures : List Result
                             }
 
 {-| Run a test and get a Result -}
@@ -30,8 +31,8 @@ run test =
                                      AssertNotEqual t a b -> runAssertion t <| a ++ " equals " ++ b
                                      AssertTrue  t        -> runAssertion t <| "not True"
                                      AssertFalse t        -> runAssertion t <| "not False"
-        Suite name tests -> let results = map run tests
-                                (passes, fails) = partition pass results
+        Suite name tests -> let results = List.map run tests
+                                (passes, fails) = List.partition pass results
                             in Report name { results  = results
                                            , passes   = passes
                                            , failures = fails
@@ -42,7 +43,7 @@ pass : Result -> Bool
 pass m = case m of
            Pass _     -> True
            Fail _ _   -> False
-           Report _ r -> if (length (.failures r) > 0) then False else True
+           Report _ r -> if (List.length (.failures r) > 0) then False else True
 
 {-| Transform a Result into a Bool. True if the result represents a fail, otherwise False -}
 fail : Result -> Bool
@@ -52,20 +53,20 @@ passedTests : Result -> Int
 passedTests result = case result of
                         Pass _     -> 1
                         Fail _ _   -> 0
-                        Report n r -> sum << map passedTests <| r.results
+                        Report n r -> List.sum << List.map passedTests <| r.results
 
 failedTests : Result -> Int
 failedTests result = case result of
                         Pass _     -> 0
                         Fail _ _   -> 1
-                        Report n r -> sum << map failedTests <| r.results
+                        Report n r -> List.sum << List.map failedTests <| r.results
 
 passedSuites : Result -> Int
 passedSuites result = case result of
-                        Report n r -> let passed = if length r.failures == 0
+                        Report n r -> let passed = if List.length r.failures == 0
                                                    then 1
                                                    else 0
-                                      in  passed + (sum << map passedSuites <| r.results)
+                                      in  passed + (List.sum << List.map passedSuites <| r.results)
                         _ -> 0
 
 failedSuites : Result -> Int

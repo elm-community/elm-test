@@ -7,7 +7,9 @@ module ElmTest.Assertion where
 
 -}    
 
-data Assertion = AssertTrue     (() -> Bool)
+import List
+
+type Assertion = AssertTrue     (() -> Bool)
                | AssertFalse    (() -> Bool)
                | AssertEqual    (() -> Bool) String String
                | AssertNotEqual (() -> Bool) String String
@@ -22,13 +24,13 @@ assert b = AssertTrue (\_ -> b)
 
 {-| Basic function to create an Assert Equals assertion, the expected value goes on the left. -}
 assertEqual : a -> a -> Assertion
-assertEqual a b = AssertEqual (\_ -> a == b) (show a) (show b)
+assertEqual a b = AssertEqual (\_ -> a == b) (toString a) (toString b)
 
 {-| Given a list of values and another list of expected values,
 generate a list of Assert Equal assertions. -}
-assertionList : [a] -> [a] -> [Assertion]
-assertionList xs ys = zipWith assertEqual xs ys
+assertionList : List a -> List a -> List Assertion
+assertionList xs ys = List.map2 assertEqual xs ys
 
 {-| Basic function to create an Assert Not Equals assertion. -}
 assertNotEqual : a -> a -> Assertion
-assertNotEqual a b = AssertNotEqual (\_ -> a /= b) (show a) (show b)
+assertNotEqual a b = AssertNotEqual (\_ -> a /= b) (toString a) (toString b)
