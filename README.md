@@ -175,19 +175,28 @@ Since `elm-io` version 0.1, it's possible to ignore most of this boilerplate in 
 graphical Elm programs. Compile with `elm-io --default-ports Tests.elm tests.js`, replacing `Tests.elm`
 with the filename of your Elm source file, and `tests.js` with the desired output script name to be
 run with node. With this `--default-ports` flag, a valid console-run test file is:
-```haskell
+```elm
 module Main where
 
+import IO.IO (..)
+import IO.Runner (Request, Response, run)
+
 import ElmTest.Runner.Console (runDisplay)
-import open ElmTest.Test
+import ElmTest.Test (..)
+import ElmTest.Assertion (..)
 
-tests : Test
-tests = suite "A Test Suite"
-        [ 5 `equals` 5
-        , test "Addition" (assertEqual (3 + 7) 10)
-        ]
+tests = suite "Test"
+  [ 5 `equals` 5
+  , test "Addition" (assertEqual (3 + 7) 10)
+  ]
 
-console = runDisplay tests
+testRunner : IO ()
+testRunner = runDisplay tests
+
+port requests : Signal Request
+port requests = run responses testRunner
+
+port responses : Signal Response
 ```
 That's it! Make sure `evancz/automaton` and `jsdom` are installed in the project directory, then
 compile like `elm-io --default-ports Tests.elm tests.js`. Run `node tests.js` and you will get:
