@@ -1,4 +1,5 @@
 language: haskell
+ghc: 7.8
 install:
   - git clone https://github.com/elm-lang/elm-compiler.git
   - cd elm-compiler
