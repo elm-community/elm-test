@@ -146,7 +146,7 @@ $ npm install jsdom
 $ curl https://raw.githubusercontent.com/maxsnew/IO/master/elm-io.sh > elm-io.sh
 $ elm-make Example.elm --output raw-test.js
 $ bash elm-io.sh raw-test.js test.js
-$ npm test.js
+$ node test.js
   5 suites run, containing 17 tests
   3 suites and 16 tests passed
   2 suites and 1 tests failed
