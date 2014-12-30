@@ -182,5 +182,15 @@ before_script:
   - bash elm-io.sh raw-test.js test.js
 script: node test.js
 ```
-See also the `.travis.yml` in this repository, which uses git HEAD
-versions of `elm-make`/`elm-package`.
+For convenience, we've also uploaded precompiled binaries based on the official Elm 0.14 release and a setup script to [http://deadfoxygrandpa.github.io/elm-travis-cache](https://github.com/deadfoxygrandpa/elm-travis-cache/tree/gh-pages) which is being used in the `.travis.yml` in this repository. With this script, the previous `.travis.yml` example can be reduced to:
+```
+language: haskell
+install:
+- wget http://deadfoxygrandpa.github.io/elm-travis-cache/elm-test-install.sh
+- bash elm-test-install.sh
+before_script:
+- ./elm-make --yes --output raw-test.js Tests/Tests.elm
+- bash elm-io.sh raw-test.js test.js
+script: node test.js
+```
+
