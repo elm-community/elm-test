@@ -1,26 +1,8 @@
 language: haskell
-ghc: 7.8
 install:
-  - git clone https://github.com/elm-lang/elm-compiler.git
-  - cd elm-compiler
-  - git checkout 0.14
-  - cd ..
-  - git clone https://github.com/elm-lang/elm-package.git
-  - cd elm-package
-  - git checkout 0.2
-  - cd ..
-  - git clone https://github.com/elm-lang/elm-make.git
-  - cd elm-make
-  - git checkout 0.1
-  - cabal sandbox init
-  - cabal sandbox add-source ../elm-compiler
-  - cabal sandbox add-source ../elm-package
-  - cabal install
-  - cd ..
-  - curl https://raw.githubusercontent.com/maxsnew/IO/master/elm-io.sh > elm-io.sh
-  - npm install jsdom
-  - ./elm-make/.cabal-sandbox/bin/elm-package install -y
+  - wget http://deadfoxygrandpa.github.io/elm-travis-cache/elm-test-install.sh
+  - bash elm-test-install.sh
 before_script: 
-  - ./elm-make/.cabal-sandbox/bin/elm-make --yes --output raw-test.js Tests/Tests.elm
+  - ./elm-make --yes --output raw-test.js Tests/Tests.elm
   - bash elm-io.sh raw-test.js test.js
 script: node test.js
