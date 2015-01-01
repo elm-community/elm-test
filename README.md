@@ -30,7 +30,7 @@ As well as functions for making these assertions:
 assert : Bool -> Assertion
 assertEqual : a -> a -> Assertion
 assertNotEqual : a -> a -> Assertion
-assertionList : [a] -> [a] -> [Assertion]
+assertionList : List a -> List a -> List Assertion
 ```
 Example usage of these functions might be:
 ```haskell
@@ -45,7 +45,7 @@ assertionList [a, b, c] [d, e, f] -- Shorthand for [assertEqual a d, assertEqual
 Writing many tests as a flat list quickly becomes unwieldy. For easier maintenance you can group tests into logical
 units called test suites. The following function will create a test suite from a suite name and a list of tests:
 ```haskell
-suite : String -> [Test] -> Test
+suite : String -> List Test -> Test
 ```
 The type of a test suite is simply `Test`, allowing use of all the test runners with either a single test or a suite of tests. Test suites can also contain subsuites, of course.
 
@@ -58,7 +58,7 @@ the tests or subsuites contained in a suite. All results contain the name of the
 
 The most basic way to run a test is the `run` function, which has the type signature `Test -> Result`. A test suite can also be run all at once, again with the `run` function.
 
-A `Report` is of type `{results : [Result], passes : [Result], failures : [Result]}`.
+A `Report` is of type `{results : List Result, passes : List Result, failures : List Result}`.
 There is no built-in way to display results, but there are functions for running tests and immediately seeing the results. 
 
 ## Displaying Results
