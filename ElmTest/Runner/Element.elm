@@ -35,13 +35,17 @@ indent : String -> Int
 indent s = let trimmed = String.trimLeft s
            in  String.length s - String.length trimmed
 
+maxOrZero : List Int -> Int
+maxOrZero l =
+    List.foldl max 0 l
+
 {-| Runs a list of tests and renders the results as an Element -}
 runDisplay : Test -> Element
 runDisplay tests =
     let ((summary, allPassed) :: results) = String.run tests
         results' = List.map pretty results
-        maxWidth = List.maximum << List.map widthOf <| results'
-        maxHeight = List.maximum << List.map heightOf <| results'
+        maxWidth = maxOrZero << List.map widthOf <| results'
+        maxHeight = maxOrZero << List.map heightOf <| results'
         elements = if results == [("", allPassed)]
                    then []
                    else List.map (color black << container (maxWidth + 2) (maxHeight + 2) midLeft << width maxWidth) results'
