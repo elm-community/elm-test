@@ -14,7 +14,7 @@ For convenience, there is a function to create a name for you based on the input
 -- Test name will be "5 == 5"
 myTest = defaultTest (assertEqual 5 5)
 ```
-As well as a function to create an assertEqual tests, again deriving a name based on the inputs:
+As well as a function to create an `assertEqual` tests, again deriving a name based on the inputs:
 ```haskell
 myTest = defaultTest (5 `assertEqual` 5)
 ```
