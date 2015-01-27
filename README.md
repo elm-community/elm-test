@@ -16,7 +16,7 @@ myTest = defaultTest (assertEqual 5 5)
 ```
 As well as a function to create an assertEqual tests, again deriving a name based on the inputs:
 ```haskell
-myTest = 5 `equals` 5
+myTest = defaultTest (5 `assertEqual` 5)
 ```
 There are four different types of assertions:
 ```haskell
