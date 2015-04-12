@@ -7,19 +7,19 @@ module ElmTest.Runner.Element (runDisplay) where
 
 -}
 
-import Color (..)
-import Graphics.Element (..)
-import List ((::))
+import Color exposing (..)
+import Graphics.Element exposing (..)
+import List exposing ((::))
 import List
 import String
 import Text
 
 import ElmTest.Run as Run
-import ElmTest.Test (..)
+import ElmTest.Test exposing (..)
 import ElmTest.Runner.String as String
 
 plainText : String -> Element
-plainText s = Text.leftAligned (Text.fromString s)
+plainText s = leftAligned (Text.fromString s)
 
 -- Given a result, render it in plainText and return a pass/fail color
 pretty : (String, Run.Result) -> Element
@@ -30,7 +30,7 @@ pretty (s, result) =
             Run.Pass _   -> color green <| flow right [spacer w 1, plainText s, spacer w' 1]
             Run.Fail _ _ -> color red <| flow right [spacer w 1, plainText s, spacer w' 1]
             Run.Report _ _ -> let c = if Run.failedTests result > 0 then red else green
-                              in  color c <| flow right [spacer w 1, Text.leftAligned << Text.bold << Text.fromString <| s, spacer w' 1]
+                              in  color c <| flow right [spacer w 1, leftAligned << Text.bold << Text.fromString <| s, spacer w' 1]
 indent : String -> Int
 indent s = let trimmed = String.trimLeft s
            in  String.length s - String.length trimmed

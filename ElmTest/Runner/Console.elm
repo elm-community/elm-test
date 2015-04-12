@@ -10,9 +10,9 @@ module ElmTest.Runner.Console (runDisplay) where
 import List
 import String
 
-import IO.IO (..)
+import IO.IO exposing (..)
 
-import ElmTest.Test (..)
+import ElmTest.Test exposing (..)
 import ElmTest.Run as Run
 import ElmTest.Runner.String as String
 

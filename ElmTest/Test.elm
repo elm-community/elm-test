@@ -7,7 +7,7 @@ module ElmTest.Test where
 
 -}
 
-import ElmTest.Assertion (..)
+import ElmTest.Assertion exposing (..)
 import List
 
 type Test = TestCase String Assertion | Suite String (List Test)

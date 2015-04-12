@@ -8,8 +8,8 @@ the output, instead look at the ```runDisplay``` series in ElmTest.Runner
 
 -}
 
-import ElmTest.Assertion (..)
-import ElmTest.Test (..)
+import ElmTest.Assertion exposing (..)
+import ElmTest.Test exposing (..)
 import List
 
 type Result = Pass String

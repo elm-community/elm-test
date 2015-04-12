@@ -7,12 +7,12 @@ module ElmTest.Runner.String (runDisplay, run) where
 
 -}
 
-import List ((::))
+import List exposing ((::))
 import List
 import String
 
 import ElmTest.Run as Run
-import ElmTest.Test (..)
+import ElmTest.Test exposing (..)
 
 -- | Some pretty printing stuff. Should be factored into a pretty printing library.
 vcat : List String -> String
