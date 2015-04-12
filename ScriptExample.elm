@@ -1,7 +1,7 @@
 module Main where
 
-import IO.IO (..)
-import IO.Runner (Request, Response)
+import IO.IO exposing (..)
+import IO.Runner exposing (Request, Response)
 import IO.Runner as Run
 
 import Test
