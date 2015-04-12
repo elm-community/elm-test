@@ -4,11 +4,11 @@ import List
 
 import ElmTest.Assertion as A
 import ElmTest.Run as R
-import ElmTest.Runner.Console (runDisplay)
-import ElmTest.Test (..)
+import ElmTest.Runner.Console exposing (runDisplay)
+import ElmTest.Test exposing (..)
 
-import IO.IO (..)
-import IO.Runner (Request, Response)
+import IO.IO exposing (..)
+import IO.Runner exposing (Request, Response)
 import IO.Runner as Run
 
 tests : List Test

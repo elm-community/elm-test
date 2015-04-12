@@ -1,22 +1,22 @@
 module Test where
 
-import ElmTest.Assertion (..)
-import ElmTest.Test (..)
+import ElmTest.Assertion exposing (..)
+import ElmTest.Test exposing (..)
 
 -- Example Usage
 ----------------
-tests : [Test]
+tests : List Test
 tests = [ (2^3) `equals` 1
         , 3 `equals` 3
         , defaultTest (assert True)
-        , test "test head" (assertEqual 1 (head [1..10]))
+        , test "test head" (assertEqual 1 (Maybe.withDefault 0 (List.head [1..10])))
         ]
 
-tests2 : [Test]
+tests2 : List Test
 tests2 = [ (2^3) `equals` 8
          , 3 `equals` 3
          , defaultTest (assert True)
-         , test "test head" (assertEqual 1 (head [1..10]))
+         , test "test head" (assertEqual 1 (Maybe.withDefault 0 (List.head [1..10])))
          ]
 
 passingTest : Test
