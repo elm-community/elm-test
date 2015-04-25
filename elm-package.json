@@ -1,22 +1,22 @@
 {
-    "version": "2.0.0",
+    "version": "1.0.4",
     "summary": "Unit Testing Support with Element/String outputs.",
     "repository": "https://github.com/deadfoxygrandpa/Elm-Test.git",
     "license": "MIT",
     "source-directories": [
         "."
     ],
-    "exposed-modules":
-      [ "ElmTest.Assertion"
-      , "ElmTest.Test"
-      , "ElmTest.Run"
-      , "ElmTest.Runner.Console"
-      , "ElmTest.Runner.Element"
-      , "ElmTest.Runner.String"
-      ],
+    "exposed-modules": [
+        "ElmTest.Assertion",
+        "ElmTest.Test",
+        "ElmTest.Run",
+        "ElmTest.Runner.Console",
+        "ElmTest.Runner.Element",
+        "ElmTest.Runner.String"
+    ],
     "dependencies": {
         "elm-lang/core": "2.0.0 <= v < 3.0.0",
-        "maxsnew/IO": "2.0.0 <= v < 3.0.0"
+        "maxsnew/IO": "1.0.1 <= v < 2.0.0"
     },
     "elm-version": "0.15.0 <= v < 0.16.0"
 }
