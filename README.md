@@ -64,13 +64,13 @@ There is no built-in way to display results, but there are functions for running
 ## Displaying Results
 
 In `ElmTest.Runner.Element` lives `runDisplay : Test -> Element`, which is an easy way to run your tests and report the results in-browser, as a standard Elm module. A full example could be:
-```haskell
+```elm
 -- Example.elm
 import String
 
-import ElmTest.Test (test, Test, suite)
-import ElmTest.Assertion (assert, assertEqual)
-import ElmTest.Runner.Element (runDisplay)
+import ElmTest.Test exposing (test, Test, suite)
+import ElmTest.Assertion exposing (assert, assertEqual)
+import ElmTest.Runner.Element exposing (runDisplay)
 
 tests : Test
 tests = suite "A Test Suite"
@@ -85,13 +85,13 @@ main = runDisplay tests
 Compile this with `elm-make Example.elm --output Example.html` and open the resulting file in your browser, and you'll see the results.
 
 Another method is the `runDispay : Test -> String` function in `ElmTest.Runner.String`. This is almost the same, but it returns a `String` instead of an `Element`. The `String` is a summary of the overall test results. Here's the same example as before, but modified for `ElmTest.Runner.String`:
-```haskell
+```elm
 -- Example.elm
 import String
 
-import ElmTest.Test (test, Test)
-import ElmTest.Assertion (assert, assertEqual)
-import ElmTest.Runner.String (runDisplay)
+import ElmTest.Test exposing (test, Test)
+import ElmTest.Assertion exposing (assert, assertEqual)
+import ElmTest.Runner.String exposing (runDisplay)
 
 tests : Test
 tests = suite "A Test Suite"
@@ -116,15 +116,15 @@ For a quick demo, you can compile the `ElementExample.elm` file, or continue to 
 ## Testing from the Command Line
 See https://github.com/maxsnew/IO for details, but here's the short version:
 Make a file that uses the `IO` runner and sets up the appropriate ports:
-```
+```elm
 -- Example.elm
 import String
 
-import IO.IO (..)
-import IO.Runner (Request, Response, run)
-import ElmTest.Test (test, Test)
-import ElmTest.Assertion (assert, assertEqual)
-import ElmTest.Runner.Console (runDisplay)
+import IO.IO exposing (..)
+import IO.Runner exposing (Request, Response, run)
+import ElmTest.Test exposing (test, Test)
+import ElmTest.Assertion exposing (assert, assertEqual)
+import ElmTest.Runner.Console exposing (runDisplay)
 
 tests : Test
 tests = suite "A Test Suite"
