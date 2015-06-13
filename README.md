@@ -6,34 +6,34 @@ A unit testing framework for Elm
 ## Creating Tests
 
 Creating a test case is very simple. You only need a name and an assertion:
-```haskell
+```elm
 myTest = test "Example Test" (assert True)
 ```
 For convenience, there is a function to create a name for you based on the inputs:
-```haskell
+```elm
 -- Test name will be "5 == 5"
 myTest = defaultTest (assertEqual 5 5)
 ```
 As well as a function to create an `assertEqual` tests, again deriving a name based on the inputs:
-```haskell
+```elm
 myTest = defaultTest (5 `assertEqual` 5)
 ```
 There are four different types of assertions:
-```haskell
+```elm
 AssertTrue
 AssertFalse
 AssertEqual
 AssertNotEqual
 ```
 As well as functions for making these assertions:
-```haskell
+```elm
 assert : Bool -> Assertion
 assertEqual : a -> a -> Assertion
 assertNotEqual : a -> a -> Assertion
 assertionList : List a -> List a -> List Assertion
 ```
 Example usage of these functions might be:
-```haskell
+```elm
 assert        (a > 5)             -- Returns an AssertTrue assertion
 assertEqual    a b                -- Returns an AssertEqual assertion
 assertNotEqual a b                -- Returns an AssertNotEqual assertion
@@ -44,7 +44,7 @@ assertionList [a, b, c] [d, e, f] -- Shorthand for [assertEqual a d, assertEqual
 
 Writing many tests as a flat list quickly becomes unwieldy. For easier maintenance you can group tests into logical
 units called test suites. The following function will create a test suite from a suite name and a list of tests:
-```haskell
+```elm
 suite : String -> List Test -> Test
 ```
 The type of a test suite is simply `Test`, allowing use of all the test runners with either a single test or a suite of tests. Test suites can also contain subsuites, of course.
