@@ -42,11 +42,31 @@ maxOrZero l =
 {-| Runs a list of tests and renders the results as an Element -}
 runDisplay : Test -> Element
 runDisplay tests =
-    let ((summary, allPassed) :: results) = String.run tests
-        results' = List.map pretty results
-        maxWidth = maxOrZero << List.map widthOf <| results'
-        maxHeight = maxOrZero << List.map heightOf <| results'
-        elements = if results == [("", allPassed)]
-                   then []
-                   else List.map (color black << container (maxWidth + 2) (maxHeight + 2) midLeft << width maxWidth) results'
-    in  flow down <| plainText summary :: spacer 1 10 :: elements
+    case String.run tests of
+        (summary, allPassed) :: results ->
+            let
+                results' =
+                    List.map pretty results
+                
+                maxWidth =
+                    maxOrZero << List.map widthOf <| results'
+                
+                maxHeight =
+                    maxOrZero << List.map heightOf <| results'
+                
+                elements =
+                    if results == [("", allPassed)]
+                        then
+                            []
+                        
+                        else
+                            List.map 
+                                (color black << container (maxWidth + 2) (maxHeight + 2) midLeft << width maxWidth)
+                                results'
+                                
+            in
+                flow down <|
+                    plainText summary :: spacer 1 10 :: elements
+
+        _ ->
+            flow down []

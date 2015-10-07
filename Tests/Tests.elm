@@ -7,9 +7,8 @@ import ElmTest.Run as R
 import ElmTest.Runner.Console exposing (runDisplay)
 import ElmTest.Test exposing (..)
 
-import IO.IO exposing (..)
-import IO.Runner exposing (Request, Response)
-import IO.Runner as Run
+import Console exposing (..)
+import Console.Runner exposing (Request, Response)
 
 tests : List Test
 tests = [ (R.run (0 `equals` 0)) `equals` (R.Pass "0 == 0")
@@ -19,7 +18,3 @@ tests = [ (R.run (0 `equals` 0)) `equals` (R.Pass "0 == 0")
 
 console = runDisplay <| Suite "All Tests" tests
 
-port requests : Signal Request
-port requests = Run.run responses console
-
-port responses : Signal Response

@@ -1,14 +1,16 @@
-module ElmTest.Assertion where
+module ElmTest.Assertion 
+    ( Assertion(..), assertionList, assertT, assert, assertEqual, assertNotEqual   
+    ) where
 
 {-| The basic component of a test case, an assertion.
 
 # Assert
-@docs assertT, assert, assertEqual, assertNotEqual
-
+@docs Assertion, assertionList, assertT, assert, assertEqual, assertNotEqual
 -}    
 
 import List
 
+{-| An assertion. -}
 type Assertion = AssertTrue     (() -> Bool)
                | AssertFalse    (() -> Bool)
                | AssertEqual    (() -> Bool) String String
