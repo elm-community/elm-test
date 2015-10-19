@@ -67,20 +67,25 @@ In `ElmTest.Runner.Element` lives `runDisplay : Test -> Element`, which is an ea
 ```elm
 -- Example.elm
 import String
+import Graphics.Element exposing (Element)
 
 import ElmTest.Test exposing (test, Test, suite)
 import ElmTest.Assertion exposing (assert, assertEqual)
 import ElmTest.Runner.Element exposing (runDisplay)
 
+
 tests : Test
-tests = suite "A Test Suite"
+tests = 
+    suite "A Test Suite"
         [ test "Addition" (assertEqual (3 + 7) 10)
         , test "String.left" (assertEqual "a" (String.left 1 "abcdefg"))
         , test "This test should fail" (assert False)
         ]
 
+
 main : Element
-main = runDisplay tests
+main = 
+    runDisplay tests
 ```
 Compile this with `elm-make Example.elm --output Example.html` and open the resulting file in your browser, and you'll see the results.
 
@@ -88,23 +93,25 @@ Another method is the `runDispay : Test -> String` function in `ElmTest.Runner.S
 ```elm
 -- Example.elm
 import String
+import Graphics.Element exposing (Element, show)
 
-import ElmTest.Test exposing (test, Test)
+import ElmTest.Test exposing (test, Test, suite)
 import ElmTest.Assertion exposing (assert, assertEqual)
 import ElmTest.Runner.String exposing (runDisplay)
 
+
 tests : Test
-tests = suite "A Test Suite"
+tests = 
+    suite "A Test Suite"
         [ test "Addition" (assertEqual (3 + 7) 10)
         , test "String.left" (assertEqual "a" (String.left 1 "abcdefg"))
         , test "This test should fail" (assert False)
         ]
 
-results : String
-results = runDisplay tests
 
 main : Element
-main = plainText results
+main = 
+    show tests
 ```
 
 There is one more version of this function. `runDisplay : Test -> IO ()` which lives in `ElmTest.Runner.Console`. This is designed to work with [Max New's Elm IO library](https://github.com/maxsnew/IO/). See the below section on **Testing from the Command Line** for details.
