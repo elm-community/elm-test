@@ -39,36 +39,37 @@ run test =
         TestCase name assertion ->
             let
                 runAssertion t m =
-                    if t ()
-                        then Pass name
-                        else Fail name m
-            in 
+                    if t () then
+                        Pass name
+
+                    else
+                        Fail name m
+            in
                 case assertion of
                     AssertEqual t a b ->
                         runAssertion t <|
                             "Expected: " ++ a ++ "; got: " ++ b
-                    
+
                     AssertNotEqual t a b ->
                         runAssertion t <|
                             a ++ " equals " ++ b
-                    
+
                     AssertTrue  t ->
                         runAssertion t <|
                             "not True"
-                    
+
                     AssertFalse t ->
                         runAssertion t <| "not False"
-        
+
         Suite name tests ->
             let
                 results =
                     List.map run tests
-                    
+
                 (passes, fails) =
                     List.partition pass results
-
             in
-                Report name 
+                Report name
                     { results  = results
                     , passes   = passes
                     , failures = fails
@@ -77,26 +78,29 @@ run test =
 
 {-| Transform a Result into a Bool. True if the result represents a pass, otherwise False -}
 pass : Result -> Bool
-pass m = 
+pass m =
     case m of
         Pass _ ->
             True
-        
+
         Fail _ _ ->
             False
-        
+
         Report _ r ->
-            if (List.length (.failures r) > 0)
-                then False
-                else True
+            if (List.length (.failures r) > 0) then
+                False
+
+            else
+                True
 
 
 {-| Transform a Result into a Bool. True if the result represents a fail, otherwise False -}
 fail : Result -> Bool
-fail = not << pass
+fail =
+    not << pass
 
 
-{-| Undocumented. -}
+{-| Determine the number of Tests that passed -}
 passedTests : Result -> Int
 passedTests result =
     case result of
@@ -110,7 +114,7 @@ passedTests result =
             List.sum << List.map passedTests <| r.results
 
 
-{-| Undocumented. -}
+{-| Determine the number of Tests that failed -}
 failedTests : Result -> Int
 failedTests result =
     case result of
@@ -119,42 +123,44 @@ failedTests result =
 
         Fail _ _ ->
             1
-            
+
         Report n r ->
             List.sum << List.map failedTests <| r.results
 
 
-{-| Undocumented. -}
+{-| Determine the number of Suites that passed -}
 passedSuites : Result -> Int
 passedSuites result =
     case result of
         Report n r ->
-            let 
+            let
                 passed =
-                    if List.length r.failures == 0
-                        then 1
-                        else 0
-            
+                    if List.length r.failures == 0 then
+                        1
+
+                    else
+                        0
             in
                 passed + (List.sum << List.map passedSuites <| r.results)
-        
+
         _ ->
             0
 
 
-{-| Undocumented. -}
+{-| Determine the number of Suites that failed -}
 failedSuites : Result -> Int
 failedSuites result =
     case result of
         Report n r ->
             let
                 failed =
-                    if List.length r.failures > 0
-                        then 1
-                        else 0
+                    if List.length r.failures > 0 then
+                        1
 
+                    else
+                        0
             in
                 failed + (List.sum << List.map failedSuites <| r.results)
-                        
+
         _ ->
             0
