@@ -1,5 +1,7 @@
 module ElmTest
-    ( ..
+    ( Test, test, defaultTest, equals, suite
+    , Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList
+    , elementRunner, consoleRunner, stringRunner
     ) where
 
 {-| A unit testing framework for Elm.
