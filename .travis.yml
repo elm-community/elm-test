@@ -2,6 +2,8 @@ language: haskell
 install:
   - npm install -g elm
   - elm-package install -y
+  - console_version=$(node -pe 'JSON.parse(process.argv[1])["laszlopandy/elm-console"]' "$(cat elm-stuff/exact-dependencies.json)")
+  - echo $console_version
 before_script: 
   - elm-make --yes --output raw-test.js tests/Tests.elm
   - bash elm-stuff/packages/laszlopandy/elm-console/1.0.2/elm-io.sh raw-test.js test.js
