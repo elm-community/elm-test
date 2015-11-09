@@ -175,6 +175,6 @@ install:
   - elm-package install -y
 before_script: 
   - elm-make --yes --output raw-test.js tests/Tests.elm
-  - elm-stuff/packages/laszlopandy/elm-console/1.0.2/elm-io.sh raw-test.js test.js
+  - bash elm-stuff/packages/laszlopandy/elm-console/1.0.2/elm-io.sh raw-test.js test.js
 script: node test.js
 ```
