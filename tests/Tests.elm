@@ -1,20 +1,27 @@
 module Main where
 
 import List
-
-import ElmTest.Assertion as A
-import ElmTest.Run as R
-import ElmTest.Runner.Console exposing (runDisplay)
-import ElmTest.Test exposing (..)
+import Task
 
 import Console exposing (..)
-import Console.Runner exposing (Request, Response)
+import ElmTest exposing (..)
+
 
 tests : List Test
-tests = [ (R.run (0 `equals` 0)) `equals` (R.Pass "0 == 0")
-        , test "pass" <| A.assert (R.pass <| R.Pass "")
-        , test "fail" <| A.assertNotEqual (R.fail <| R.Pass "") True
-        ] ++ (List.map defaultTest <| A.assertionList [1..10] [1..10])
+tests = 
+    [ 0 `equals` 0
+    , test "pass" <| assert True
+    , test "fail" <| assertNotEqual True False
+    ] 
+    ++ 
+    (List.map defaultTest <| assertionList [1..10] [1..10])
 
-console = runDisplay <| Suite "All Tests" tests
 
+consoleTests : IO ()
+consoleTests = 
+    consoleRunner <| suite "All Tests" tests
+
+
+port runner : Signal (Task.Task x ())
+port runner =
+    Console.run consoleTests
