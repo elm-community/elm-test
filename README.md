@@ -1,4 +1,4 @@
-elm-test [![Build Status](https://travis-ci.org/deadfoxygrandpa/Elm-Test.png?branch=master)](https://travis-ci.org/deadfoxygrandpa/Elm-Test)
+elm-test [![Build Status](https://travis-ci.org/deadfoxygrandpa/elm-test.png?branch=master)](https://travis-ci.org/deadfoxygrandpa/elm-test)
 ========
 
 A unit testing framework for Elm
@@ -178,3 +178,4 @@ before_script:
   - bash elm-stuff/packages/laszlopandy/elm-console/1.0.2/elm-io.sh raw-test.js test.js
 script: node test.js
 ```
+You can look at the `.travis.yml` file in this repository to see a real example.
