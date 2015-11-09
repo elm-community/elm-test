@@ -121,38 +121,34 @@ There is one more version of this function. `runDisplay : Test -> IO ()` which l
 For a quick demo, you can compile the `ElementExample.elm` file, or continue to the next section:
 
 ## Testing from the Command Line
-See https://github.com/maxsnew/IO for details, but here's the short version:
-Make a file that uses the `IO` runner and sets up the appropriate ports:
+See https://github.com/laszlopandy/elm-console for details, but here's the short version:
+Make a file that uses the `Console` runner and sets up the appropriate ports:
 ```elm
 -- Example.elm
 import String
+import Task
 
-import IO.IO exposing (..)
-import IO.Runner exposing (Request, Response, run)
-import ElmTest.Test exposing (test, Test)
-import ElmTest.Assertion exposing (assert, assertEqual)
-import ElmTest.Runner.Console exposing (runDisplay)
+import Console
+import ElmTest exposing (..)
+
 
 tests : Test
-tests = suite "A Test Suite"
+tests = 
+    suite "A Test Suite"
         [ test "Addition" (assertEqual (3 + 7) 10)
         , test "String.left" (assertEqual "a" (String.left 1 "abcdefg"))
         , test "This test should fail" (assert False)
         ]
 
-port requests : Signal Request
-port requests = run responses (runDisplay tests)
 
-port responses : Signal Responseresults : String
+port runner : Signal (Task.Task x ())
+port runner =
+    Console.run (consoleRunner tests)
 ```
-Then download the `elm-io.sh` script and `jsdom` to run it:
-(On Windows, `jsdom` is somewhat difficult to install. [Refer to this blog post](http://www.steveworkman.com/node-js/2012/installing-jsdom-on-windows/) for detailed instructions)
+Then compile it, run the `elm-io.sh` script inside the elm-console directory (you can find this in your project's `elm-stuff` directory) to process the file, and run it with node:
 ```bash
-$ npm install jsdom
-...
-$ curl https://raw.githubusercontent.com/maxsnew/IO/master/elm-io.sh > elm-io.sh
 $ elm-make Example.elm --output raw-test.js
-$ bash elm-io.sh raw-test.js test.js
+$ elm-stuff/packages/laszlopandy/elm-console/1.0.2/elm-io.sh raw-test.js test.js
 $ node test.js
   5 suites run, containing 17 tests
   3 suites and 16 tests passed
@@ -169,35 +165,20 @@ Test Suite: A Test Suite: FAILED
   3 == 3: passed.
   Test Suite: Even more!!: all tests passed
 ```
-While the `Element` display is nicest to read, the `IO` runner is amenable to automated testing. If a test suite passes the script will exit with exit code 0, and if it fails it will exit with 1.
+While the `elementRunner` display is nicest to read, the `consoleRunner` runner is amenable to automated testing. If a test suite passes the script will exit with exit code 0, and if it fails it will exit with 1.
 
 ## Integrating With Travis CI
 
-With Elm-Test and IO, it is now possible to run continuous integration tests with Travis CI on
-your Elm projects. Just set up Travis CI for your repository as normal, write tests with Elm-Test,
+With elm-test and elm-console, it is possible to run continuous integration tests with Travis CI on
+your Elm projects. Just set up Travis CI for your repository as normal, write tests with elm-test,
 and include a `.travis.yml` file based on the following:
 ```
 language: haskell
 install:
-  - cabal install elm-make
-  - cabal install elm-package
-  - curl https://raw.githubusercontent.com/maxsnew/IO/master/elm-io.sh > elm-io.sh
-  - npm install jsdom
+  - npm install -g elm
   - elm-package install -y
 before_script: 
-  - elm-make --yes --output raw-test.js Tests/Tests.elm
-  - bash elm-io.sh raw-test.js test.js
+  - elm-make --yes --output raw-test.js tests/Tests.elm
+  - elm-stuff/packages/laszlopandy/elm-console/1.0.2/elm-io.sh raw-test.js test.js
 script: node test.js
 ```
-For convenience, we've also uploaded precompiled binaries based on the official Elm 0.14 release and a setup script to [http://deadfoxygrandpa.github.io/elm-travis-cache](https://github.com/deadfoxygrandpa/elm-travis-cache/tree/gh-pages) which is being used in the `.travis.yml` in this repository. With this script, the previous `.travis.yml` example can be reduced to:
-```
-language: haskell
-install:
-- wget http://deadfoxygrandpa.github.io/elm-travis-cache/elm-test-install.sh
-- bash elm-test-install.sh
-before_script:
-- ./elm-make --yes --output raw-test.js Tests/Tests.elm
-- bash elm-io.sh raw-test.js test.js
-script: node test.js
-```
-
