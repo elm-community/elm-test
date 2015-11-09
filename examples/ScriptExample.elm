@@ -1,17 +1,18 @@
 module Main where
 
-import IO.IO exposing (..)
-import IO.Runner exposing (Request, Response)
-import IO.Runner as Run
+import Task
 
-import Test
+import Console exposing (..)
 import ElmTest.Runner.Console as Console
 
-sigs : IO ()
-sigs = Console.runDisplay Test.suite3
+import Test
 
--- | Can't use a type alias in ports, yet :/
-port requests : Signal Request
-port requests = Run.run responses sigs
 
-port responses : Signal Response
+tests : IO ()
+tests = 
+    consoleRunner Test.suite3
+
+
+port runner : Signal (Task.Task x ())
+port runner = 
+    Console.run sigs
