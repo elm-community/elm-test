@@ -3,9 +3,7 @@ module Main where
 import Test
 import Text
 import Graphics.Element exposing (..)
-import ElmTest.Run as Run
-import ElmTest.Runner.Element as ElementRunner
-import ElmTest.Runner.String  as StringRunner
+import ElmTest exposing (..)
 
 
 plainText : String -> Element
@@ -15,17 +13,17 @@ plainText s =
 
 prettyOut : Element
 prettyOut = 
-    ElementRunner.runDisplay Test.suite3
+    elementRunner Test.suite3
 
 
 uglyOut : String
 uglyOut = 
-    StringRunner.runDisplay Test.suite2
+    stringRunner Test.suite2
 
 
 uglyOut' : String
 uglyOut' = 
-    StringRunner.runDisplay Test.suite3
+    stringRunner Test.suite3
 
 
 main : Element
