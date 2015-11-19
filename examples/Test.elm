@@ -1,7 +1,6 @@
 module Test where
 
-import ElmTest.Assertion exposing (..)
-import ElmTest.Test exposing (..)
+import ElmTest exposing (..)
 
 
 tests : List Test
@@ -32,27 +31,27 @@ failingTest =
     test "failing test" (assertEqual 1 0)
 
 
-suite = 
-    Suite "Some tests" tests2
+suite1 = 
+    suite "Some tests" tests2
 
 
 suite2 = 
-    Suite 
+    suite 
         "A Test Suite" 
-        [ suite
-        , Suite "Some other tests" tests2
-        , Suite "More tests!" tests2
+        [ suite1
+        , suite "Some other tests" tests2
+        , suite "More tests!" tests2
         , 3 `equals` 3
-        , Suite "Even more!!" tests2
+        , suite "Even more!!" tests2
         ]
 
 
 suite3 = 
-    Suite 
+    suite 
         "A Test Suite" 
-        [ suite
-        , Suite "Some other tests" tests
-        , Suite "More tests!" tests2
+        [ suite2
+        , suite "Some other tests" tests
+        , suite "More tests!" tests2
         , 3 `equals` 3
-        , Suite "Even more!!" tests2
+        , suite "Even more!!" tests2
         ]
