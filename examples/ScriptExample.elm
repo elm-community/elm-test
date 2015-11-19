@@ -3,7 +3,7 @@ module Main where
 import Task
 
 import Console exposing (..)
-import ElmTest.Runner.Console as Console
+import ElmTest exposing (consoleRunner)
 
 import Test
 
@@ -15,4 +15,4 @@ tests =
 
 port runner : Signal (Task.Task x ())
 port runner = 
-    Console.run sigs
+    Console.run tests
