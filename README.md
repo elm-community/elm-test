@@ -3,6 +3,10 @@ elm-test [![Build Status](https://travis-ci.org/deadfoxygrandpa/elm-test.png?bra
 
 A unit testing framework for Elm
 
+## Getting Started
+
+The simplest way to get started with Elm Test is to install & run it via [node-elm-test](https://github.com/rtfeldman/node-elm-test). This package can install Elm Test and its dependencies for you, as well as providing you with a command line test runner and an example test suite.
+
 ## Creating Tests
 
 Creating a test case is very simple. You only need a name and an assertion:
