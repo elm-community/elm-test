@@ -51,15 +51,19 @@ run test =
                             "Expected: " ++ a ++ "; got: " ++ b
 
                     AssertNotEqual t a b ->
-                        runAssertion t <|
-                            a ++ " equals " ++ b
+            runAssertion t <| a ++ " equals " ++ b
 
                     AssertTrue  t ->
-                        runAssertion t <|
-                            "not True"
+            runAssertion t "not True"
 
                     AssertFalse t ->
-                        runAssertion t <| "not False"
+            runAssertion t "not False"
+
+          AlwaysPass ->
+            runAssertion (always True) ""
+
+          AlwaysFail s ->
+            runAssertion (always False) s
 
         Suite name tests ->
             let

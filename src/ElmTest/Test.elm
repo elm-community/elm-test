@@ -84,6 +84,12 @@ defaultTest a =
 
                 AssertNotEqual _ a b ->
                     a ++ " /= " ++ b
+
+                AlwaysPass ->
+                  "Always passes"
+
+                AlwaysFail s ->
+                  "Always fails"
     in
         test name a
 

@@ -16,7 +16,7 @@ import Text
 
 import ElmTest.Run as Run
 import ElmTest.Test exposing (..)
-import ElmTest.Runner.String as String
+import ElmTest.Runner.String as StringRunner
 
 
 plainText : String -> Element
@@ -68,7 +68,7 @@ maxOrZero l =
 {-| Runs a list of tests and renders the results as an Element -}
 runDisplay : Test -> Element
 runDisplay tests =
-    case String.run tests of
+    case StringRunner.run tests of
         (summary, allPassed) :: results ->
             let
                 results' =

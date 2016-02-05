@@ -1,6 +1,6 @@
 module ElmTest
     ( Test, test, defaultTest, equals, suite
-    , Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList
+    , Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail
     , elementRunner, consoleRunner, stringRunner
     ) where
 
@@ -10,7 +10,7 @@ module ElmTest
 @docs Test, test, defaultTest, equals, suite
 
 # Assertions
-@docs Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList
+@docs Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail
 
 # Running Tests
 @docs elementRunner, consoleRunner, stringRunner
@@ -99,6 +99,22 @@ list of assertions that these values are equal. -}
 assertionList : List a -> List a -> List Assertion
 assertionList =
     ElmTest.Assertion.assertionList
+
+
+{-| An assertion that always passes. This is useful when you have test results
+from another library but want to use ElmTest runners.
+-}
+pass : Assertion
+pass =
+    ElmTest.Assertion.AlwaysPass
+
+
+{-| Create an assertion that always fails, for reasons described by the given
+string.
+-}
+fail : String -> Assertion
+fail =
+    ElmTest.Assertion.AlwaysFail
 
 
 {-| Run a test or a test suite and return an `Element` containing the

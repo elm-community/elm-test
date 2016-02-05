@@ -17,6 +17,8 @@ type Assertion
     | AssertFalse (() -> Bool)
     | AssertEqual (() -> Bool) String String
     | AssertNotEqual (() -> Bool) String String
+    | AlwaysPass
+    | AlwaysFail String
 
 
 {-| Basic function to create an Assert True assertion. Delays execution until tests are run. -}
