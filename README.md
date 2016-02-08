@@ -147,7 +147,7 @@ Then compile it, run the `elm-io.sh` script inside the elm-console directory (yo
 directory) to process the file, and run it with node:
 ```bash
 $ elm-make Example.elm --output raw-test.js
-$ elm-stuff/packages/laszlopandy/elm-console/1.0.2/elm-io.sh raw-test.js test.js
+$ sh ./elm-stuff/packages/laszlopandy/elm-console/1.1.0/elm-io.sh raw-test.js test.js
 $ node test.js
   5 suites run, containing 17 tests
   3 suites and 16 tests passed
