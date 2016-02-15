@@ -9,9 +9,7 @@ module ElmTest.Runner.Console (runDisplay) where
 
 import List
 import String
-
 import Console exposing (..)
-
 import ElmTest.Test exposing (..)
 import ElmTest.Run as Run
 import ElmTest.Runner.String as String
@@ -23,16 +21,19 @@ exit code 0 if all tests pass, or with code 1 if any tests fail.
 -}
 runDisplay : Test -> IO ()
 runDisplay tests =
-    case String.run tests of
-        (summary, allPassed) :: results ->
-            let
-                out =
-                    summary ++ "\n\n" ++ (String.concat << List.intersperse "\n" << List.map fst <| results)
-            in
-                putStrLn out >>>
-                    case Run.pass allPassed of
-                        True  -> exit 0
-                        False -> exit 1
+  case String.run tests of
+    ( summary, allPassed ) :: results ->
+      let
+        out =
+          summary ++ "\n\n" ++ (String.concat << List.intersperse "\n" << List.map fst <| results)
+      in
+        putStrLn out
+          >>> case Run.pass allPassed of
+                True ->
+                  exit 0
 
-        _ ->
-            exit 1
+                False ->
+                  exit 1
+
+    _ ->
+      exit 1
