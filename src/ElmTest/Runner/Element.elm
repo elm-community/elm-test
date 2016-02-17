@@ -81,16 +81,16 @@ runDisplay tests =
         maxWidth =
           maxOrZero << List.map widthOf <| results'
 
-        maxHeight =
-          maxOrZero << List.map heightOf <| results'
+        separator =
+          spacer maxWidth 1 |> color black
 
         elements =
           if results == [ ( "", allPassed ) ] then
             []
           else
-            List.map
-              (color black << container (maxWidth + 2) (maxHeight + 2) midLeft << width maxWidth)
-              results'
+            results'
+            |> List.map (\elem -> width maxWidth elem)
+            |> List.intersperse separator
       in
         flow down
           <| plainText summary
