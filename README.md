@@ -183,3 +183,7 @@ before_script:
 script: node test.js
 ```
 You can look at the `.travis.yml` file in this repository to see a real example.
+
+## Running tests with Gulp
+
+You can follow [this gist from turboMaCk](https://gist.github.com/turboMaCk/e2e5bdaee255cd2d1488). Thanks to @turboMaCk for figuring this out.
