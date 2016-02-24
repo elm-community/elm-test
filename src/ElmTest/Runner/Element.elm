@@ -7,7 +7,7 @@ module ElmTest.Runner.Element (runDisplay) where
 
 -}
 
-import Color exposing (..)
+import Color
 import Graphics.Element exposing (..)
 import List exposing ((::))
 import List
@@ -23,10 +23,12 @@ plainText s =
   leftAligned (Text.fromString s)
 
 
+red : Color.Color
+red =
+  Color.rgb 255 126 132
+
 
 -- Given a result, render it in plainText and return a pass/fail color
-
-
 pretty : ( String, Run.Result ) -> Element
 pretty ( s, result ) =
   let
@@ -38,20 +40,20 @@ pretty ( s, result ) =
   in
     case result of
       Run.Pass _ ->
-        color green <| flow right [ spacer w 1, plainText s, spacer w' 1 ]
+        flow right [ spacer w 1, plainText s, spacer w' 1 ]
 
       Run.Fail _ _ ->
         color red <| flow right [ spacer w 1, plainText s, spacer w' 1 ]
 
       Run.Report _ _ ->
         let
-          c =
+          f =
             if Run.failedTests result > 0 then
-              red
+              color red
             else
-              green
+              identity
         in
-          color c <| flow right [ spacer w 1, leftAligned << Text.bold << Text.fromString <| s, spacer w' 1 ]
+          f <| flow right [ spacer w 1, leftAligned << Text.bold << Text.fromString <| s, spacer w' 1 ]
 
 
 indent : String -> Int
@@ -81,16 +83,16 @@ runDisplay tests =
         maxWidth =
           maxOrZero << List.map widthOf <| results'
 
-        maxHeight =
-          maxOrZero << List.map heightOf <| results'
+        separator =
+          spacer maxWidth 1 |> color Color.white
 
         elements =
           if results == [ ( "", allPassed ) ] then
             []
           else
-            List.map
-              (color black << container (maxWidth + 2) (maxHeight + 2) midLeft << width maxWidth)
-              results'
+            results'
+            |> List.map (\elem -> width maxWidth elem)
+            |> List.intersperse separator
       in
         flow down
           <| plainText summary
