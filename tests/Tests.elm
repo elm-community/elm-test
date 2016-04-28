@@ -1,16 +1,17 @@
 module Main exposing (..) -- where
 
+import Array
 import List
+import Json.Decode
 
 import Html.App as Html
 import Html
 import ElmTest exposing (..)
 
-
 tests : List Test
 tests =
     [ 0 `equals` 0
-    , test "pass" <| assert True
+    , test "pass" <| assert False
     , test "fail" <| assertNotEqual True False
     ]
     ++
