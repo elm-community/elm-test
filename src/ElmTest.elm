@@ -1,4 +1,4 @@
-module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail, consoleRunner, stringRunner)
+module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail, consoleRunner, stringRunner, runSuite) -- where
 
 {-| A unit testing framework for Elm.
 
@@ -8,9 +8,11 @@ module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, asse
 # Assertions
 @docs Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail
 
-# Running Tests
+# Run tests in-program
 @docs consoleRunner, stringRunner
 
+# Run tests as an app
+@docs runSuite
 -}
 
 import ElmTest.Assertion
@@ -136,3 +138,9 @@ probably use either `elementRunner` or `consoleRunner`.
 stringRunner : Test -> String
 stringRunner =
   ElmTest.Runner.String.runDisplay
+
+{-| run a suite as a program
+-}
+runSuite : Test -> Program Never
+runSuite =
+  ElmTest.Runner.Console.runSuite

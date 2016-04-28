@@ -1,4 +1,4 @@
-module ElmTest.Run exposing (Result(..), run, pass, fail, failedTests, passedTests, failedSuites, passedSuites)
+module ElmTest.Run exposing (Result(..), run, pass, fail, failedTests, passedTests, failedSuites, passedSuites) -- where
 
 {-| Basic utilities for running tests and customizing the output. If you don't care about customizing
 the output, instead look at the `runDisplay` series in ElmTest.Runner
