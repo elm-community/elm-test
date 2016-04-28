@@ -8,11 +8,11 @@ import ElmTest exposing (consoleRunner)
 import Test
 
 
-tests : IO ()
-tests = 
+tests : String
+tests =
     consoleRunner Test.suite3
 
 
 port runner : Signal (Task.Task x ())
-port runner = 
+port runner =
     Console.run tests

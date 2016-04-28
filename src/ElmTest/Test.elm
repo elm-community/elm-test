@@ -1,4 +1,4 @@
-module ElmTest.Test (Test(..), test, equals, defaultTest, suite, numberOfTests, numberOfSuites) where
+module ElmTest.Test exposing (Test(..), test, equals, defaultTest, suite, numberOfTests, numberOfSuites)
 
 {-| The units of a test suite, named tests.
 

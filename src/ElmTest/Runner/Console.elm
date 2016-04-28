@@ -1,4 +1,4 @@
-module ElmTest.Runner.Console (runDisplay) where
+module ElmTest.Runner.Console exposing (runDisplay)
 
 {-| Run a test suite as a command-line script.
 
@@ -9,7 +9,6 @@ module ElmTest.Runner.Console (runDisplay) where
 
 import List
 import String
-import Console exposing (..)
 import ElmTest.Test exposing (..)
 import ElmTest.Run as Run
 import ElmTest.Runner.String as String
@@ -19,7 +18,7 @@ import ElmTest.Runner.String as String
 Requires this library to work. Results are printed to console once all tests have completed. Exits with
 exit code 0 if all tests pass, or with code 1 if any tests fail.
 -}
-runDisplay : Test -> IO ()
+runDisplay : Test -> String
 runDisplay tests =
   case String.run tests of
     ( summary, allPassed ) :: results ->
@@ -27,13 +26,12 @@ runDisplay tests =
         out =
           summary ++ "\n\n" ++ (String.concat << List.intersperse "\n" << List.map fst <| results)
       in
-        putStrLn out
-          >>> case Run.pass allPassed of
+        case Run.pass allPassed of
                 True ->
-                  exit 0
+                  Debug.log "" out
 
                 False ->
-                  exit 1
+                  Debug.crash out
 
     _ ->
-      exit 1
+      Debug.crash ""
