@@ -1,4 +1,4 @@
-module ElmTest.Runner.Console (runDisplay) where
+module ElmTest.Runner.Console exposing (runDisplay, runSuite) -- where
 
 {-| Run a test suite as a command-line script.
 
@@ -9,17 +9,15 @@ module ElmTest.Runner.Console (runDisplay) where
 
 import List
 import String
-import Console exposing (..)
 import ElmTest.Test exposing (..)
 import ElmTest.Run as Run
 import ElmTest.Runner.String as String
+import Html.App as Html
+import Html
 
-
-{-| Run a list of tests in the IO type from [Max New's Elm IO library](https://github.com/maxsnew/IO/).
-Requires this library to work. Results are printed to console once all tests have completed. Exits with
-exit code 0 if all tests pass, or with code 1 if any tests fail.
+{-| Run a test and print the output
 -}
-runDisplay : Test -> IO ()
+runDisplay : Test -> String
 runDisplay tests =
   case String.run tests of
     ( summary, allPassed ) :: results ->
@@ -27,13 +25,21 @@ runDisplay tests =
         out =
           summary ++ "\n\n" ++ (String.concat << List.intersperse "\n" << List.map fst <| results)
       in
-        putStrLn out
-          >>> case Run.pass allPassed of
+        case Run.pass allPassed of
                 True ->
-                  exit 0
+                  Debug.log out ""
 
                 False ->
-                  exit 1
+                  Debug.crash out
 
     _ ->
-      exit 1
+      Debug.crash ""
+
+
+runSuite : Test -> Program Never
+runSuite consoleTests =
+  Html.beginnerProgram
+    { model = runDisplay consoleTests
+    , view = (\x -> Html.text "")
+    , update = (\x y -> y)
+    }

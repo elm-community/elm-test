@@ -1,4 +1,4 @@
-module ElmTest.Runner.String (runDisplay, run) where
+module ElmTest.Runner.String exposing (runDisplay, run)
 
 {-| Run a test suite and display it as a string.
 

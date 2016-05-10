@@ -1,4 +1,4 @@
-module ElmTest.Assertion (Assertion(..), assertionList, assertT, assert, assertEqual, assertNotEqual) where
+module ElmTest.Assertion exposing (Assertion(..), assertionList, assertT, assert, assertEqual, assertNotEqual)
 
 {-| The basic component of a test case, an assertion.
 

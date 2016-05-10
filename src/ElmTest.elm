@@ -1,4 +1,4 @@
-module ElmTest (Test, test, defaultTest, equals, suite, Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail, elementRunner, consoleRunner, stringRunner) where
+module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail, consoleRunner, stringRunner, runSuite) -- where
 
 {-| A unit testing framework for Elm.
 
@@ -8,18 +8,17 @@ module ElmTest (Test, test, defaultTest, equals, suite, Assertion, assert, asser
 # Assertions
 @docs Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail
 
-# Running Tests
-@docs elementRunner, consoleRunner, stringRunner
+# Run tests in-program
+@docs consoleRunner, stringRunner
 
+# Run tests as an app
+@docs runSuite
 -}
 
-import Graphics.Element exposing (Element)
-import Console exposing (IO)
 import ElmTest.Assertion
 import ElmTest.Test
 import ElmTest.Run
 import ElmTest.Runner.String
-import ElmTest.Runner.Element
 import ElmTest.Runner.Console
 
 
@@ -123,18 +122,10 @@ fail =
   ElmTest.Assertion.AlwaysFail
 
 
-{-| Run a test or a test suite and return an `Element` containing the
-formatted test results.
--}
-elementRunner : Test -> Element
-elementRunner =
-  ElmTest.Runner.Element.runDisplay
-
-
 {-| Run a test or a test suite with `laszlopandy/elm-console` and return an
 `IO ()` action which outputs the test results to console.
 -}
-consoleRunner : Test -> IO ()
+consoleRunner : Test -> String
 consoleRunner =
   ElmTest.Runner.Console.runDisplay
 
@@ -147,3 +138,9 @@ probably use either `elementRunner` or `consoleRunner`.
 stringRunner : Test -> String
 stringRunner =
   ElmTest.Runner.String.runDisplay
+
+{-| run a suite as a program
+-}
+runSuite : Test -> Program Never
+runSuite =
+  ElmTest.Runner.Console.runSuite
