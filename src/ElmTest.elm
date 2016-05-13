@@ -1,4 +1,4 @@
-module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail, consoleRunner, stringRunner, runSuite) -- where
+module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail, consoleRunner, stringRunner, runSuite, runSuiteHtml) -- where
 
 {-| A unit testing framework for Elm.
 
@@ -12,7 +12,7 @@ module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, asse
 @docs consoleRunner, stringRunner
 
 # Run tests as an app
-@docs runSuite
+@docs runSuite, runSuiteHtml
 -}
 
 import ElmTest.Assertion
@@ -20,6 +20,7 @@ import ElmTest.Test
 import ElmTest.Run
 import ElmTest.Runner.String
 import ElmTest.Runner.Console
+import ElmTest.Runner.Html
 
 
 {-| The basic unit of testability.
@@ -144,3 +145,10 @@ stringRunner =
 runSuite : Test -> Program Never
 runSuite =
   ElmTest.Runner.Console.runSuite
+
+
+{-| Run a suite as program with Html output.
+-}
+runSuiteHtml : Test -> Program Never
+runSuiteHtml =
+  ElmTest.Runner.Html.runSuite
