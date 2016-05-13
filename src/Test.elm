@@ -1,152 +1,167 @@
 module Test exposing (..)
 
-import Random
+import Random.Pcg as Random
+
+
+-- none of the types below will be exported, except Test which will be opaque
+
+
+type alias Outcome =
+  List ( String, String )
+
+
+{-| A TestTree is either
+   * A leaf thunk that yields an outcome
+   * A node whose children are lazy thunks
+   * A node whose children are lazy and randomized thunks
+   * A node whose children are already evaluated
+-}
+type TestTree
+  = Thunk (() -> Outcome)
+  | Group (List (() -> Test))
+  | FuzzGroup (List (( Random.Seed, Int, Bool ) -> Test))
+    -- seed, runs, doShrink; make record?
+  | Batch (List Test)
+
+
+type alias Options =
+  { onFail : String
+  , runs : Int
+  , doShrink : Bool
+  }
 
 
 type Test
-  = Test (() -> List ( String, String ))
-  | Group (List (Random.Seed -> Test))
-  | Batch (List Test)
-  | FailWith String Test
-  | Runs Int Test
-  | DoManyRuns Test
-  | Shrink Bool Test
+  = Test Options TestTree
+
+
+type Fuzzer a
+  = -- TODO: shrinking
+    Fuzzer (Random.Generator a)
 
 
 batch : List Test -> Test
-batch =
-  Batch
+batch tests =
+  Test { onFail = "Batch failed:", runs = 1, doShrink = False } (Batch tests)
 
 
 onFail : String -> Test -> Test
-onFail =
-  FailWith
+onFail str (Test opts tree) =
+  Test { opts | onFail = str } tree
+
+
+runs : Int -> Test -> Test
+runs int (Test opts tree) =
+  Test { opts | runs = int } tree
 
 
 unit : List (() -> Test) -> Test
 unit tests =
-  List.map (\f seed -> f ()) tests |> Group
+  Test { onFail = "Unit test suite failed:", runs = 1, doShrink = False }
+    <| Group
+    <| List.map (\t _ -> t ()) tests
 
 
 fuzz : Fuzzer a -> List (a -> Test) -> Test
-fuzz fuzzer tests =
-  List.map (fuzzTest fuzzer) tests |> Group |> DoManyRuns
+fuzz (Fuzzer gen) fuzzTests =
+  Test { onFail = "Fuzz test suite failed:", runs = 100, doShrink = True }
+    <| FuzzGroup
+    <| (flip List.map)
+        fuzzTests
+        (\fuzzTest ( seed, runs, doShrink ) ->
+          let
+            genTests =
+              Random.list runs gen |> Random.map (List.map (\arg _ -> fuzzTest arg))
+
+            opts =
+              { onFail = "Fuzz test failed:", runs = runs, doShrink = doShrink }
+          in
+            Random.step genTests seed |> fst |> Group |> Test opts
+        )
 
 
 fuzz2 : Fuzzer a -> Fuzzer b -> List (a -> b -> Test) -> Test
-fuzz2 fuzzerA fuzzerB tests =
-  List.map (fuzzTest2 fuzzerA fuzzerB) tests |> Batch |> DoManyRuns
+fuzz2 (Fuzzer genA) (Fuzzer genB) fuzzTests =
+  Test { onFail = "Fuzz test suite failed:", runs = 100, doShrink = True }
+    <| FuzzGroup
+    <| (flip List.map)
+        fuzzTests
+        (\fuzzTest ( seed, runs, doShrink ) ->
+          let
+            genTuple =
+              Random.map2 (,) genA genB
+
+            genTests =
+              Random.list runs genTuple |> Random.map (List.map (\( a, b ) _ -> fuzzTest a b))
+
+            opts =
+              { onFail = "Fuzz test failed:", runs = runs, doShrink = doShrink }
+          in
+            Random.step genTests seed |> fst |> Group |> Test opts
+        )
 
 
 assertEqual : { expected : a, actually : a } -> Test
 assertEqual { expected, actually } =
   Test
-    (\_ ->
-      if expected == actually then
-        []
-      else
-        [ ( "Expected", toString expected ), ( "Actually", toString actually ) ]
-    )
-
-
-fuzzTest : Fuzzer a -> (a -> Test) -> Random.Seed -> Test
-fuzzTest (Fuzzer gen) f seed =
-  -- TODO
-  Test (\() -> [])
-
-
-fuzzTest2 : Fuzzer a -> Fuzzer b -> (a -> b -> Test) -> Test
-fuzzTest2 fuzzerA fuzzerB runTest =
-  -- TODO
-  Test (\() -> [])
-
-
-
-{-
-
-   type alias PlanItem =
-     { seed : Random.Seed
-     , failWith : String
-     , doShrink : Bool
-     , id : String
-     , run : Int
-     , test : Random.Seed -> Test
-     }
-
-
-   type alias Plan =
-     List PlanItem
-
-
-   type alias Options =
-     { seed : Random.Seed
-     , failWith : String
-     , doShrink : Bool
-     , id : String
-     , runs : Int
-     }
-
-
-   initialOptions : Options
-   initialOptions =
-     Options (Random.initialSeed 42) "Test Failed" True "0" 0
-
-
-   plan : Test -> Plan
-   plan =
-     planHelp initialOptions
-
-
-   planHelp : Options -> Test -> Plan
-   planHelp opts test =
-     case test of
-       Test f ->
-         List.map
-           (\i ->
-             PlanItem opts.seed opts.failWith opts.doShrink opts.id i f
-           )
-           [1..opts.runs]
-
-       FailWith str test ->
-         planHelp { opts | failWith = str } test
-
-       Runs i test ->
-         planHelp { opts | runs = i } test
-
-       DoManyRuns test ->
-         if opts.runs <= 1 then
-           planHelp { opts | runs = 100 } test
-         else
-           planHelp opts test
-
-       Shrink b test ->
-         planHelp { opts | doShrink = b } test
-
-       Batch tests ->
-         List.indexedMap
-           (\i test ->
-             planHelp { opts | id = opts.id ++ "." ++ toString i } test
-           )
-           tests
-           |> List.concat
-
--}
-
-
-type Fuzzer a
-  = Fuzzer (Random.Generator a)
-
-
-{-| Stubbed fuzzer
--}
-string : Fuzzer String
-string =
-  Fuzzer
-    <| Random.map
-        (\b ->
-          if b then
-            "foo"
+    { onFail = "Test failed:", runs = 1, doShrink = False }
+    <| Thunk
+        (\_ ->
+          if expected == actually then
+            []
           else
-            "bar"
+            [ ( "Expected", toString expected ), ( "Actually", toString actually ) ]
         )
-        Random.bool
+
+
+type ResultTree
+  = Leaf String Outcome
+  | Branch String (List ResultTree)
+
+
+runWithSeed : Random.Seed -> Test -> ResultTree
+runWithSeed seed (Test opts tree) =
+  let
+    unfiltered =
+      case tree of
+        Thunk thunk ->
+          Leaf opts.onFail (thunk ())
+
+        Group thunks ->
+          Branch opts.onFail <| List.map (\thunk -> runWithSeed seed (thunk ())) thunks
+
+        FuzzGroup randThunks ->
+          Random.list (List.length randThunks) Random.independentSeed
+            |> Random.map (List.map2 (\randThunk seed -> randThunk ( seed, opts.runs, opts.doShrink ) |> runWithSeed seed) randThunks)
+            |> (flip Random.step) seed
+            |> fst
+            |> Branch opts.onFail
+
+        Batch tests ->
+          Random.list (List.length tests) Random.independentSeed
+            |> (flip Random.step) seed
+            |> fst
+            |> List.map2 (\test seed -> runWithSeed seed test) tests
+            |> Branch opts.onFail
+  in
+    filterSuccesses unfiltered |> Maybe.withDefault (Branch "No failures" [])
+
+
+filterSuccesses : ResultTree -> Maybe ResultTree
+filterSuccesses rt =
+  case rt of
+    Leaf _ xs ->
+      if List.isEmpty xs then
+        Nothing
+      else
+        Just rt
+
+    Branch onFail results ->
+      let
+        filtered =
+          List.filterMap filterSuccesses results
+      in
+        if List.isEmpty filtered then
+          Nothing
+        else
+          Just (Branch onFail filtered)
