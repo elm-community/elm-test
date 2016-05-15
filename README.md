@@ -1,11 +1,7 @@
-elm-test [![Build Status](https://travis-ci.org/deadfoxygrandpa/elm-test.png?branch=master)](https://travis-ci.org/deadfoxygrandpa/elm-test)
+elm-test [![Build Status](https://travis-ci.org/elm-community/elm-test.png?branch=master)](https://travis-ci.org/elm-community/elm-test)
 ========
 
 A unit testing framework for Elm
-
-## Getting Started
-
-The simplest way to get started with Elm Test is to install & run it via [node-elm-test](https://github.com/rtfeldman/node-elm-test). This package can install Elm Test and its dependencies for you, as well as providing you with a command line test runner and an example test suite.
 
 ## Creating Tests
 
@@ -110,61 +106,38 @@ main =
     show (stringRunner tests)
 ```
 
-There is one more version of this function: `consoleRunner : Test -> IO ()`. This is designed to work with 
-[Laszlo Pandy's elm-console library](https://github.com/laszlopandy/elm-console/). See the below section on 
-**Testing from the Command Line** for details.
+You can also run these tests from command line with `runSuite : Test -> Program Never`, see the below section on **Testing from the Command Line** for details.
 
 ## Demo
 
 For a quick demo, you can compile the `ElementExample.elm` file, or continue to the next section:
 
 ## Testing from the Command Line
-See https://github.com/laszlopandy/elm-console for details, but here's the short version:
-Make a file that uses the `Console` runner and sets up the appropriate ports:
+Make a file that uses the `runSuite` function:
 ```elm
--- Example.elm
-import String
-import Task
+module Tests exposing (..)
 
-import Console
 import ElmTest exposing (..)
 
-
 tests : Test
-tests = 
+tests =
     suite "A Test Suite"
         [ test "Addition" (assertEqual (3 + 7) 10)
         , test "String.left" (assertEqual "a" (String.left 1 "abcdefg"))
         , test "This test should fail" (assert False)
         ]
 
-
-port runner : Signal (Task.Task x ())
-port runner =
-    Console.run (consoleRunner tests)
+main : Program Never
+main =
+    runSuite tests
 ```
-Then compile it, run the `elm-io.sh` script inside the elm-console directory (you can find this in your project's `elm-stuff`
-directory) to process the file, and run it with node:
+Then compile it to JS file and run it with node:
 ```bash
-$ elm-make Example.elm --output raw-test.js
-$ sh ./elm-stuff/packages/laszlopandy/elm-console/1.1.0/elm-io.sh raw-test.js test.js
-$ node test.js
-  5 suites run, containing 17 tests
-  3 suites and 16 tests passed
-  2 suites and 1 tests failed
-
-Test Suite: A Test Suite: FAILED
-  Test Suite: Some tests: all tests passed
-  Test Suite: Some other tests: FAILED
-    8 == 1: FAILED. Expected: 8; got: 1
-    3 == 3: passed.
-    True: passed.
-    test head: passed.
-  Test Suite: More tests!: all tests passed
-  3 == 3: passed.
-  Test Suite: Even more!!: all tests passed
+$ elm-make Tests.elm --output tests.js
+$ node tests.js
 ```
-While the `elementRunner` display is nicest to read, the `consoleRunner` runner is amenable to automated testing. If a test
+
+While the `elementRunner` display is nicest to read, the `runSuite` function is amenable to automated testing. If a test
 suite passes the script will exit with exit code 0, and if it fails it will exit with 1.
 
 ## Integrating With Travis CI
@@ -178,12 +151,7 @@ install:
   - npm install -g elm
   - elm-package install -y
 before_script: 
-  - elm-make --yes --output raw-test.js tests/Tests.elm
-  - bash elm-stuff/packages/laszlopandy/elm-console/1.0.2/elm-io.sh raw-test.js test.js
+  - elm-make --yes --output test.js tests/Tests.elm
 script: node test.js
 ```
 You can look at the `.travis.yml` file in this repository to see a real example.
-
-## Running tests with Gulp
-
-You can follow [this gist from turboMaCk](https://gist.github.com/turboMaCk/e2e5bdaee255cd2d1488). Thanks to @turboMaCk for figuring this out.

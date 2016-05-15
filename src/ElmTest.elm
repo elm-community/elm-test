@@ -1,4 +1,4 @@
-module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail, consoleRunner, stringRunner, runSuite, runSuiteHtml) -- where
+module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail, stringRunner, runSuite, runSuiteHtml)
 
 {-| A unit testing framework for Elm.
 
@@ -9,7 +9,7 @@ module ElmTest exposing (Test, test, defaultTest, equals, suite, Assertion, asse
 @docs Assertion, assert, assertEqual, assertNotEqual, lazyAssert, assertionList, pass, fail
 
 # Run tests in-program
-@docs consoleRunner, stringRunner
+@docs stringRunner
 
 # Run tests as an app
 @docs runSuite, runSuiteHtml
@@ -123,24 +123,38 @@ fail =
   ElmTest.Assertion.AlwaysFail
 
 
-{-| Run a test or a test suite with `laszlopandy/elm-console` and return an
-`IO ()` action which outputs the test results to console.
--}
-consoleRunner : Test -> String
-consoleRunner =
-  ElmTest.Runner.Console.runDisplay
-
-
 {-| Run a test or a test suite and return the results as a `String`. Mostly
 useful if you want to implement a different type of output for your test
 results. If you aren't sure whether or not to use this function, you should
-probably use either `elementRunner` or `consoleRunner`.
+probably use `elementRunner`.
 -}
 stringRunner : Test -> String
 stringRunner =
   ElmTest.Runner.String.runDisplay
 
-{-| run a suite as a program
+{-| Run a suite as a program. Useful for tests run from the command line:
+
+    module Tests exposing (..)
+
+    import ElmTest exposing (..)
+    
+    tests : Test
+    tests =
+        suite "A Test Suite"
+            [ test "Addition" (assertEqual (3 + 7) 10)
+            , test "Subtraction" (assertEqual (7 - 3) 4)
+            , test "This test should fail" (assert False)
+            ]
+    
+    main : Program Never
+    main =
+        runSuite tests
+
+And then:
+
+    $ elm-make Tests.elm --output tests.js
+    $ node tests.js
+
 -}
 runSuite : Test -> Program Never
 runSuite =
