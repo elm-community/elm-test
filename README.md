@@ -117,6 +117,7 @@ Make a file that uses the `runSuite` function:
 ```elm
 module Tests exposing (..)
 
+import String
 import ElmTest exposing (..)
 
 tests : Test
