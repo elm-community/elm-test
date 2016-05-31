@@ -1,8 +1,10 @@
 module Example exposing (..)
 
 import Test exposing (..)
+import Fuzzer exposing (Fuzzer)
 import Random.Pcg as Random
 import Html
+import Shrink
 
 
 {-| A fuzzzer that usually generates "foo", but occasonally "bar". We expect a claim that it's always "foo" to fail.
@@ -18,6 +20,7 @@ usuallyFoo =
                         "foo"
                 )
         )
+        Shrink.string
 
 
 actualFuzzSuite : Test
@@ -50,15 +53,8 @@ oxfordify _ _ _ =
 -}
 string : Fuzzer String
 string =
-    Fuzzer
-        <| Random.map
-            (\b ->
-                if b then
-                    "foo"
-                else
-                    "bar"
-            )
-            Random.bool
+    Fuzzer (Random.choice "foo" "bar")
+        Shrink.string
 
 
 fuzzSuite : Test

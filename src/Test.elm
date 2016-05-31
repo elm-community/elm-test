@@ -1,5 +1,11 @@
-module Test exposing (..)
+module Test exposing (Test, ResultTree, unit, fuzz, fuzz2, assertEqual, batch, onFail, runs, runWithSeed)
 
+{-|
+
+@docs Test, ResultTree, unit, fuzz, fuzz2, assertEqual, batch, onFail, runs, runWithSeed
+-}
+
+import Fuzzer exposing (Fuzzer)
 import Random.Pcg as Random
 
 
@@ -31,30 +37,35 @@ type alias Options =
     }
 
 
+{-| TODO: docs
+-}
 type Test
     = Test Options TestTree
 
 
-type Fuzzer a
-    = -- TODO: shrinking
-      Fuzzer (Random.Generator a)
-
-
+{-| TODO: docs
+-}
 batch : List Test -> Test
 batch tests =
     Test { onFail = "Batch failed:", runs = 1, doShrink = False } (Batch tests)
 
 
+{-| TODO: docs
+-}
 onFail : String -> Test -> Test
 onFail str (Test opts tree) =
     Test { opts | onFail = str } tree
 
 
+{-| TODO: docs
+-}
 runs : Int -> Test -> Test
 runs int (Test opts tree) =
     Test { opts | runs = int } tree
 
 
+{-| TODO: docs
+-}
 unit : List (() -> Test) -> Test
 unit tests =
     Test { onFail = "Unit test suite failed:", runs = 1, doShrink = False }
@@ -62,15 +73,17 @@ unit tests =
         <| List.map (\t _ -> t ()) tests
 
 
+{-| TODO: docs
+-}
 fuzz : Fuzzer a -> List (a -> Test) -> Test
-fuzz (Fuzzer gen) fuzzTests =
+fuzz { generator } fuzzTests =
     Test { onFail = "Fuzz test suite failed:", runs = 100, doShrink = True }
         <| FuzzGroup
         <| (flip List.map) fuzzTests
             (\fuzzTest ( seed, runs, doShrink ) ->
                 let
                     genTests =
-                        Random.list runs gen |> Random.map (List.map (\arg _ -> fuzzTest arg))
+                        Random.list runs generator |> Random.map (List.map (\arg _ -> fuzzTest arg))
 
                     opts =
                         { onFail = "Fuzz test failed:", runs = runs, doShrink = doShrink }
@@ -79,15 +92,17 @@ fuzz (Fuzzer gen) fuzzTests =
             )
 
 
+{-| TODO: docs
+-}
 fuzz2 : Fuzzer a -> Fuzzer b -> List (a -> b -> Test) -> Test
-fuzz2 (Fuzzer genA) (Fuzzer genB) fuzzTests =
+fuzz2 fuzzA fuzzB fuzzTests =
     Test { onFail = "Fuzz test suite failed:", runs = 100, doShrink = True }
         <| FuzzGroup
         <| (flip List.map) fuzzTests
             (\fuzzTest ( seed, runs, doShrink ) ->
                 let
                     genTuple =
-                        Random.map2 (,) genA genB
+                        Random.map2 (,) fuzzA.generator fuzzB.generator
 
                     genTests =
                         Random.list runs genTuple |> Random.map (List.map (\( a, b ) _ -> fuzzTest a b))
@@ -99,6 +114,8 @@ fuzz2 (Fuzzer genA) (Fuzzer genB) fuzzTests =
             )
 
 
+{-| TODO: docs
+-}
 assertEqual : { expected : a, actually : a } -> Test
 assertEqual { expected, actually } =
     Test { onFail = "Test failed:", runs = 1, doShrink = False }
@@ -111,11 +128,15 @@ assertEqual { expected, actually } =
             )
 
 
+{-| TODO: docs
+-}
 type ResultTree
     = Leaf String Outcome
     | Branch String (List ResultTree)
 
 
+{-| TODO: docs
+-}
 runWithSeed : Random.Seed -> Test -> ResultTree
 runWithSeed seed (Test opts tree) =
     let
