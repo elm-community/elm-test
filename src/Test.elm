@@ -124,7 +124,7 @@ assertEqual { expected, actually } =
                 if expected == actually then
                     []
                 else
-                    [ ( "Expected", toString expected ), ( "Actually", toString actually ) ]
+                    [ ( "Expected: ", toString expected ), ( "Actual:   ", toString actually ) ]
             )
 
 
