@@ -82,7 +82,7 @@ the results.
 
 Another method is the `stringRunner : Test -> String` function. This is almost the same, but it returns a `String` instead 
 of rendering an HTML view. The `String` is a summary of the overall test results. Here's the same example as before, but 
-modified for `stringRunner` (note, this uses elm-core/html):
+modified for `stringRunner` (note, this uses elm-lang/html):
 ```elm
 -- Example.elm
 import String
