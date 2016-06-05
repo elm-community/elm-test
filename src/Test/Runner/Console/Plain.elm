@@ -48,7 +48,7 @@ summaryLinesHelp resultTree ( failures, lines ) =
                 newLines =
                     case failureMsg of
                         Just msg ->
-                            [ "| " ++ msg ]
+                            [ "↓ " ++ msg ]
 
                         Nothing ->
                             []
