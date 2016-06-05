@@ -3,12 +3,10 @@ module Test.Runner.Html exposing (run)
 import Test exposing (Outcome, Test)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.App
 import Dict exposing (Dict)
 import Task
 import Set exposing (Set)
-import Random.Pcg as Random
-import Time exposing (Time)
+import Test.Runner
 
 
 type alias TestId =
@@ -25,11 +23,6 @@ type alias Model =
 
 type Msg
     = Dispatch
-
-
-type InitMsg
-    = Init (Maybe Random.Seed) Test
-    | Msg Msg
 
 
 viewOutcome : Outcome -> Html a
@@ -104,103 +97,35 @@ update msg model =
                                 ( newModel, dispatch )
 
 
-prepare : Random.Seed -> Test -> Model
-prepare seed test =
-    let
-        available =
-            testToDict seed test
-    in
-        { available = available
-        , queue = List.sort (Dict.keys available)
-        , completed = []
-        , running = Set.empty
-        }
-
-
-testToDict : Random.Seed -> Test -> Dict TestId (() -> Outcome)
-testToDict seed test =
-    test
-        |> Test.toRunners seed
-        |> List.indexedMap (,)
-        |> Dict.fromList
-
-
 dispatch : Cmd Msg
 dispatch =
     Task.succeed Dispatch
         |> Task.perform identity identity
 
 
-getInitialSeed : Test -> Cmd InitMsg
-getInitialSeed test =
-    Time.now
-        |> Task.perform fromNever (\time -> Init (Just (seedFromTime time)) test)
-
-
-seedFromTime : Time -> Random.Seed
-seedFromTime time =
-    (0xFFFFFFFF * time)
-        |> floor
-        |> Random.initialSeed
-
-
-fromNever : Never -> a
-fromNever a =
-    fromNever a
-
-
-initOrUpdate : InitMsg -> Maybe Model -> ( Maybe Model, Cmd InitMsg )
-initOrUpdate msg maybeModel =
-    case maybeModel of
-        Nothing ->
-            case msg of
-                Init Nothing test ->
-                    ( Nothing, getInitialSeed test )
-
-                Init (Just seed) test ->
-                    initOrUpdate (Msg Dispatch) (Just (prepare seed test))
-
-                Msg _ ->
-                    Debug.crash "Attempted to run a message pre-init!"
-
-        Just model ->
-            case msg of
-                Msg subMsg ->
-                    let
-                        ( newModel, cmd ) =
-                            update subMsg model
-                    in
-                        ( Just newModel, Cmd.map Msg cmd )
-
-                Init _ _ ->
-                    Debug.crash "Attempted to init twice!"
-
-
-init : Test -> ( Maybe Model, Cmd InitMsg )
-init test =
+init : List (() -> Outcome) -> ( Model, Cmd Msg )
+init thunks =
     let
-        cmd =
-            Task.succeed (Init Nothing test)
-                |> Task.perform identity identity
+        indexedThunks : List ( TestId, () -> Outcome )
+        indexedThunks =
+            List.indexedMap (,) thunks
+
+        model =
+            { available = Dict.fromList indexedThunks
+            , running = Set.empty
+            , queue = List.map fst indexedThunks
+            , completed = []
+            }
     in
-        ( Nothing, cmd )
-
-
-initOrView : Maybe Model -> Html InitMsg
-initOrView maybeModel =
-    case maybeModel of
-        Nothing ->
-            text ""
-
-        Just model ->
-            Html.App.map Msg (view model)
+        ( model, dispatch )
 
 
 run : Test -> Program Never
 run test =
-    Html.App.program
-        { init = init test
-        , update = initOrUpdate
-        , view = initOrView
+    Test.Runner.run
+        { test = test
+        , init = init
+        , update = update
+        , view = view
         , subscriptions = \_ -> Sub.none
         }
