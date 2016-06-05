@@ -1,8 +1,8 @@
-module Test exposing (Test, ResultTree, Outcome, toRunners, unit, fuzz, fuzz2, assertEqual, onFail, runs)
+module Test exposing (Test, ResultTree, Outcome, toRunners, unit, assertEqual, onFail, runs)
 
 {-|
 
-@docs Test, ResultTree, Outcome, unit, fuzz, fuzz2, toRunners, assertEqual, onFail, runs
+@docs Test, ResultTree, Outcome, unit, toRunners, assertEqual, onFail, runs
 -}
 
 import Fuzzer exposing (Fuzzer)
@@ -26,6 +26,7 @@ type alias Options =
     }
 
 
+defaultOptions : Options
 defaultOptions =
     { onFail = [], runs = Nothing, doShrink = Nothing, seed = Nothing }
 
@@ -119,11 +120,9 @@ unit =
     Assertions defaultOptions
 
 
-{-| TODO: docs
--}
-fuzz : Fuzzer a -> List (a -> Assertion) -> Test
-fuzz { generator } fuzzTests =
-    Debug.crash "TODO"
+
+--fuzz : Fuzzer a -> List (a -> Assertion) -> Test
+--fuzz { generator } fuzzTests =
 
 
 {-| Run a list of tests.
@@ -155,16 +154,8 @@ describe desc =
 --            in
 --                Random.step genTests seed |> fst |> Fuzz |> Test opts
 --        )
-
-
-{-| TODO: docs
--}
-fuzz2 : Fuzzer a -> Fuzzer b -> List (a -> b -> Assertion) -> Test
-fuzz2 fuzzA fuzzB fuzzTests =
-    Debug.crash "TODO"
-
-
-
+--fuzz2 : Fuzzer a -> Fuzzer b -> List (a -> b -> Assertion) -> Test
+--fuzz2 fuzzA fuzzB fuzzTests =
 --Test
 --{ onFail = "Fuzz test suite failed:", runs = 100, doShrink = True }
 --<| Fuzz
