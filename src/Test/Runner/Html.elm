@@ -34,7 +34,10 @@ viewFailures messages =
             []
 
         final :: [] ->
-            [ withRedChar '✗' final ]
+            [ text final ]
+
+        penultimate :: final :: [] ->
+            [ withRedChar '✗' penultimate, p [] [ text final ] ]
 
         first :: rest ->
             withRedChar '↓' first :: viewFailures rest
@@ -91,7 +94,7 @@ viewOutcome outcome =
     outcome
         |> Assert.toFailures
         |> viewFailures
-        |> li []
+        |> li [ style [ ( "margin", "40px 0" ) ] ]
 
 
 warn : String -> a -> a
