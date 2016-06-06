@@ -47,28 +47,34 @@ tests : Test
 tests =
     Test.batch
         [ oxfordifySuite
+        , assertionSuite
         , splineSuite
         , actualFuzzSuite
         , fuzzSuite
         , fuzzSuite
-        , failingSuite
         ]
 
 
-
--- TODO FIXME if you change or remove this `runs` call, the output changes a LOT!
---|> runs 10000
-
-
-failingSuite : Test
-failingSuite =
-    describe "failing suite"
-        Test.unit
-        [ \_ ->
-            { expected = "something"
-            , actual = "someting else"
-            }
-                |> Assert.equal
+assertionSuite : Test
+assertionSuite =
+    describe "basic assertions"
+        Test.batch
+        [ describe "this should succeed"
+            Test.unit
+            [ \_ ->
+                { expected = ()
+                , actual = ()
+                }
+                    |> Assert.equal
+            ]
+        , describe "this should fail"
+            Test.unit
+            [ \_ ->
+                { expected = "something"
+                , actual = "someting else"
+                }
+                    |> Assert.equal
+            ]
         ]
 
 
