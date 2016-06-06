@@ -1,4 +1,4 @@
-module Assert exposing (Outcome, succeed, fail, formatError, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, assertFuzz, resolve)
+module Assert exposing (Outcome, succeed, fail, formatError, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, assertFuzz, resolve)
 
 import Random.Pcg as Random
 
@@ -7,7 +7,8 @@ import Random.Pcg as Random
 -}
 type Outcome
     = Success
-    | Failure (List String)
+      -- TODO add (List String) to Success to keep context around
+    | Failure String (List String)
 
 
 {-| TODO: docs
@@ -47,7 +48,7 @@ resolve seed runs doShrink (Assertion run) =
 
 fail : String -> Outcome
 fail str =
-    Failure [ str ]
+    Failure str []
 
 
 succeed : Outcome
@@ -63,8 +64,8 @@ toFailures outcome =
         Success ->
             []
 
-        Failure failures ->
-            failures
+        Failure msg context ->
+            msg :: context
 
 
 withoutSuccesses : List Outcome -> List Outcome
@@ -86,24 +87,35 @@ concatOutcomesHelp result outcomes =
         Success :: rest ->
             concatOutcomesHelp result rest
 
-        (Failure messages) :: rest ->
+        ((Failure msg context) as currentFailure) :: rest ->
             let
-                totalMessages =
+                newFailure =
                     case result of
-                        Failure otherMessages ->
-                            messages ++ otherMessages
+                        Failure otherMsg otherContext ->
+                            -- TODO this seems broken - why treat otherMsg like context?
+                            Failure msg (context ++ (otherMsg :: otherContext))
 
                         Success ->
-                            messages
+                            currentFailure
             in
-                concatOutcomesHelp (Failure totalMessages) rest
+                concatOutcomesHelp newFailure rest
 
 
-formatError : (List String -> List String) -> Outcome -> Outcome
-formatError format outcome =
+addContext : String -> Outcome -> Outcome
+addContext str outcome =
     case outcome of
         Success ->
             Success
 
-        Failure messages ->
-            Failure (format messages)
+        Failure msg context ->
+            Failure msg (str :: context)
+
+
+formatError : String -> Outcome -> Outcome
+formatError str outcome =
+    case outcome of
+        Failure msg context ->
+            Failure str context
+
+        Success ->
+            outcome

@@ -47,15 +47,18 @@ tests : Test
 tests =
     describe "Example tests"
         Test.batch
-        [ actualFuzzSuite
+        [ splineSuite
+        , actualFuzzSuite
         , fuzzSuite
         , oxfordifySuite
         , fuzzSuite
         , failingSuite
         ]
-        -- TODO FIXME if you change or remove this `runs` call, the output changes a LOT!
-        |>
-            runs 10000
+
+
+
+-- TODO FIXME if you change or remove this `runs` call, the output changes a LOT!
+--|> runs 10000
 
 
 failingSuite : Test
@@ -117,6 +120,19 @@ fuzzSuite =
             }
                 |> Assert.equal
                 |> onFail "given a list of length 3, did not return an oxford-style sentence"
+        ]
+
+
+splineSuite : Test
+splineSuite =
+    describe "spline reticulator"
+        (fuzz2 string string)
+        [ \str1 str2 ->
+            it "properly reticulates splines"
+                Assert.equal
+                { expected = str1
+                , actual = str2
+                }
         ]
 
 

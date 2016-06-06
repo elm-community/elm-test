@@ -1,8 +1,8 @@
-module Test exposing (Test, toRunners, batch, describe, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, onFail, runs)
+module Test exposing (Test, toRunners, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, onFail, runs)
 
 {-|
 
-@docs Test, batch, describe, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, onFail, runs
+@docs Test, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, onFail, runs
 -}
 
 import Fuzzer exposing (Fuzzer)
@@ -54,11 +54,14 @@ toRunnersHelp baseOpts test =
 
 thunkToOutcome : Options -> (() -> Assertion) -> () -> Outcome
 thunkToOutcome opts thunk _ =
-    thunk ()
-        |> Assert.resolve (Maybe.withDefault defaultSeed opts.seed)
-            (Maybe.withDefault 1 opts.runs)
-            (Maybe.withDefault True opts.doShrink)
-        |> Assert.formatError ((++) opts.onFail)
+    let
+        outcome =
+            thunk ()
+                |> Assert.resolve (Maybe.withDefault defaultSeed opts.seed)
+                    (Maybe.withDefault 1 opts.runs)
+                    (Maybe.withDefault True opts.doShrink)
+    in
+        List.foldr Assert.addContext outcome opts.onFail
 
 
 defaultSeed : Random.Seed
@@ -73,14 +76,21 @@ onFail str assertion =
     let
         -- Run the original assertion, then replace any failure output with str.
         run seed runs doShrink =
-            let
-                outcome =
-                    Assert.resolve seed runs doShrink assertion
-            in
-                if List.isEmpty (Assert.toFailures outcome) then
-                    Assert.succeed
-                else
-                    Assert.fail str
+            Assert.resolve seed runs doShrink assertion
+                |> Assert.formatError str
+    in
+        Assert.assertFuzz run
+
+
+{-| TODO: docs
+-}
+it : String -> (a -> Assertion) -> a -> Assertion
+it str getAssertion arg =
+    let
+        -- Run the original assertion, then replace any failure output with str.
+        run seed runs doShrink =
+            Assert.resolve seed runs doShrink (getAssertion arg)
+                |> Assert.addContext str
     in
         Assert.assertFuzz run
 
