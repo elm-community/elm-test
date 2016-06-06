@@ -1,12 +1,12 @@
-module Test exposing (Test, ResultTree, Outcome, toRunners, unit, assertEqual, onFail, runs)
+module Test exposing (Test, ResultTree, Outcome, toRunners, unit, fuzz, fuzz2, assertEqual, onFail, runs)
 
 {-|
 
-@docs Test, ResultTree, Outcome, unit, toRunners, assertEqual, onFail, runs
+@docs Test, ResultTree, Outcome, unit, fuzz, fuzz2, toRunners, assertEqual, onFail, runs
 -}
 
 import Fuzzer exposing (Fuzzer)
-import Random.Pcg as Random
+import Random.Pcg as Random exposing (Generator)
 
 
 -- none of the types below will be exported, except Test which will be opaque
@@ -120,9 +120,38 @@ unit =
     Assertions defaultOptions
 
 
+{-| TODO docs
+-}
+fuzz : Fuzzer a -> List (a -> Assertion) -> Test
+fuzz { generator } fuzzTests =
+    Assertions defaultOptions (List.map (fuzzToThunk generator) fuzzTests)
 
---fuzz : Fuzzer a -> List (a -> Assertion) -> Test
---fuzz { generator } fuzzTests =
+
+fuzzToThunk : Generator a -> (a -> Assertion) -> () -> Assertion
+fuzzToThunk generator runAssert _ =
+    let
+        run seed runs doShrink =
+            let
+                -- testRuns : Generator (List a)
+                testRuns =
+                    generator
+                        |> Random.list runs
+                        |> Random.map (List.map runAssert)
+            in
+                Random.step testRuns seed
+                    |> resolveAssertions
+    in
+        Assertion run
+
+
+resolveAssertions : ( List Assertion, Random.Seed ) -> Outcome
+resolveAssertions ( assertions, seed ) =
+    List.concatMap (resolveAssertion seed) assertions
+
+
+resolveAssertion : Random.Seed -> Assertion -> Outcome
+resolveAssertion seed (Assertion run) =
+    run seed 1 False
 
 
 {-| Run a list of tests.
@@ -141,36 +170,17 @@ describe desc =
     Batch { defaultOptions | onFail = [ desc ] }
 
 
-
---Test { onFail = "Fuzz test suite", runs = 100, doShrink = True }
---    <| Fuzz
---    <| (flip List.map) fuzzTests
---        (\fuzzTest ( seed, runs, doShrink ) ->
---            let
---                genTests =
---                    Random.list runs generator |> Random.map (List.map (\arg _ -> fuzzTest arg))
---                opts =
---                    { onFail = "Fuzz test failed:", runs = runs, doShrink = doShrink }
---            in
---                Random.step genTests seed |> fst |> Fuzz |> Test opts
---        )
---fuzz2 : Fuzzer a -> Fuzzer b -> List (a -> b -> Assertion) -> Test
---fuzz2 fuzzA fuzzB fuzzTests =
---Test
---{ onFail = "Fuzz test suite failed:", runs = 100, doShrink = True }
---<| Fuzz
---<| (flip List.map) fuzzTests
---    (\fuzzTest ( seed, runs, doShrink ) ->
---        let
---            genTuple =
---                Random.map2 (,) fuzzA.generator fuzzB.generator
---            genTests =
---                Random.list runs genTuple |> Random.map (List.map (\( a, b ) _ -> fuzzTest a b))
---            opts =
---                { onFail = "Fuzz test failed:", runs = runs, doShrink = doShrink }
---        in
---            Random.step genTests seed |> fst |> Fuzz |> Test opts
---    )
+{-| TODO docs
+-}
+fuzz2 : Fuzzer a -> Fuzzer b -> List (a -> b -> Assertion) -> Test
+fuzz2 fuzzA fuzzB fuzzTests =
+    let
+        genTuple =
+            Random.map2 (,) fuzzA.generator fuzzB.generator
+    in
+        fuzzTests
+            |> List.map (uncurry >> fuzzToThunk genTuple)
+            |> Assertions defaultOptions
 
 
 {-| TODO: docs

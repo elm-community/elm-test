@@ -24,22 +24,21 @@ usuallyFoo =
         Shrink.string
 
 
-
---actualFuzzSuite : Test
---actualFuzzSuite =
---    Test.fuzz usuallyFoo
---        [ \shouldBeFoo ->
---            { expected = "foo"
---            , actual = shouldBeFoo
---            }
---                |> assertEqual
---                |> onFail "It wasn't \"foo\"."
---        ]
+actualFuzzSuite : Test
+actualFuzzSuite =
+    Test.fuzz usuallyFoo
+        [ \shouldBeFoo ->
+            { expected = "foo"
+            , actual = shouldBeFoo
+            }
+                |> assertEqual
+                |> onFail "It wasn't \"foo\"."
+        ]
 
 
 main : Program Never
 main =
-    Test.Runner.Html.run oxfordifySuite
+    Test.Runner.Html.run actualFuzzSuite
 
 
 
@@ -62,35 +61,34 @@ string =
         Shrink.string
 
 
-
---fuzzSuite : Test
---fuzzSuite =
---    Test.fuzz2 string
---        string
---        [ \name punctuation ->
---            { expected = ""
---            , actual = oxfordify "This sentence is empty" "." []
---            }
---                |> assertEqual
---                |> onFail "given an empty list, did not return an empty string"
---        , \name punctuation ->
---            { expected = "This sentence contains one item."
---            , actual = oxfordify "This sentence contains " "." [ "one item" ]
---            }
---                |> assertEqual
---        , \name punctuation ->
---            { expected = "This sentence contains one item and two item."
---            , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
---            }
---                |> assertEqual
---                |> onFail "given an empty list, did not return an empty string"
---        , \name punctuation ->
---            { expected = "This sentence contains one item, two item, and three item."
---            , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
---            }
---                |> assertEqual
---                |> onFail "given a list of length 3, did not return an oxford-style sentence"
---        ]
+fuzzSuite : Test
+fuzzSuite =
+    Test.fuzz2 string
+        string
+        [ \name punctuation ->
+            { expected = ""
+            , actual = oxfordify "This sentence is empty" "." []
+            }
+                |> assertEqual
+                |> onFail "given an empty list, did not return an empty string"
+        , \name punctuation ->
+            { expected = "This sentence contains one item."
+            , actual = oxfordify "This sentence contains " "." [ "one item" ]
+            }
+                |> assertEqual
+        , \name punctuation ->
+            { expected = "This sentence contains one item and two item."
+            , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
+            }
+                |> assertEqual
+                |> onFail "given an empty list, did not return an empty string"
+        , \name punctuation ->
+            { expected = "This sentence contains one item, two item, and three item."
+            , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
+            }
+                |> assertEqual
+                |> onFail "given a list of length 3, did not return an oxford-style sentence"
+        ]
 
 
 oxfordifySuite : Test
