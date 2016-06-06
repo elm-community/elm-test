@@ -1,5 +1,6 @@
 module Example exposing (..)
 
+import Assert
 import Test exposing (..)
 import Test.Runner.Html
 import Fuzzer exposing (Fuzzer)
@@ -31,14 +32,17 @@ actualFuzzSuite =
             { expected = "foo"
             , actual = shouldBeFoo
             }
-                |> assertEqual
+                |> Assert.equal
                 |> onFail "It wasn't \"foo\"."
         ]
 
 
 main : Program Never
 main =
-    Test.Runner.Html.run actualFuzzSuite
+    (Test.Runner.Html.run << Test.batch)
+        [ actualFuzzSuite
+        , oxfordifySuite
+        ]
 
 
 
@@ -69,24 +73,24 @@ fuzzSuite =
             { expected = ""
             , actual = oxfordify "This sentence is empty" "." []
             }
-                |> assertEqual
+                |> Assert.equal
                 |> onFail "given an empty list, did not return an empty string"
         , \name punctuation ->
             { expected = "This sentence contains one item."
             , actual = oxfordify "This sentence contains " "." [ "one item" ]
             }
-                |> assertEqual
+                |> Assert.equal
         , \name punctuation ->
             { expected = "This sentence contains one item and two item."
             , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
             }
-                |> assertEqual
+                |> Assert.equal
                 |> onFail "given an empty list, did not return an empty string"
         , \name punctuation ->
             { expected = "This sentence contains one item, two item, and three item."
             , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
             }
-                |> assertEqual
+                |> Assert.equal
                 |> onFail "given a list of length 3, did not return an oxford-style sentence"
         ]
 
@@ -98,23 +102,23 @@ oxfordifySuite =
             { expected = ""
             , actual = oxfordify "This sentence is empty" "." []
             }
-                |> assertEqual
+                |> Assert.equal
                 |> onFail "given an empty list, did not return an empty string"
         , \_ ->
             { expected = "This sentence contains one item."
             , actual = oxfordify "This sentence contains " "." [ "one item" ]
             }
-                |> assertEqual
+                |> Assert.equal
         , \_ ->
             { expected = "This sentence contains one item and two item."
             , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
             }
-                |> assertEqual
+                |> Assert.equal
                 |> onFail "given an empty list, did not return an empty string"
         , \_ ->
             { expected = "This sentence contains one item, two item, and three item."
             , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
             }
-                |> assertEqual
+                |> Assert.equal
                 |> onFail "given a list of length 3, did not return an oxford-style sentence"
         ]

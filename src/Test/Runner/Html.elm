@@ -1,6 +1,7 @@
 module Test.Runner.Html exposing (run)
 
-import Test exposing (Outcome, Test)
+import Test exposing (Test)
+import Assert exposing (Outcome)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Dict exposing (Dict)

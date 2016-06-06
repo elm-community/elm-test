@@ -1,21 +1,16 @@
-module Test exposing (Test, Outcome, toRunners, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, assertEqual, onFail, runs)
+module Test exposing (Test, toRunners, batch, describe, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, onFail, runs)
 
 {-|
 
-@docs Test, Outcome, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, assertEqual, onFail, runs
+@docs Test, batch, describe, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, onFail, runs
 -}
 
 import Fuzzer exposing (Fuzzer)
+import Assert exposing (Outcome(Success, Failure), Assertion)
 import Random.Pcg as Random exposing (Generator)
 
 
 -- none of the types below will be exported, except Test which will be opaque
-
-
-{-| The outcome from running a single test.
--}
-type alias Outcome =
-    List String
 
 
 type alias Options =
@@ -38,12 +33,6 @@ defaultOptions =
 type Test
     = Assertions Options (List (() -> Assertion))
     | Batch Options (List Test)
-
-
-{-| TODO: docs
--}
-type Assertion
-    = Assertion (Random.Seed -> Int -> Bool -> Outcome)
 
 
 mergeOptions : Options -> Options -> Options
@@ -74,11 +63,10 @@ toRunnersHelp baseOpts test =
 
 thunkToOutcome : Options -> (() -> Assertion) -> () -> Outcome
 thunkToOutcome opts thunk _ =
-    case thunk () of
-        Assertion run ->
-            run (Maybe.withDefault defaultSeed opts.seed)
-                (Maybe.withDefault 1 opts.runs)
-                (Maybe.withDefault True opts.doShrink)
+    Assert.resolve (Maybe.withDefault defaultSeed opts.seed)
+        (Maybe.withDefault 1 opts.runs)
+        (Maybe.withDefault True opts.doShrink)
+        (thunk ())
 
 
 defaultSeed : Random.Seed
@@ -89,16 +77,18 @@ defaultSeed =
 {-| TODO: docs
 -}
 onFail : String -> Assertion -> Assertion
-onFail str (Assertion oldRun) =
+onFail str assertion =
     let
         -- Run the original assertion, then replace any failure output with str.
         run seed runs doShrink =
-            if List.isEmpty (oldRun seed runs doShrink) then
-                []
-            else
-                [ str ]
+            case Assert.resolve seed runs doShrink assertion of
+                Success ->
+                    Success
+
+                Failure _ ->
+                    Failure [ str ]
     in
-        Assertion run
+        Assert.assertFuzz run
 
 
 {-| TODO: docs
@@ -231,17 +221,46 @@ fuzzToThunk generator runAssert _ =
                 Random.step testRuns seed
                     |> resolveAssertions
     in
-        Assertion run
+        Assert.assertFuzz run
+
+
+concatOutcomes : List Outcome -> Outcome
+concatOutcomes =
+    concatOutcomesHelp Success
+
+
+concatOutcomesHelp : Outcome -> List Outcome -> Outcome
+concatOutcomesHelp result outcomes =
+    case outcomes of
+        [] ->
+            result
+
+        Success :: rest ->
+            concatOutcomesHelp result rest
+
+        (Failure messages) :: rest ->
+            let
+                totalMessages =
+                    case result of
+                        Failure otherMessages ->
+                            messages ++ otherMessages
+
+                        Success ->
+                            messages
+            in
+                concatOutcomesHelp (Failure totalMessages) rest
 
 
 resolveAssertions : ( List Assertion, Random.Seed ) -> Outcome
 resolveAssertions ( assertions, seed ) =
-    List.concatMap (resolveAssertion seed) assertions
+    assertions
+        |> List.map (resolveAssertion seed)
+        |> concatOutcomes
 
 
 resolveAssertion : Random.Seed -> Assertion -> Outcome
-resolveAssertion seed (Assertion run) =
-    run seed 1 False
+resolveAssertion seed =
+    Assert.resolve seed 1 False
 
 
 {-| Run a list of tests.
@@ -258,20 +277,6 @@ batch =
 describe : String -> List Test -> Test
 describe desc =
     Batch { defaultOptions | onFail = [ desc ] }
-
-
-{-| TODO: docs
--}
-assertEqual : { expected : a, actual : a } -> Assertion
-assertEqual { expected, actual } =
-    let
-        run _ _ _ =
-            if expected == actual then
-                []
-            else
-                [ "Expected: " ++ toString expected, "Actual:   " ++ toString actual ]
-    in
-        Assertion run
 
 
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
