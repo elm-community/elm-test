@@ -1,8 +1,8 @@
-module Test exposing (Test, ResultTree, Outcome, toRunners, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, assertEqual, onFail, runs)
+module Test exposing (Test, Outcome, toRunners, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, assertEqual, onFail, runs)
 
 {-|
 
-@docs Test, ResultTree, Outcome, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, assertEqual, onFail, runs
+@docs Test, Outcome, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, assertEqual, onFail, runs
 -}
 
 import Fuzzer exposing (Fuzzer)
@@ -272,33 +272,6 @@ assertEqual { expected, actual } =
                 [ "Expected: " ++ toString expected, "Actual:   " ++ toString actual ]
     in
         Assertion run
-
-
-{-| TODO: docs
--}
-type ResultTree
-    = Leaf String Outcome
-    | Branch String (List ResultTree)
-
-
-filterSuccesses : ResultTree -> Maybe ResultTree
-filterSuccesses rt =
-    case rt of
-        Leaf _ xs ->
-            if List.isEmpty xs then
-                Nothing
-            else
-                Just rt
-
-        Branch onFail results ->
-            let
-                filtered =
-                    List.filterMap filterSuccesses results
-            in
-                if List.isEmpty filtered then
-                    Nothing
-                else
-                    Just (Branch onFail filtered)
 
 
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
