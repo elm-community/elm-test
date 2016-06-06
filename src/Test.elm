@@ -281,14 +281,9 @@ fuzzToThunk generator runAssert opts =
                 |> Random.map (List.map runWithInput)
     in
         Random.step testRuns seed
-            |> formatOutcomes
-
-
-formatOutcomes : ( List ( Maybe String, Outcome ), Random.Seed ) -> Outcome
-formatOutcomes ( assertions, seed ) =
-    assertions
-        |> List.map formatOutcome
-        |> Assert.concatOutcomes
+            |> fst
+            |> List.map formatOutcome
+            |> Assert.concatOutcomes
 
 
 formatOutcome : ( Maybe String, Outcome ) -> Outcome
