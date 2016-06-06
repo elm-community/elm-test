@@ -37,17 +37,17 @@ viewFailures messages =
             [ text final ]
 
         penultimate :: final :: [] ->
-            [ withRedChar '✗' penultimate, p [] [ text final ] ]
+            [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" penultimate, p [] [ text final ] ]
 
         first :: rest ->
-            withRedChar '↓' first :: viewFailures rest
+            withColorChar '↓' "darkgray" first :: viewFailures rest
 
 
-withRedChar : Char -> String -> Html a
-withRedChar char str =
+withColorChar : Char -> String -> String -> Html a
+withColorChar char textColor str =
     div []
-        [ span [ style [ ( "color", "hsla(3, 100%, 40%, 1.0)" ) ] ] [ text (String.fromChar char) ]
-        , span [] [ text (String.cons ' ' str) ]
+        [ span [ style [ ( "color", textColor ) ] ] [ text (String.fromChar char) ]
+        , span [ style [ ( "color", textColor ) ] ] [ text (String.cons ' ' str) ]
         ]
 
 
