@@ -23,12 +23,19 @@ type alias Options =
 
 initialOptions : Options
 initialOptions =
-    { onFail = [], runs = Nothing, doShrink = Nothing, seed = Nothing }
+    { onFail = []
+    , runs = Nothing
+    , doShrink = Nothing
+    , seed = Nothing
+    }
 
 
 defaults : { runs : Int, doShrink : Bool, seed : Random.Seed }
 defaults =
-    { runs = 100, doShrink = False, seed = Random.initialSeed 42 }
+    { runs = 100
+    , doShrink = False
+    , seed = Random.initialSeed 42
+    }
 
 
 {-| A Test is either
@@ -43,23 +50,22 @@ type Test
 {-| Turn a `Test` into a list of thunks that can be run to produce outcomes.
 -}
 toRunners : Random.Seed -> Test -> List (() -> Outcome)
-toRunners seed =
-    toRunnersHelp { initialOptions | seed = Just seed }
-
-
-toRunnersHelp : Options -> Test -> List (() -> Outcome)
-toRunnersHelp baseOpts test =
+toRunners seed test =
     case test of
         Assertions opts thunks ->
-            List.map (thunkToOutcome (mergeOptions opts baseOpts)) thunks
+            List.map (toOutcome seed opts) thunks
 
         Batch tests ->
-            List.concatMap (toRunnersHelp baseOpts) tests
+            List.concatMap (toRunners seed) tests
 
 
-thunkToOutcome : Options -> (Options -> Outcome) -> () -> Outcome
-thunkToOutcome opts getAssertion _ =
-    getAssertion opts
+toOutcome : Random.Seed -> Options -> (Options -> Outcome) -> () -> Outcome
+toOutcome seed opts getAssertion _ =
+    let
+        outcome =
+            getAssertion { opts | seed = Maybe.oneOf [ opts.seed, Just seed ] }
+    in
+        List.foldr Assert.addContext outcome opts.onFail
 
 
 {-| TODO: docs
@@ -120,7 +126,11 @@ unit fns =
 
 initialUnitOptions : Options
 initialUnitOptions =
-    { onFail = [], runs = Just 1, doShrink = Just False, seed = Just defaults.seed }
+    { onFail = []
+    , runs = Just 1
+    , doShrink = Just False
+    , seed = Just defaults.seed
+    }
 
 
 {-| TODO docs
@@ -226,7 +236,7 @@ batch =
 -}
 describe : String -> (a -> Test) -> a -> Test
 describe desc getTest arg =
-    Batch [ mapOptions (prependFail desc) (getTest arg) ]
+    mapOptions (prependFail desc) (getTest arg)
 
 
 prependFail : String -> Options -> Options
@@ -278,12 +288,9 @@ fuzzToThunk generator runAssert opts =
             generator
                 |> Random.list runs
                 |> Random.map (List.map runWithInput)
-
-        outcome =
-            Random.step testRuns seed
-                |> formatOutcomes
     in
-        List.foldr Assert.addContext outcome opts.onFail
+        Random.step testRuns seed
+            |> formatOutcomes
 
 
 formatOutcomes : ( List ( Maybe String, Outcome ), Random.Seed ) -> Outcome

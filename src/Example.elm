@@ -47,10 +47,22 @@ tests : Test
 tests =
     Test.batch
         [ oxfordifySuite
+        , plainAssertion
         , assertionSuite
         , failFuzzSuite
         , actualFuzzSuite
         , fuzzSuite
+        ]
+
+
+plainAssertion : Test
+plainAssertion =
+    Test.unit
+        [ \_ ->
+            { expected = "no description"
+            , actual = "whatsoever!"
+            }
+                |> Assert.equal
         ]
 
 
@@ -71,6 +83,13 @@ assertionSuite =
             [ \_ ->
                 { expected = "something"
                 , actual = "someting else"
+                }
+                    |> Assert.equal
+            ]
+        , Test.unit
+            [ \_ ->
+                { expected = "forty-two"
+                , actual = "forty-three"
                 }
                     |> Assert.equal
             ]
