@@ -45,12 +45,11 @@ main =
 
 tests : Test
 tests =
-    describe "Example tests"
-        Test.batch
-        [ splineSuite
+    Test.batch
+        [ oxfordifySuite
+        , splineSuite
         , actualFuzzSuite
         , fuzzSuite
-        , oxfordifySuite
         , fuzzSuite
         , failingSuite
         ]
@@ -85,7 +84,7 @@ oxfordify _ _ _ =
     "Alice, Bob, and Claire"
 
 
-{-| Stubbed fuzzer
+{-| Stubbed fuzzer - TODO implement
 -}
 string : Fuzzer String
 string =
@@ -130,7 +129,7 @@ splineSuite =
         [ \str1 str2 ->
             it "properly reticulates splines"
                 Assert.equal
-                { expected = str1
+                { expected = str1 ++ "blah"
                 , actual = str2
                 }
         ]
@@ -138,28 +137,39 @@ splineSuite =
 
 oxfordifySuite : Test
 oxfordifySuite =
-    Test.unit
-        [ \_ ->
-            { expected = ""
-            , actual = oxfordify "This sentence is empty" "." []
-            }
-                |> Assert.equal
-                |> onFail "given an empty list, did not return an empty string"
-        , \_ ->
-            { expected = "This sentence contains one item."
-            , actual = oxfordify "This sentence contains " "." [ "one item" ]
-            }
-                |> Assert.equal
-        , \_ ->
-            { expected = "This sentence contains one item and two item."
-            , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
-            }
-                |> Assert.equal
-                |> onFail "given an empty list, did not return an empty string"
-        , \_ ->
-            { expected = "This sentence contains one item, two item, and three item."
-            , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
-            }
-                |> Assert.equal
-                |> onFail "given a list of length 3, did not return an oxford-style sentence"
+    describe "oxfordify"
+        Test.batch
+        [ describe "given an empty sentence"
+            Test.unit
+            [ \_ ->
+                it "returns an empty string"
+                    Assert.equal
+                    { expected = ""
+                    , actual = oxfordify "This sentence is empty" "." []
+                    }
+            ]
+        , describe "given a sentence with one item"
+            Test.unit
+            [ \_ ->
+                it "still contains one item"
+                    Assert.equal
+                    { expected = "This sentence contains one item."
+                    , actual = oxfordify "This sentence contains " "." [ "one item" ]
+                    }
+            ]
+        , describe "given a sentence with multiple items"
+            Test.unit
+            [ \_ ->
+                it "returns an oxford-style sentence"
+                    Assert.equal
+                    { expected = "This sentence contains one item and two item."
+                    , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
+                    }
+            , \_ ->
+                it "returns an oxford-style sentence"
+                    Assert.equal
+                    { expected = "This sentence contains one item, two item, and three item."
+                    , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
+                    }
+            ]
         ]

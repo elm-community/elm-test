@@ -47,10 +47,8 @@ viewFailures messages =
 
 withColorChar : Char -> String -> String -> Html a
 withColorChar char textColor str =
-    div []
-        [ span [ style [ ( "color", textColor ) ] ] [ text (String.fromChar char) ]
-        , span [ style [ ( "color", textColor ) ] ] [ text (String.cons ' ' str) ]
-        ]
+    div [ style [ ( "color", textColor ) ] ]
+        [ text (String.cons char (String.cons ' ' str)) ]
 
 
 view : Model -> Html Msg
