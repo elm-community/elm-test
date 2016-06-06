@@ -37,7 +37,9 @@ viewFailures messages =
             [ text final ]
 
         penultimate :: final :: [] ->
-            [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" penultimate, p [] [ text final ] ]
+            [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" penultimate
+            , pre [] [ text final ]
+            ]
 
         first :: rest ->
             withColorChar '↓' "darkgray" first :: viewFailures rest
