@@ -65,7 +65,7 @@ toFailures outcome =
             []
 
         Failure msg context ->
-            msg :: context
+            context ++ [ msg ]
 
 
 withoutSuccesses : List Outcome -> List Outcome

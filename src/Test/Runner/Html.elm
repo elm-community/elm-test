@@ -90,7 +90,6 @@ viewOutcome : Outcome -> Html a
 viewOutcome outcome =
     outcome
         |> Assert.toFailures
-        |> List.reverse
         |> viewFailures
         |> li []
 
