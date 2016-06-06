@@ -82,7 +82,8 @@ string =
 
 fuzzSuite : Test
 fuzzSuite =
-    (Test.fuzz2 string string)
+    describe "fuzz suite"
+        (Test.fuzz2 string string)
         [ \name punctuation ->
             { expected = ""
             , actual = oxfordify "This sentence is empty" "." []

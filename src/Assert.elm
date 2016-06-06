@@ -1,4 +1,4 @@
-module Assert exposing (Outcome, succeed, fail, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, assertFuzz, resolve)
+module Assert exposing (Outcome, succeed, fail, formatError, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, assertFuzz, resolve)
 
 import Random.Pcg as Random
 
@@ -97,3 +97,13 @@ concatOutcomesHelp result outcomes =
                             messages
             in
                 concatOutcomesHelp (Failure totalMessages) rest
+
+
+formatError : (List String -> List String) -> Outcome -> Outcome
+formatError format outcome =
+    case outcome of
+        Success ->
+            Success
+
+        Failure messages ->
+            Failure (format messages)

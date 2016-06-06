@@ -28,20 +28,11 @@ defaultOptions =
 
 {-| A Test is either
    * A list of thunks, each of which returns an assertion
-   * A list of child tests
+   * A batch of these tests
 -}
 type Test
     = Assertions Options (List (() -> Assertion))
     | Batch Options (List Test)
-
-
-mergeOptions : Options -> Options -> Options
-mergeOptions child parent =
-    { onFail = parent.onFail ++ child.onFail
-    , runs = Maybe.oneOf [ child.runs, parent.runs ]
-    , doShrink = Maybe.oneOf [ child.doShrink, parent.doShrink ]
-    , seed = Maybe.oneOf [ child.seed, parent.seed ]
-    }
 
 
 {-| Turn a `Test` into a list of thunks that can be run to produce outcomes.
@@ -63,10 +54,11 @@ toRunnersHelp baseOpts test =
 
 thunkToOutcome : Options -> (() -> Assertion) -> () -> Outcome
 thunkToOutcome opts thunk _ =
-    Assert.resolve (Maybe.withDefault defaultSeed opts.seed)
-        (Maybe.withDefault 1 opts.runs)
-        (Maybe.withDefault True opts.doShrink)
-        (thunk ())
+    thunk ()
+        |> Assert.resolve (Maybe.withDefault defaultSeed opts.seed)
+            (Maybe.withDefault 1 opts.runs)
+            (Maybe.withDefault True opts.doShrink)
+        |> Assert.formatError ((++) opts.onFail)
 
 
 defaultSeed : Random.Seed
@@ -120,13 +112,6 @@ fuzz :
     -> Test
 fuzz { generator } fuzzTests =
     Assertions defaultOptions (List.map (fuzzToThunk generator) fuzzTests)
-
-
-fuzzN : (a -> () -> Assertion) -> List a -> Test
-fuzzN fn fuzzTests =
-    fuzzTests
-        |> List.map fn
-        |> Assertions defaultOptions
 
 
 {-| TODO docs
@@ -209,35 +194,6 @@ fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE =
         fuzzN (uncurry5 >> fuzzToThunk gen)
 
 
-fuzzToThunk : Generator a -> (a -> Assertion) -> () -> Assertion
-fuzzToThunk generator runAssert _ =
-    let
-        run seed runs doShrink =
-            let
-                -- testRuns : Generator (List a)
-                testRuns =
-                    generator
-                        |> Random.list runs
-                        |> Random.map (List.map runAssert)
-            in
-                Random.step testRuns seed
-                    |> resolveAssertions
-    in
-        Assert.assertFuzz run
-
-
-resolveAssertions : ( List Assertion, Random.Seed ) -> Outcome
-resolveAssertions ( assertions, seed ) =
-    assertions
-        |> List.map (resolveAssertion seed)
-        |> Assert.concatOutcomes
-
-
-resolveAssertion : Random.Seed -> Assertion -> Outcome
-resolveAssertion seed =
-    Assert.resolve seed 1 False
-
-
 {-| Run a list of tests.
 
 See [`describe`](#describe) for running tests with a descriptive string.
@@ -247,7 +203,7 @@ batch =
     Batch defaultOptions
 
 
-{-| Run a list of tests, associated with the given description.
+{-| Run a test and associate the given description.
 -}
 describe : String -> (a -> Test) -> a -> Test
 describe desc getTest arg =
@@ -267,3 +223,48 @@ uncurry4 fn ( a, b, c, d ) =
 uncurry5 : (a -> b -> c -> d -> e -> f) -> ( a, b, c, d, e ) -> f
 uncurry5 fn ( a, b, c, d, e ) =
     fn a b c d e
+
+
+mergeOptions : Options -> Options -> Options
+mergeOptions child parent =
+    { onFail = parent.onFail ++ child.onFail
+    , runs = Maybe.oneOf [ child.runs, parent.runs ]
+    , doShrink = Maybe.oneOf [ child.doShrink, parent.doShrink ]
+    , seed = Maybe.oneOf [ child.seed, parent.seed ]
+    }
+
+
+resolveAssertions : ( List Assertion, Random.Seed ) -> Outcome
+resolveAssertions ( assertions, seed ) =
+    assertions
+        |> List.map (resolveAssertion seed)
+        |> Assert.concatOutcomes
+
+
+resolveAssertion : Random.Seed -> Assertion -> Outcome
+resolveAssertion seed =
+    Assert.resolve seed 1 False
+
+
+fuzzToThunk : Generator a -> (a -> Assertion) -> () -> Assertion
+fuzzToThunk generator runAssert _ =
+    let
+        run seed runs doShrink =
+            let
+                -- testRuns : Generator (List a)
+                testRuns =
+                    generator
+                        |> Random.list runs
+                        |> Random.map (List.map runAssert)
+            in
+                Random.step testRuns seed
+                    |> resolveAssertions
+    in
+        Assert.assertFuzz run
+
+
+fuzzN : (a -> () -> Assertion) -> List a -> Test
+fuzzN fn fuzzTests =
+    fuzzTests
+        |> List.map fn
+        |> Assertions defaultOptions
