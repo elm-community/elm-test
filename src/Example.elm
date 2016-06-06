@@ -40,7 +40,13 @@ actualFuzzSuite =
 
 main : Program Never
 main =
-    (Test.Runner.Html.run << Test.batch)
+    Test.Runner.Html.run tests
+
+
+tests : Test
+tests =
+    describe "Example tests"
+        Test.batch
         [ actualFuzzSuite
         , oxfordifySuite
         , fuzzSuite
