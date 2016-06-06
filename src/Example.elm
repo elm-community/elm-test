@@ -48,10 +48,14 @@ tests =
     describe "Example tests"
         Test.batch
         [ actualFuzzSuite
+        , fuzzSuite
         , oxfordifySuite
         , fuzzSuite
         , failingSuite
         ]
+        -- TODO FIXME if you change or remove this `runs` call, the output changes a LOT!
+        |>
+            runs 10000
 
 
 failingSuite : Test
