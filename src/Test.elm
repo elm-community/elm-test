@@ -21,9 +21,14 @@ type alias Options =
     }
 
 
-defaultOptions : Options
-defaultOptions =
+initialOptions : Options
+initialOptions =
     { onFail = [], runs = Nothing, doShrink = Nothing, seed = Nothing }
+
+
+defaults : { runs : Int, doShrink : Bool, seed : Random.Seed }
+defaults =
+    { runs = 100, doShrink = False, seed = Random.initialSeed 42 }
 
 
 {-| A Test is either
@@ -39,7 +44,7 @@ type Test
 -}
 toRunners : Random.Seed -> Test -> List (() -> Outcome)
 toRunners seed =
-    toRunnersHelp { defaultOptions | seed = Just seed }
+    toRunnersHelp { initialOptions | seed = Just seed }
 
 
 toRunnersHelp : Options -> Test -> List (() -> Outcome)
@@ -57,16 +62,11 @@ thunkToOutcome opts thunk _ =
     let
         outcome =
             thunk ()
-                |> Assert.resolve (Maybe.withDefault defaultSeed opts.seed)
-                    (Maybe.withDefault 1 opts.runs)
-                    (Maybe.withDefault True opts.doShrink)
+                |> Assert.resolve (Maybe.withDefault defaults.seed opts.seed)
+                    (Maybe.withDefault defaults.runs opts.runs)
+                    (Maybe.withDefault defaults.doShrink opts.doShrink)
     in
         List.foldr Assert.addContext outcome opts.onFail
-
-
-defaultSeed : Random.Seed
-defaultSeed =
-    Random.initialSeed 42
 
 
 {-| TODO: docs
@@ -101,17 +101,22 @@ runs : Int -> Test -> Test
 runs count test =
     case test of
         Assertions opts thunks ->
-            Assertions { opts | runs = Just count } thunks
+            Assertions { opts | runs = Maybe.oneOf [ opts.runs, Just count ] } thunks
 
         Batch opts tests ->
-            Batch { opts | runs = Just count } tests
+            Batch { opts | runs = Maybe.oneOf [ opts.runs, Just count ] } tests
 
 
 {-| TODO: docs
 -}
 unit : List (() -> Assertion) -> Test
 unit =
-    Assertions defaultOptions
+    Assertions initialUnitOptions
+
+
+initialUnitOptions : Options
+initialUnitOptions =
+    { onFail = [], runs = Just 1, doShrink = Just False, seed = Just defaults.seed }
 
 
 {-| TODO docs
@@ -121,7 +126,7 @@ fuzz :
     -> List (a -> Assertion)
     -> Test
 fuzz { generator } fuzzTests =
-    Assertions defaultOptions (List.map (fuzzToThunk generator) fuzzTests)
+    Assertions initialOptions (List.map (fuzzToThunk generator) fuzzTests)
 
 
 {-| TODO docs
@@ -210,14 +215,14 @@ See [`describe`](#describe) for running tests with a descriptive string.
 -}
 batch : List Test -> Test
 batch =
-    Batch defaultOptions
+    Batch initialOptions
 
 
 {-| Run a test and associate the given description.
 -}
 describe : String -> (a -> Test) -> a -> Test
 describe desc getTest arg =
-    Batch { defaultOptions | onFail = [ desc ] } [ getTest arg ]
+    Batch { initialOptions | onFail = [ desc ] } [ getTest arg ]
 
 
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
@@ -244,16 +249,11 @@ mergeOptions child parent =
     }
 
 
-resolveAssertions : ( List Assertion, Random.Seed ) -> Outcome
-resolveAssertions ( assertions, seed ) =
+resolveAssertions : Int -> Bool -> ( List Assertion, Random.Seed ) -> Outcome
+resolveAssertions runs doShrink ( assertions, seed ) =
     assertions
-        |> List.map (resolveAssertion seed)
+        |> List.map (Assert.resolve seed runs doShrink)
         |> Assert.concatOutcomes
-
-
-resolveAssertion : Random.Seed -> Assertion -> Outcome
-resolveAssertion seed =
-    Assert.resolve seed 1 False
 
 
 fuzzToThunk : Generator a -> (a -> Assertion) -> () -> Assertion
@@ -268,7 +268,7 @@ fuzzToThunk generator runAssert _ =
                         |> Random.map (List.map runAssert)
             in
                 Random.step testRuns seed
-                    |> resolveAssertions
+                    |> resolveAssertions runs doShrink
     in
         Assert.assertFuzz run
 
@@ -277,4 +277,4 @@ fuzzN : (a -> () -> Assertion) -> List a -> Test
 fuzzN fn fuzzTests =
     fuzzTests
         |> List.map fn
-        |> Assertions defaultOptions
+        |> Assertions initialOptions

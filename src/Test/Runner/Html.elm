@@ -27,22 +27,34 @@ type Msg
     = Dispatch
 
 
-viewFailures : List String -> List (Html a)
-viewFailures messages =
-    case messages of
-        [] ->
-            []
+viewFailures : { messages : List String, context : List String } -> List (Html a)
+viewFailures { messages, context } =
+    let
+        ( maybeLastContext, otherContexts ) =
+            case List.reverse context of
+                [] ->
+                    ( Nothing, [] )
 
-        final :: [] ->
-            [ text final ]
+                first :: rest ->
+                    ( Just first, List.reverse rest )
 
-        penultimate :: final :: [] ->
-            [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" penultimate
-            , pre [] [ text final ]
-            ]
+        viewMessage message =
+            case maybeLastContext of
+                Just lastContext ->
+                    div []
+                        [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" lastContext
+                        , pre [] [ text message ]
+                        ]
 
-        first :: rest ->
-            withColorChar '↓' "darkgray" first :: viewFailures rest
+                Nothing ->
+                    pre [] [ text message ]
+
+        viewContext =
+            otherContexts
+                |> List.map (withColorChar '↓' "darkgray")
+                |> div []
+    in
+        viewContext :: List.map viewMessage messages
 
 
 withColorChar : Char -> String -> String -> Html a
@@ -88,10 +100,12 @@ view model =
 
 viewOutcome : Outcome -> Html a
 viewOutcome outcome =
-    outcome
-        |> Assert.toFailures
-        |> viewFailures
-        |> li [ style [ ( "margin", "40px 0" ) ] ]
+    case Assert.toFailures outcome of
+        Just failures ->
+            li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failures)
+
+        Nothing ->
+            text ""
 
 
 warn : String -> a -> a

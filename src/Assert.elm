@@ -8,13 +8,17 @@ import Random.Pcg as Random
 type Outcome
     = Success
       -- TODO add (List String) to Success to keep context around
-    | Failure String (List String)
+    | Failure { messages : List String, context : List String }
 
 
 {-| TODO: docs
 -}
 type Assertion
     = Assertion (Random.Seed -> Int -> Bool -> Outcome)
+
+
+
+-- TODO Assertion (Maybe String -> Outcome)
 
 
 {-| TODO: docs
@@ -48,7 +52,7 @@ resolve seed runs doShrink (Assertion run) =
 
 fail : String -> Outcome
 fail str =
-    Failure str []
+    Failure { messages = [ str ], context = [] }
 
 
 succeed : Outcome
@@ -58,14 +62,14 @@ succeed =
 
 {-| In the event of success, returns [].
 -}
-toFailures : Outcome -> List String
+toFailures : Outcome -> Maybe { messages : List String, context : List String }
 toFailures outcome =
     case outcome of
         Success ->
-            []
+            Nothing
 
-        Failure msg context ->
-            context ++ [ msg ]
+        Failure record ->
+            Just record
 
 
 withoutSuccesses : List Outcome -> List Outcome
@@ -87,13 +91,14 @@ concatOutcomesHelp result outcomes =
         Success :: rest ->
             concatOutcomesHelp result rest
 
-        ((Failure msg context) as currentFailure) :: rest ->
+        ((Failure record) as currentFailure) :: rest ->
             let
                 newFailure =
                     case result of
-                        Failure otherMsg otherContext ->
-                            -- TODO this seems broken - why treat otherMsg like context?
-                            Failure msg (context ++ (otherMsg :: otherContext))
+                        Failure { messages } ->
+                            -- NOTE: we use the first context we get, and
+                            -- assume all other contexts are the same.
+                            Failure { record | messages = record.messages ++ messages }
 
                         Success ->
                             currentFailure
@@ -107,15 +112,15 @@ addContext str outcome =
         Success ->
             Success
 
-        Failure msg context ->
-            Failure msg (str :: context)
+        Failure record ->
+            Failure { record | context = str :: record.context }
 
 
 formatError : String -> Outcome -> Outcome
 formatError str outcome =
     case outcome of
-        Failure msg context ->
-            Failure str context
+        Failure record ->
+            Failure { record | messages = List.map (\_ -> str) record.messages }
 
         Success ->
             outcome
