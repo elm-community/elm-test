@@ -1,20 +1,19 @@
-module Assert exposing (Outcome, succeed, fail, formatError, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, assertFuzz, resolve)
-
-import Random.Pcg as Random
-
+module Assert exposing (Outcome, succeed, fail, formatError, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, resolve)
 
 {-| The outcome from running a single test.
 -}
+
+
 type Outcome
     = Success
-      -- TODO add (List String) to Success to keep context around
+      -- TODO keep context around for success
     | Failure { messages : List String, context : List String }
 
 
 {-| TODO: docs
 -}
 type Assertion
-    = Assertion (Random.Seed -> Int -> Bool -> Outcome)
+    = Assertion (Maybe String -> Outcome)
 
 
 
@@ -26,28 +25,32 @@ type Assertion
 equal : { expected : a, actual : a } -> Assertion
 equal { expected, actual } =
     let
-        run _ _ _ =
+        run input =
             if expected == actual then
                 succeed
             else
-                fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
+                let
+                    prefix =
+                        case input of
+                            Nothing ->
+                                ""
+
+                            Just str ->
+                                "Input: " ++ str ++ "\n\n"
+                in
+                    fail (prefix ++ "Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
     in
         Assertion run
 
 
-assert : Outcome -> Assertion
-assert outcome =
-    Assertion (\_ _ _ -> outcome)
-
-
-assertFuzz : (Random.Seed -> Int -> Bool -> Outcome) -> Assertion
-assertFuzz =
+assert : (Maybe String -> Outcome) -> Assertion
+assert =
     Assertion
 
 
-resolve : Random.Seed -> Int -> Bool -> Assertion -> Outcome
-resolve seed runs doShrink (Assertion run) =
-    run seed runs doShrink
+resolve : Maybe String -> Assertion -> Outcome
+resolve input (Assertion run) =
+    run input
 
 
 fail : String -> Outcome

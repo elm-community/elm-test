@@ -36,7 +36,7 @@ defaults =
    * A batch of these tests
 -}
 type Test
-    = Assertions Options (List (() -> Assertion))
+    = Assertions Options (List (Options -> Assertion))
     | Batch Options (List Test)
 
 
@@ -57,16 +57,10 @@ toRunnersHelp baseOpts test =
             List.concatMap (toRunnersHelp (mergeOptions opts baseOpts)) suites
 
 
-thunkToOutcome : Options -> (() -> Assertion) -> () -> Outcome
-thunkToOutcome opts thunk _ =
-    let
-        outcome =
-            thunk ()
-                |> Assert.resolve (Maybe.withDefault defaults.seed opts.seed)
-                    (Maybe.withDefault defaults.runs opts.runs)
-                    (Maybe.withDefault defaults.doShrink opts.doShrink)
-    in
-        List.foldr Assert.addContext outcome opts.onFail
+thunkToOutcome : Options -> (Options -> Assertion) -> () -> Outcome
+thunkToOutcome opts getAssertion _ =
+    getAssertion opts
+        |> Assert.resolve Nothing
 
 
 {-| TODO: docs
@@ -75,11 +69,11 @@ onFail : String -> Assertion -> Assertion
 onFail str assertion =
     let
         -- Run the original assertion, then replace any failure output with str.
-        run seed runs doShrink =
-            Assert.resolve seed runs doShrink assertion
+        run input =
+            Assert.resolve input assertion
                 |> Assert.formatError str
     in
-        Assert.assertFuzz run
+        Assert.assert run
 
 
 {-| TODO: docs
@@ -88,11 +82,11 @@ it : String -> (a -> Assertion) -> a -> Assertion
 it str getAssertion arg =
     let
         -- Run the original assertion, then replace any failure output with str.
-        run seed runs doShrink =
-            Assert.resolve seed runs doShrink (getAssertion arg)
+        run input =
+            Assert.resolve input (getAssertion arg)
                 |> Assert.addContext str
     in
-        Assert.assertFuzz run
+        Assert.assert run
 
 
 {-| TODO: docs
@@ -110,8 +104,10 @@ runs count test =
 {-| TODO: docs
 -}
 unit : List (() -> Assertion) -> Test
-unit =
-    Assertions initialUnitOptions
+unit fns =
+    fns
+        |> List.map (\fn -> (\_ -> fn ()))
+        |> Assertions initialUnitOptions
 
 
 initialUnitOptions : Options
@@ -249,31 +245,46 @@ mergeOptions child parent =
     }
 
 
-resolveAssertions : Int -> Bool -> ( List Assertion, Random.Seed ) -> Outcome
-resolveAssertions runs doShrink ( assertions, seed ) =
+resolveAssertions : ( List ( Maybe String, Assertion ), Random.Seed ) -> Outcome
+resolveAssertions ( assertions, seed ) =
     assertions
-        |> List.map (Assert.resolve seed runs doShrink)
+        |> List.map (\( input, assertion ) -> Assert.resolve input assertion)
         |> Assert.concatOutcomes
 
 
-fuzzToThunk : Generator a -> (a -> Assertion) -> () -> Assertion
-fuzzToThunk generator runAssert _ =
+fuzzToThunk : Generator a -> (a -> Assertion) -> Options -> Assertion
+fuzzToThunk generator runAssert opts =
     let
-        run seed runs doShrink =
+        seed =
+            Maybe.withDefault defaults.seed opts.seed
+
+        runs =
+            Maybe.withDefault defaults.runs opts.runs
+
+        doShrink =
+            Maybe.withDefault defaults.doShrink opts.doShrink
+
+        runWithInput val =
+            ( Just (toString val), runAssert val )
+
+        run _ =
             let
                 -- testRuns : Generator (List a)
                 testRuns =
                     generator
                         |> Random.list runs
-                        |> Random.map (List.map runAssert)
+                        |> Random.map (List.map runWithInput)
+
+                outcome =
+                    Random.step testRuns seed
+                        |> resolveAssertions
             in
-                Random.step testRuns seed
-                    |> resolveAssertions runs doShrink
+                List.foldr Assert.addContext outcome opts.onFail
     in
-        Assert.assertFuzz run
+        Assert.assert run
 
 
-fuzzN : (a -> () -> Assertion) -> List a -> Test
+fuzzN : (a -> Options -> Assertion) -> List a -> Test
 fuzzN fn fuzzTests =
     fuzzTests
         |> List.map fn
