@@ -62,10 +62,7 @@ view model =
                 if List.isEmpty failures then
                     h2 [ style [ ( "color", "darkgreen" ) ] ] [ text "All tests passed!" ]
                 else
-                    div []
-                        [ h2 [ style [ ( "color", "hsla(3, 100%, 40%, 1.0)" ) ] ] [ text "Tests finished" ]
-                        , div [] [ text (toString (List.length failures) ++ " of " ++ toString completedCount ++ " failed:") ]
-                        ]
+                    h2 [ style [ ( "color", "hsla(3, 100%, 40%, 1.0)" ) ] ] [ text (toString (List.length failures) ++ " of " ++ toString completedCount ++ " Tests Failed:") ]
             else
                 div []
                     [ h2 [] [ text "Running Tests..." ]
