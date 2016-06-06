@@ -6,7 +6,7 @@ module Test exposing (Test, toRunners, batch, describe, it, unit, fuzz, fuzz2, f
 -}
 
 import Fuzzer exposing (Fuzzer)
-import Assert exposing (Outcome, Assertion)
+import Assert exposing (Outcome)
 import Random.Pcg as Random exposing (Generator)
 
 
@@ -32,11 +32,11 @@ defaults =
 
 
 {-| A Test is either
-   * A list of thunks, each of which returns an assertion
+   * A list of thunks, each of which returns an Outcome
    * A batch of these tests
 -}
 type Test
-    = Assertions Options (List (Options -> Assertion))
+    = Assertions Options (List (Options -> Outcome))
     | Batch Options (List Test)
 
 
@@ -57,36 +57,23 @@ toRunnersHelp baseOpts test =
             List.concatMap (toRunnersHelp (mergeOptions opts baseOpts)) suites
 
 
-thunkToOutcome : Options -> (Options -> Assertion) -> () -> Outcome
+thunkToOutcome : Options -> (Options -> Outcome) -> () -> Outcome
 thunkToOutcome opts getAssertion _ =
     getAssertion opts
-        |> Assert.resolve
 
 
 {-| TODO: docs
 -}
-onFail : String -> Assertion -> Assertion
-onFail str assertion =
-    let
-        -- Run the original assertion, then replace any failure output with str.
-        run =
-            Assert.resolve assertion
-                |> Assert.formatFailures (\_ -> str)
-    in
-        Assert.assert run
+onFail : String -> Outcome -> Outcome
+onFail str outcome =
+    Assert.formatFailures (\_ -> str) outcome
 
 
 {-| TODO: docs
 -}
-it : String -> (a -> Assertion) -> a -> Assertion
-it str getAssertion arg =
-    let
-        -- Run the original assertion, then replace any failure output with str.
-        run =
-            Assert.resolve (getAssertion arg)
-                |> Assert.addContext str
-    in
-        Assert.assert run
+it : String -> (a -> Outcome) -> a -> Outcome
+it str getOutcome arg =
+    Assert.addContext str (getOutcome arg)
 
 
 {-| TODO: docs
@@ -103,7 +90,7 @@ runs count test =
 
 {-| TODO: docs
 -}
-unit : List (() -> Assertion) -> Test
+unit : List (() -> Outcome) -> Test
 unit fns =
     fns
         |> List.map (\fn -> (\_ -> fn ()))
@@ -119,7 +106,7 @@ initialUnitOptions =
 -}
 fuzz :
     Fuzzer a
-    -> List (a -> Assertion)
+    -> List (a -> Outcome)
     -> Test
 fuzz { generator } fuzzTests =
     Assertions initialOptions (List.map (fuzzToThunk generator) fuzzTests)
@@ -130,7 +117,7 @@ fuzz { generator } fuzzTests =
 fuzz2 :
     Fuzzer a
     -> Fuzzer b
-    -> List (a -> b -> Assertion)
+    -> List (a -> b -> Outcome)
     -> Test
 fuzz2 fuzzA fuzzB =
     let
@@ -148,7 +135,7 @@ fuzz3 :
     Fuzzer a
     -> Fuzzer b
     -> Fuzzer c
-    -> List (a -> b -> c -> Assertion)
+    -> List (a -> b -> c -> Outcome)
     -> Test
 fuzz3 fuzzA fuzzB fuzzC =
     let
@@ -168,7 +155,7 @@ fuzz4 :
     -> Fuzzer b
     -> Fuzzer c
     -> Fuzzer d
-    -> List (a -> b -> c -> d -> Assertion)
+    -> List (a -> b -> c -> d -> Outcome)
     -> Test
 fuzz4 fuzzA fuzzB fuzzC fuzzD =
     let
@@ -190,7 +177,7 @@ fuzz5 :
     -> Fuzzer c
     -> Fuzzer d
     -> Fuzzer e
-    -> List (a -> b -> c -> d -> e -> Assertion)
+    -> List (a -> b -> c -> d -> e -> Outcome)
     -> Test
 fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE =
     let
@@ -245,20 +232,19 @@ mergeOptions child parent =
     }
 
 
-resolveAssertions : ( List ( Maybe String, Assertion ), Random.Seed ) -> Outcome
-resolveAssertions ( assertions, seed ) =
+formatOutcomes : ( List ( Maybe String, Outcome ), Random.Seed ) -> Outcome
+formatOutcomes ( assertions, seed ) =
     assertions
-        |> List.map resolveAssertion
+        |> List.map formatOutcome
         |> Assert.concatOutcomes
 
 
-resolveAssertion : ( Maybe String, Assertion ) -> Outcome
-resolveAssertion ( input, assertion ) =
-    Assert.resolve assertion
-        |> Assert.formatFailures (prependInput input)
+formatOutcome : ( Maybe String, Outcome ) -> Outcome
+formatOutcome ( input, outcome ) =
+    Assert.formatFailures (prependInput input) outcome
 
 
-fuzzToThunk : Generator a -> (a -> Assertion) -> Options -> Assertion
+fuzzToThunk : Generator a -> (a -> Outcome) -> Options -> Outcome
 fuzzToThunk generator runAssert opts =
     let
         seed =
@@ -273,21 +259,17 @@ fuzzToThunk generator runAssert opts =
         runWithInput val =
             ( Just (toString val), runAssert val )
 
-        run =
-            let
-                -- testRuns : Generator (List a)
-                testRuns =
-                    generator
-                        |> Random.list runs
-                        |> Random.map (List.map runWithInput)
+        -- testRuns : Generator (List a)
+        testRuns =
+            generator
+                |> Random.list runs
+                |> Random.map (List.map runWithInput)
 
-                outcome =
-                    Random.step testRuns seed
-                        |> resolveAssertions
-            in
-                List.foldr Assert.addContext outcome opts.onFail
+        outcome =
+            Random.step testRuns seed
+                |> formatOutcomes
     in
-        Assert.assert run
+        List.foldr Assert.addContext outcome opts.onFail
 
 
 prependInput : Maybe String -> String -> String
@@ -300,7 +282,7 @@ prependInput input str =
             "Input: " ++ str ++ "\n\n"
 
 
-fuzzN : (a -> Options -> Assertion) -> List a -> Test
+fuzzN : (a -> Options -> Outcome) -> List a -> Test
 fuzzN fn fuzzTests =
     fuzzTests
         |> List.map fn

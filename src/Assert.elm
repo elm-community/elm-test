@@ -1,9 +1,11 @@
-module Assert exposing (Outcome, succeed, fail, formatFailures, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, resolve)
+module Assert exposing (succeed, fail, formatFailures, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Outcome)
 
-{-| The outcome from running a single test.
+{-| Making assertions.
 -}
 
 
+{-| The outcome from running a single test.
+-}
 type Outcome
     = Success
       -- TODO keep context around for success
@@ -12,32 +14,12 @@ type Outcome
 
 {-| TODO: docs
 -}
-type Assertion
-    = Assertion Outcome
-
-
-{-| TODO: docs
--}
-equal : { expected : a, actual : a } -> Assertion
+equal : { expected : a, actual : a } -> Outcome
 equal { expected, actual } =
-    let
-        run =
-            if expected == actual then
-                succeed
-            else
-                fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
-    in
-        Assertion run
-
-
-assert : Outcome -> Assertion
-assert =
-    Assertion
-
-
-resolve : Assertion -> Outcome
-resolve (Assertion outcome) =
-    outcome
+    if expected == actual then
+        succeed
+    else
+        fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
 
 
 fail : String -> Outcome
