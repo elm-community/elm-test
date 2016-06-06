@@ -1,4 +1,4 @@
-module Assert exposing (Outcome, succeed, fail, formatError, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, resolve)
+module Assert exposing (Outcome, succeed, fail, formatFailures, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, resolve)
 
 {-| The outcome from running a single test.
 -}
@@ -13,11 +13,7 @@ type Outcome
 {-| TODO: docs
 -}
 type Assertion
-    = Assertion (Maybe String -> Outcome)
-
-
-
--- TODO Assertion (Maybe String -> Outcome)
+    = Assertion Outcome
 
 
 {-| TODO: docs
@@ -25,32 +21,23 @@ type Assertion
 equal : { expected : a, actual : a } -> Assertion
 equal { expected, actual } =
     let
-        run input =
+        run =
             if expected == actual then
                 succeed
             else
-                let
-                    prefix =
-                        case input of
-                            Nothing ->
-                                ""
-
-                            Just str ->
-                                "Input: " ++ str ++ "\n\n"
-                in
-                    fail (prefix ++ "Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
+                fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
     in
         Assertion run
 
 
-assert : (Maybe String -> Outcome) -> Assertion
+assert : Outcome -> Assertion
 assert =
     Assertion
 
 
-resolve : Maybe String -> Assertion -> Outcome
-resolve input (Assertion run) =
-    run input
+resolve : Assertion -> Outcome
+resolve (Assertion outcome) =
+    outcome
 
 
 fail : String -> Outcome
@@ -119,11 +106,11 @@ addContext str outcome =
             Failure { record | context = str :: record.context }
 
 
-formatError : String -> Outcome -> Outcome
-formatError str outcome =
+formatFailures : (String -> String) -> Outcome -> Outcome
+formatFailures format outcome =
     case outcome of
         Failure record ->
-            Failure { record | messages = List.map (\_ -> str) record.messages }
+            Failure { record | messages = List.map format record.messages }
 
         Success ->
             outcome

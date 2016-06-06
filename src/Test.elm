@@ -60,7 +60,7 @@ toRunnersHelp baseOpts test =
 thunkToOutcome : Options -> (Options -> Assertion) -> () -> Outcome
 thunkToOutcome opts getAssertion _ =
     getAssertion opts
-        |> Assert.resolve Nothing
+        |> Assert.resolve
 
 
 {-| TODO: docs
@@ -69,9 +69,9 @@ onFail : String -> Assertion -> Assertion
 onFail str assertion =
     let
         -- Run the original assertion, then replace any failure output with str.
-        run input =
-            Assert.resolve input assertion
-                |> Assert.formatError str
+        run =
+            Assert.resolve assertion
+                |> Assert.formatFailures (\_ -> str)
     in
         Assert.assert run
 
@@ -82,8 +82,8 @@ it : String -> (a -> Assertion) -> a -> Assertion
 it str getAssertion arg =
     let
         -- Run the original assertion, then replace any failure output with str.
-        run input =
-            Assert.resolve input (getAssertion arg)
+        run =
+            Assert.resolve (getAssertion arg)
                 |> Assert.addContext str
     in
         Assert.assert run
@@ -248,8 +248,14 @@ mergeOptions child parent =
 resolveAssertions : ( List ( Maybe String, Assertion ), Random.Seed ) -> Outcome
 resolveAssertions ( assertions, seed ) =
     assertions
-        |> List.map (\( input, assertion ) -> Assert.resolve input assertion)
+        |> List.map resolveAssertion
         |> Assert.concatOutcomes
+
+
+resolveAssertion : ( Maybe String, Assertion ) -> Outcome
+resolveAssertion ( input, assertion ) =
+    Assert.resolve assertion
+        |> Assert.formatFailures (prependInput input)
 
 
 fuzzToThunk : Generator a -> (a -> Assertion) -> Options -> Assertion
@@ -267,7 +273,7 @@ fuzzToThunk generator runAssert opts =
         runWithInput val =
             ( Just (toString val), runAssert val )
 
-        run _ =
+        run =
             let
                 -- testRuns : Generator (List a)
                 testRuns =
@@ -282,6 +288,16 @@ fuzzToThunk generator runAssert opts =
                 List.foldr Assert.addContext outcome opts.onFail
     in
         Assert.assert run
+
+
+prependInput : Maybe String -> String -> String
+prependInput input str =
+    case input of
+        Nothing ->
+            str
+
+        Just str ->
+            "Input: " ++ str ++ "\n\n"
 
 
 fuzzN : (a -> Options -> Assertion) -> List a -> Test
