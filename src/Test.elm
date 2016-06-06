@@ -232,18 +232,6 @@ mergeOptions child parent =
     }
 
 
-formatOutcomes : ( List ( Maybe String, Outcome ), Random.Seed ) -> Outcome
-formatOutcomes ( assertions, seed ) =
-    assertions
-        |> List.map formatOutcome
-        |> Assert.concatOutcomes
-
-
-formatOutcome : ( Maybe String, Outcome ) -> Outcome
-formatOutcome ( input, outcome ) =
-    Assert.formatFailures (prependInput input) outcome
-
-
 fuzzToThunk : Generator a -> (a -> Outcome) -> Options -> Outcome
 fuzzToThunk generator runAssert opts =
     let
@@ -272,14 +260,26 @@ fuzzToThunk generator runAssert opts =
         List.foldr Assert.addContext outcome opts.onFail
 
 
+formatOutcomes : ( List ( Maybe String, Outcome ), Random.Seed ) -> Outcome
+formatOutcomes ( assertions, seed ) =
+    assertions
+        |> List.map formatOutcome
+        |> Assert.concatOutcomes
+
+
+formatOutcome : ( Maybe String, Outcome ) -> Outcome
+formatOutcome ( input, outcome ) =
+    Assert.formatFailures (prependInput input) outcome
+
+
 prependInput : Maybe String -> String -> String
-prependInput input str =
+prependInput input original =
     case input of
         Nothing ->
-            str
+            original
 
         Just str ->
-            "Input: " ++ str ++ "\n\n"
+            "Input: " ++ str ++ "\n\n" ++ original
 
 
 fuzzN : (a -> Options -> Outcome) -> List a -> Test
