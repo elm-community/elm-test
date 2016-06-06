@@ -1,8 +1,8 @@
-module Test exposing (Test, ResultTree, Outcome, toRunners, unit, fuzz, fuzz2, assertEqual, onFail, runs)
+module Test exposing (Test, ResultTree, Outcome, toRunners, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, assertEqual, onFail, runs)
 
 {-|
 
-@docs Test, ResultTree, Outcome, unit, fuzz, fuzz2, toRunners, assertEqual, onFail, runs
+@docs Test, ResultTree, Outcome, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, assertEqual, onFail, runs
 -}
 
 import Fuzzer exposing (Fuzzer)
@@ -122,9 +122,99 @@ unit =
 
 {-| TODO docs
 -}
-fuzz : Fuzzer a -> List (a -> Assertion) -> Test
+fuzz :
+    Fuzzer a
+    -> List (a -> Assertion)
+    -> Test
 fuzz { generator } fuzzTests =
     Assertions defaultOptions (List.map (fuzzToThunk generator) fuzzTests)
+
+
+fuzzN : (a -> () -> Assertion) -> List a -> Test
+fuzzN fn fuzzTests =
+    fuzzTests
+        |> List.map fn
+        |> Assertions defaultOptions
+
+
+{-| TODO docs
+-}
+fuzz2 :
+    Fuzzer a
+    -> Fuzzer b
+    -> List (a -> b -> Assertion)
+    -> Test
+fuzz2 fuzzA fuzzB =
+    let
+        gen =
+            Random.map2 (,)
+                fuzzA.generator
+                fuzzB.generator
+    in
+        fuzzN (uncurry >> fuzzToThunk gen)
+
+
+{-| TODO docs
+-}
+fuzz3 :
+    Fuzzer a
+    -> Fuzzer b
+    -> Fuzzer c
+    -> List (a -> b -> c -> Assertion)
+    -> Test
+fuzz3 fuzzA fuzzB fuzzC =
+    let
+        gen =
+            Random.map3 (,,)
+                fuzzA.generator
+                fuzzB.generator
+                fuzzC.generator
+    in
+        fuzzN (uncurry3 >> fuzzToThunk gen)
+
+
+{-| TODO docs
+-}
+fuzz4 :
+    Fuzzer a
+    -> Fuzzer b
+    -> Fuzzer c
+    -> Fuzzer d
+    -> List (a -> b -> c -> d -> Assertion)
+    -> Test
+fuzz4 fuzzA fuzzB fuzzC fuzzD =
+    let
+        gen =
+            Random.map4 (,,,)
+                fuzzA.generator
+                fuzzB.generator
+                fuzzC.generator
+                fuzzD.generator
+    in
+        fuzzN (uncurry4 >> fuzzToThunk gen)
+
+
+{-| TODO docs
+-}
+fuzz5 :
+    Fuzzer a
+    -> Fuzzer b
+    -> Fuzzer c
+    -> Fuzzer d
+    -> Fuzzer e
+    -> List (a -> b -> c -> d -> e -> Assertion)
+    -> Test
+fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE =
+    let
+        gen =
+            Random.map5 (,,,,)
+                fuzzA.generator
+                fuzzB.generator
+                fuzzC.generator
+                fuzzD.generator
+                fuzzE.generator
+    in
+        fuzzN (uncurry5 >> fuzzToThunk gen)
 
 
 fuzzToThunk : Generator a -> (a -> Assertion) -> () -> Assertion
@@ -170,19 +260,6 @@ describe desc =
     Batch { defaultOptions | onFail = [ desc ] }
 
 
-{-| TODO docs
--}
-fuzz2 : Fuzzer a -> Fuzzer b -> List (a -> b -> Assertion) -> Test
-fuzz2 fuzzA fuzzB fuzzTests =
-    let
-        genTuple =
-            Random.map2 (,) fuzzA.generator fuzzB.generator
-    in
-        fuzzTests
-            |> List.map (uncurry >> fuzzToThunk genTuple)
-            |> Assertions defaultOptions
-
-
 {-| TODO: docs
 -}
 assertEqual : { expected : a, actual : a } -> Assertion
@@ -204,32 +281,6 @@ type ResultTree
     | Branch String (List ResultTree)
 
 
-
---runWithSeed seed (Test opts tree) =
---    let
---        unfiltered =
---            Debug.crash "TODO"
---case tree of
---    Thunk thunk ->
---        Leaf opts.onFail (thunk ())
---    Group thunks ->
---        Branch opts.onFail <| List.map (\thunk -> runWithSeed seed (thunk ())) thunks
---    FuzzGroup randThunks ->
---        Random.list (List.length randThunks) Random.independentSeed
---            |> Random.map (List.map2 (\randThunk seed -> randThunk ( seed, opts.runs, opts.doShrink ) |> runWithSeed seed) randThunks)
---            |> (flip Random.step) seed
---            |> fst
---            |> Branch opts.onFail
---    Batch tests ->
---        Random.list (List.length tests) Random.independentSeed
---            |> (flip Random.step) seed
---            |> fst
---            |> List.map2 (\test seed -> runWithSeed seed test) tests
---            |> Branch opts.onFail
---in
---    filterSuccesses unfiltered |> Maybe.withDefault (Branch "No failures" [])
-
-
 filterSuccesses : ResultTree -> Maybe ResultTree
 filterSuccesses rt =
     case rt of
@@ -248,3 +299,18 @@ filterSuccesses rt =
                     Nothing
                 else
                     Just (Branch onFail filtered)
+
+
+uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
+uncurry3 fn ( a, b, c ) =
+    fn a b c
+
+
+uncurry4 : (a -> b -> c -> d -> e) -> ( a, b, c, d ) -> e
+uncurry4 fn ( a, b, c, d ) =
+    fn a b c d
+
+
+uncurry5 : (a -> b -> c -> d -> e -> f) -> ( a, b, c, d, e ) -> f
+uncurry5 fn ( a, b, c, d, e ) =
+    fn a b c d e
