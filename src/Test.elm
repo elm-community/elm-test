@@ -259,15 +259,6 @@ uncurry5 fn ( a, b, c, d, e ) =
     fn a b c d e
 
 
-mergeOptions : Options -> Options -> Options
-mergeOptions child parent =
-    { onFail = parent.onFail ++ child.onFail
-    , runs = Maybe.oneOf [ child.runs, parent.runs ]
-    , doShrink = Maybe.oneOf [ child.doShrink, parent.doShrink ]
-    , seed = Maybe.oneOf [ child.seed, parent.seed ]
-    }
-
-
 fuzzToThunk : Generator a -> (a -> Outcome) -> Options -> Outcome
 fuzzToThunk generator runAssert opts =
     let
