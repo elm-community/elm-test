@@ -48,9 +48,8 @@ tests =
     Test.batch
         [ oxfordifySuite
         , assertionSuite
-        , splineSuite
+        , failFuzzSuite
         , actualFuzzSuite
-        , fuzzSuite
         , fuzzSuite
         ]
 
@@ -128,15 +127,15 @@ fuzzSuite =
         ]
 
 
-splineSuite : Test
-splineSuite =
-    describe "spline reticulator"
+failFuzzSuite : Test
+failFuzzSuite =
+    describe "the first element in this fuzz tuple"
         (fuzz2 string string)
         [ \str1 str2 ->
-            it "properly reticulates splines"
+            it "is always \"foo\""
                 Assert.equal
-                { expected = str1 ++ "blah"
-                , actual = str2
+                { expected = "foo"
+                , actual = str1
                 }
         ]
 

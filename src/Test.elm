@@ -1,8 +1,8 @@
-module Test exposing (Test, toRunners, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, onFail, runs)
+module Test exposing (Test, toRunners, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, onFail, withRuns, withSeed, withShrink)
 
 {-|
 
-@docs Test, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, onFail, runs
+@docs Test, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, onFail, withRuns, withSeed, withShrink
 -}
 
 import Fuzzer exposing (Fuzzer)
@@ -37,7 +37,7 @@ defaults =
 -}
 type Test
     = Assertions Options (List (Options -> Outcome))
-    | Batch Options (List Test)
+    | Batch (List Test)
 
 
 {-| Turn a `Test` into a list of thunks that can be run to produce outcomes.
@@ -53,8 +53,8 @@ toRunnersHelp baseOpts test =
         Assertions opts thunks ->
             List.map (thunkToOutcome (mergeOptions opts baseOpts)) thunks
 
-        Batch opts suites ->
-            List.concatMap (toRunnersHelp (mergeOptions opts baseOpts)) suites
+        Batch tests ->
+            List.concatMap (toRunnersHelp baseOpts) tests
 
 
 thunkToOutcome : Options -> (Options -> Outcome) -> () -> Outcome
@@ -78,14 +78,35 @@ it str getOutcome arg =
 
 {-| TODO: docs
 -}
-runs : Int -> Test -> Test
-runs count test =
+withRuns : Int -> Test -> Test
+withRuns runs =
+    mapOptions (\opts -> { opts | runs = Maybe.oneOf [ opts.runs, Just runs ] })
+
+
+{-| TODO: docs
+-}
+withSeed : Random.Seed -> Test -> Test
+withSeed seed =
+    mapOptions (\opts -> { opts | seed = Maybe.oneOf [ opts.seed, Just seed ] })
+
+
+{-| TODO: docs
+-}
+withShrink : Bool -> Test -> Test
+withShrink doShrink =
+    mapOptions (\opts -> { opts | doShrink = Maybe.oneOf [ opts.doShrink, Just doShrink ] })
+
+
+mapOptions : (Options -> Options) -> Test -> Test
+mapOptions translate test =
     case test of
         Assertions opts thunks ->
-            Assertions { opts | runs = Maybe.oneOf [ opts.runs, Just count ] } thunks
+            Assertions (translate opts) thunks
 
-        Batch opts tests ->
-            Batch { opts | runs = Maybe.oneOf [ opts.runs, Just count ] } tests
+        Batch tests ->
+            tests
+                |> List.map (mapOptions translate)
+                |> Batch
 
 
 {-| TODO: docs
@@ -198,14 +219,19 @@ See [`describe`](#describe) for running tests with a descriptive string.
 -}
 batch : List Test -> Test
 batch =
-    Batch initialOptions
+    Batch
 
 
 {-| Run a test and associate the given description.
 -}
 describe : String -> (a -> Test) -> a -> Test
 describe desc getTest arg =
-    Batch { initialOptions | onFail = [ desc ] } [ getTest arg ]
+    Batch [ mapOptions (prependFail desc) (getTest arg) ]
+
+
+prependFail : String -> Options -> Options
+prependFail str opts =
+    { opts | onFail = str :: opts.onFail }
 
 
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
