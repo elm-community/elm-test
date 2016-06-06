@@ -27,7 +27,8 @@ usuallyFoo =
 
 actualFuzzSuite : Test
 actualFuzzSuite =
-    Test.fuzz usuallyFoo
+    describe "actual fuzz suite"
+        (Test.fuzz usuallyFoo)
         [ \shouldBeFoo ->
             { expected = "foo"
             , actual = shouldBeFoo
@@ -42,6 +43,20 @@ main =
     (Test.Runner.Html.run << Test.batch)
         [ actualFuzzSuite
         , oxfordifySuite
+        , fuzzSuite
+        , failingSuite
+        ]
+
+
+failingSuite : Test
+failingSuite =
+    describe "failing suite"
+        Test.unit
+        [ \_ ->
+            { expected = "something"
+            , actual = "someting else"
+            }
+                |> Assert.equal
         ]
 
 
@@ -67,8 +82,7 @@ string =
 
 fuzzSuite : Test
 fuzzSuite =
-    Test.fuzz2 string
-        string
+    (Test.fuzz2 string string)
         [ \name punctuation ->
             { expected = ""
             , actual = oxfordify "This sentence is empty" "." []

@@ -1,4 +1,4 @@
-module Assert exposing (Outcome(Success, Failure), equal, Assertion, assert, assertFuzz, resolve)
+module Assert exposing (Outcome, succeed, fail, toFailures, concatOutcomes, withoutSuccesses, equal, Assertion, assert, assertFuzz, resolve)
 
 import Random.Pcg as Random
 
@@ -23,9 +23,9 @@ equal { expected, actual } =
     let
         run _ _ _ =
             if expected == actual then
-                Success
+                succeed
             else
-                Failure [ "Expected: " ++ toString expected, "Actual:   " ++ toString actual ]
+                fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
     in
         Assertion run
 
@@ -43,3 +43,57 @@ assertFuzz =
 resolve : Random.Seed -> Int -> Bool -> Assertion -> Outcome
 resolve seed runs doShrink (Assertion run) =
     run seed runs doShrink
+
+
+fail : String -> Outcome
+fail str =
+    Failure [ str ]
+
+
+succeed : Outcome
+succeed =
+    Success
+
+
+{-| In the event of success, returns [].
+-}
+toFailures : Outcome -> List String
+toFailures outcome =
+    case outcome of
+        Success ->
+            []
+
+        Failure failures ->
+            failures
+
+
+withoutSuccesses : List Outcome -> List Outcome
+withoutSuccesses =
+    List.filter ((/=) Success)
+
+
+concatOutcomes : List Outcome -> Outcome
+concatOutcomes =
+    concatOutcomesHelp Success
+
+
+concatOutcomesHelp : Outcome -> List Outcome -> Outcome
+concatOutcomesHelp result outcomes =
+    case outcomes of
+        [] ->
+            result
+
+        Success :: rest ->
+            concatOutcomesHelp result rest
+
+        (Failure messages) :: rest ->
+            let
+                totalMessages =
+                    case result of
+                        Failure otherMessages ->
+                            messages ++ otherMessages
+
+                        Success ->
+                            messages
+            in
+                concatOutcomesHelp (Failure totalMessages) rest

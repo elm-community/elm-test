@@ -6,7 +6,7 @@ module Test exposing (Test, toRunners, batch, describe, unit, fuzz, fuzz2, fuzz3
 -}
 
 import Fuzzer exposing (Fuzzer)
-import Assert exposing (Outcome(Success, Failure), Assertion)
+import Assert exposing (Outcome, Assertion)
 import Random.Pcg as Random exposing (Generator)
 
 
@@ -81,12 +81,14 @@ onFail str assertion =
     let
         -- Run the original assertion, then replace any failure output with str.
         run seed runs doShrink =
-            case Assert.resolve seed runs doShrink assertion of
-                Success ->
-                    Success
-
-                Failure _ ->
-                    Failure [ str ]
+            let
+                outcome =
+                    Assert.resolve seed runs doShrink assertion
+            in
+                if List.isEmpty (Assert.toFailures outcome) then
+                    Assert.succeed
+                else
+                    Assert.fail str
     in
         Assert.assertFuzz run
 
@@ -224,38 +226,11 @@ fuzzToThunk generator runAssert _ =
         Assert.assertFuzz run
 
 
-concatOutcomes : List Outcome -> Outcome
-concatOutcomes =
-    concatOutcomesHelp Success
-
-
-concatOutcomesHelp : Outcome -> List Outcome -> Outcome
-concatOutcomesHelp result outcomes =
-    case outcomes of
-        [] ->
-            result
-
-        Success :: rest ->
-            concatOutcomesHelp result rest
-
-        (Failure messages) :: rest ->
-            let
-                totalMessages =
-                    case result of
-                        Failure otherMessages ->
-                            messages ++ otherMessages
-
-                        Success ->
-                            messages
-            in
-                concatOutcomesHelp (Failure totalMessages) rest
-
-
 resolveAssertions : ( List Assertion, Random.Seed ) -> Outcome
 resolveAssertions ( assertions, seed ) =
     assertions
         |> List.map (resolveAssertion seed)
-        |> concatOutcomes
+        |> Assert.concatOutcomes
 
 
 resolveAssertion : Random.Seed -> Assertion -> Outcome
@@ -274,9 +249,9 @@ batch =
 
 {-| Run a list of tests, associated with the given description.
 -}
-describe : String -> List Test -> Test
-describe desc =
-    Batch { defaultOptions | onFail = [ desc ] }
+describe : String -> (a -> Test) -> a -> Test
+describe desc getTest arg =
+    Batch { defaultOptions | onFail = [ desc ] } [ getTest arg ]
 
 
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d

@@ -8,6 +8,7 @@ import Dict exposing (Dict)
 import Task
 import Set exposing (Set)
 import Test.Runner
+import String
 
 
 type alias TestId =
@@ -26,31 +27,71 @@ type Msg
     = Dispatch
 
 
-viewOutcome : Outcome -> Html a
-viewOutcome outcome =
-    div [] [ text ("Outcome: " ++ toString outcome) ]
+viewFailures : List String -> List (Html a)
+viewFailures messages =
+    case messages of
+        [] ->
+            []
+
+        final :: [] ->
+            [ withRedChar '✗' final ]
+
+        first :: rest ->
+            withRedChar '↓' first :: viewFailures rest
+
+
+withRedChar : Char -> String -> Html a
+withRedChar char str =
+    div []
+        [ span [ style [ ( "color", "hsla(3, 100%, 40%, 1.0)" ) ] ] [ text (String.fromChar char) ]
+        , span [] [ text (String.cons ' ' str) ]
+        ]
 
 
 view : Model -> Html Msg
 view model =
     let
-        completionLabel =
-            if Dict.isEmpty model.available && Set.isEmpty model.running then
-                h2 [] [ text "Finished!" ]
+        isFinished =
+            Dict.isEmpty model.available && Set.isEmpty model.running
+
+        summary =
+            if isFinished then
+                if List.isEmpty failures then
+                    h2 [ style [ ( "color", "darkgreen" ) ] ] [ text "All tests passed!" ]
+                else
+                    div []
+                        [ h2 [ style [ ( "color", "hsla(3, 100%, 40%, 1.0)" ) ] ] [ text "Tests finished" ]
+                        , div [] [ text (toString (List.length failures) ++ " of " ++ toString completedCount ++ " failed:") ]
+                        ]
             else
-                text ""
+                div []
+                    [ h2 [] [ text "Running Tests..." ]
+                    , div [] [ text (toString completedCount ++ " completed") ]
+                    , div [] [ text (toString remainingCount ++ " remaining") ]
+                    ]
 
         completedCount =
             List.length model.completed
 
         remainingCount =
             List.length (Dict.keys model.available)
+
+        failures : List Outcome
+        failures =
+            Assert.withoutSuccesses model.completed
     in
-        div []
-            [ h2 [] [ text "Running Tests..." ]
-            , div [ class "results" ] (List.map viewOutcome model.completed)
-            , completionLabel
+        div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
+            [ summary
+            , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (List.map viewOutcome failures)
             ]
+
+
+viewOutcome : Outcome -> Html a
+viewOutcome outcome =
+    outcome
+        |> Assert.toFailures
+        |> viewFailures
+        |> li []
 
 
 warn : String -> a -> a
@@ -71,11 +112,11 @@ update msg model =
                     ( model, Cmd.none )
                         |> warn "Attempted to Dispatch when all tests completed!"
 
-                testId :: _ ->
+                testId :: newQueue ->
                     case Dict.get testId model.available of
                         Nothing ->
                             ( model, Cmd.none )
-                                |> warn "Could not find testId"
+                                |> warn ("Could not find testId " ++ toString testId)
 
                         Just run ->
                             let
@@ -89,6 +130,7 @@ update msg model =
                                     { model
                                         | completed = completed
                                         , available = available
+                                        , queue = newQueue
                                     }
 
                                 {- Dispatch as a Cmd so as to yield to the UI
