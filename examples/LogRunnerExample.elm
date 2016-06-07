@@ -1,5 +1,13 @@
 module LogRunnerExample exposing (..)
 
+{-| HOW TO RUN THIS EXAMPLE
+
+$ elm-make LogRunnerExample.elm --output=elm.js
+$ node elm.js
+
+Note that this always uses an initial seed of 42, since it can't do effects.
+-}
+
 import Assert
 import Test exposing (..)
 import Test.Runner.Log

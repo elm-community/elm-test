@@ -1,5 +1,12 @@
 module HtmlRunnerExample exposing (..)
 
+{-| HOW TO RUN THIS EXAMPLE
+
+$ elm-reactor
+
+Visit http://localhost:8000 and bring up this file.
+-}
+
 import Assert
 import Test exposing (..)
 import Test.Runner.Html
