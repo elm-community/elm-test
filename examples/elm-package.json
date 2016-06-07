@@ -1,16 +1,13 @@
 {
-    "version": "1.1.0",
+    "version": "1.0.0",
     "summary": "Unit testing support with Console/Html/String outputs.",
     "repository": "https://github.com/elm-community/elm-test.git",
     "license": "MIT",
     "source-directories": [
-        "src"
+        ".",
+        "../src"
     ],
-    "exposed-modules": [
-        "Test",
-        "Assert",
-        "Fuzzer"
-    ],
+    "exposed-modules": [],
     "dependencies": {
         "elm-community/shrink": "1.0.1 <= v < 2.0.0",
         "elm-lang/core": "4.0.0 <= v < 5.0.0",

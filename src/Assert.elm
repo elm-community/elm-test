@@ -1,6 +1,8 @@
-module Assert exposing (succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Outcome)
+module Assert exposing (succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, equal, Outcome)
 
 {-| Making assertions.
+
+@docs succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, equal, Outcome
 -}
 
 
@@ -22,11 +24,15 @@ equal { expected, actual } =
         fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
 
 
+{-| TODO docs
+-}
 fail : String -> Outcome
 fail str =
     Failure { messages = [ str ], context = [] }
 
 
+{-| TODO docs
+-}
 succeed : Outcome
 succeed =
     Success
@@ -44,16 +50,15 @@ toFailures outcome =
             Just record
 
 
-withoutSuccesses : List Outcome -> List Outcome
-withoutSuccesses =
-    List.filter ((/=) Success)
-
-
+{-| TODO docs
+-}
 concatOutcomes : List Outcome -> Outcome
 concatOutcomes =
     concatOutcomesHelp Success
 
 
+{-| TODO docs
+-}
 isSuccess : Outcome -> Bool
 isSuccess =
     (==) Success
@@ -83,6 +88,8 @@ concatOutcomesHelp result outcomes =
                 concatOutcomesHelp newFailure rest
 
 
+{-| TODO docs
+-}
 addContext : String -> Outcome -> Outcome
 addContext str outcome =
     case outcome of
@@ -93,6 +100,8 @@ addContext str outcome =
             Failure { record | context = str :: record.context }
 
 
+{-| TODO docs
+-}
 formatFailures : (String -> String) -> Outcome -> Outcome
 formatFailures format outcome =
     case outcome of

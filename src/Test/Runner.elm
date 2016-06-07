@@ -2,7 +2,7 @@ module Test.Runner exposing (run)
 
 import Test exposing (Test)
 import Assert exposing (Outcome)
-import Html exposing (..)
+import Html exposing (Html, text)
 import Html.App
 import Task
 import Random.Pcg as Random

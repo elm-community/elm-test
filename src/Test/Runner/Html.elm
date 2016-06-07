@@ -90,7 +90,7 @@ view model =
 
         failures : List Outcome
         failures =
-            Assert.withoutSuccesses model.completed
+            List.filter (not << Assert.isSuccess) model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
