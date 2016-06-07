@@ -1,4 +1,4 @@
-module Example exposing (..)
+module HtmlRunnerExample exposing (..)
 
 import Assert
 import Test exposing (..)
