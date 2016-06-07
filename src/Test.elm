@@ -139,8 +139,8 @@ fuzz :
     Fuzzer a
     -> List (a -> Outcome)
     -> Test
-fuzz { generator } fuzzTests =
-    Assertions initialOptions (List.map (fuzzToThunk generator) fuzzTests)
+fuzz fuzzer fuzzTests =
+    Assertions initialOptions (List.map (fuzzToThunk fuzzer) fuzzTests)
 
 
 {-| TODO docs
@@ -152,12 +152,10 @@ fuzz2 :
     -> Test
 fuzz2 fuzzA fuzzB =
     let
-        gen =
-            Random.map2 (,)
-                fuzzA.generator
-                fuzzB.generator
+        fuzzer =
+            Fuzzer.tuple ( fuzzA, fuzzB )
     in
-        fuzzN (uncurry >> fuzzToThunk gen)
+        fuzzN (uncurry >> fuzzToThunk fuzzer)
 
 
 {-| TODO docs
@@ -170,13 +168,10 @@ fuzz3 :
     -> Test
 fuzz3 fuzzA fuzzB fuzzC =
     let
-        gen =
-            Random.map3 (,,)
-                fuzzA.generator
-                fuzzB.generator
-                fuzzC.generator
+        fuzzer =
+            Fuzzer.tuple3 ( fuzzA, fuzzB, fuzzC )
     in
-        fuzzN (uncurry3 >> fuzzToThunk gen)
+        fuzzN (uncurry3 >> fuzzToThunk fuzzer)
 
 
 {-| TODO docs
@@ -190,14 +185,10 @@ fuzz4 :
     -> Test
 fuzz4 fuzzA fuzzB fuzzC fuzzD =
     let
-        gen =
-            Random.map4 (,,,)
-                fuzzA.generator
-                fuzzB.generator
-                fuzzC.generator
-                fuzzD.generator
+        fuzzer =
+            Fuzzer.tuple4 ( fuzzA, fuzzB, fuzzC, fuzzD )
     in
-        fuzzN (uncurry4 >> fuzzToThunk gen)
+        fuzzN (uncurry4 >> fuzzToThunk fuzzer)
 
 
 {-| TODO docs
@@ -212,15 +203,10 @@ fuzz5 :
     -> Test
 fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE =
     let
-        gen =
-            Random.map5 (,,,,)
-                fuzzA.generator
-                fuzzB.generator
-                fuzzC.generator
-                fuzzD.generator
-                fuzzE.generator
+        fuzzer =
+            Fuzzer.tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE )
     in
-        fuzzN (uncurry5 >> fuzzToThunk gen)
+        fuzzN (uncurry5 >> fuzzToThunk fuzzer)
 
 
 {-| Run a list of tests.
@@ -259,8 +245,8 @@ uncurry5 fn ( a, b, c, d, e ) =
     fn a b c d e
 
 
-fuzzToThunk : Generator a -> (a -> Outcome) -> Options -> Outcome
-fuzzToThunk generator runAssert opts =
+fuzzToThunk : Fuzzer a -> (a -> Outcome) -> Options -> Outcome
+fuzzToThunk fuzzer runAssert opts =
     let
         seed =
             Maybe.withDefault defaults.seed opts.seed
@@ -276,14 +262,38 @@ fuzzToThunk generator runAssert opts =
 
         -- testRuns : Generator (List a)
         testRuns =
-            generator
-                |> Random.list runs
-                |> Random.map (List.map runWithInput)
+            Random.list runs fuzzer.generator
     in
-        Random.step testRuns seed
-            |> fst
-            |> List.map formatOutcome
-            |> Assert.concatOutcomes
+        if doShrink then
+            let
+                generators =
+                    -- TODO instead using runAssert alone, do some function
+                    -- that also returns whatever info shrinking needs later
+                    -- in order to only attempt to shrink failures.
+                    Random.map (List.map runAssert) testRuns
+
+                ( preliminaryResults, _ ) =
+                    Random.step generators seed
+            in
+                if List.all Assert.isSuccess preliminaryResults then
+                    Assert.succeed
+                else
+                    -- TODO do shrinking here instead of this logic!
+                    seed
+                        |> Random.step (Random.map (List.map runWithInput) testRuns)
+                        |> fst
+                        |> List.map formatOutcome
+                        |> Assert.concatOutcomes
+        else
+            let
+                generators =
+                    Random.map (List.map runWithInput) testRuns
+            in
+                seed
+                    |> Random.step generators
+                    |> fst
+                    |> List.map formatOutcome
+                    |> Assert.concatOutcomes
 
 
 formatOutcome : ( Maybe String, Outcome ) -> Outcome

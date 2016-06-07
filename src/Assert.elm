@@ -1,4 +1,4 @@
-module Assert exposing (succeed, fail, formatFailures, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Outcome)
+module Assert exposing (succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, withoutSuccesses, equal, Outcome)
 
 {-| Making assertions.
 -}
@@ -52,6 +52,11 @@ withoutSuccesses =
 concatOutcomes : List Outcome -> Outcome
 concatOutcomes =
     concatOutcomesHelp Success
+
+
+isSuccess : Outcome -> Bool
+isSuccess =
+    (==) Success
 
 
 concatOutcomesHelp : Outcome -> List Outcome -> Outcome
