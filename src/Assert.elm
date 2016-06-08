@@ -1,8 +1,8 @@
-module Assert exposing (succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, equal, Outcome)
+module Assert exposing (succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, equal, lessThan, greaterThan, Outcome)
 
 {-| Making assertions.
 
-@docs succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, equal, Outcome
+@docs succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, equal, lessThan, greaterThan, Outcome
 -}
 
 
@@ -22,6 +22,26 @@ equal { expected, actual } =
         succeed
     else
         fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
+
+
+{-| TODO: docs
+-}
+lessThan : { expected : comparable, actual : comparable } -> Outcome
+lessThan { expected, actual } =
+    if expected >= actual then
+        succeed
+    else
+        fail ("Expected: <" ++ toString expected ++ "\nActual:    " ++ toString actual)
+
+
+{-| TODO: docs
+-}
+greaterThan : { expected : comparable, actual : comparable } -> Outcome
+greaterThan { expected, actual } =
+    if expected <= actual then
+        succeed
+    else
+        fail ("Expected: >" ++ toString expected ++ "\nActual:    " ++ toString actual)
 
 
 {-| TODO docs

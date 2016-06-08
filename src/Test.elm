@@ -5,8 +5,10 @@ module Test exposing (Test, toRunners, batch, describe, it, unit, fuzz, fuzz2, f
 @docs Test, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, onFail, withRuns, withSeed, withShrink
 -}
 
+import Dict
 import Fuzzer exposing (Fuzzer)
 import Assert exposing (Outcome)
+import Shrink
 import Random.Pcg as Random exposing (Generator)
 
 
@@ -33,7 +35,7 @@ initialOptions =
 defaults : { runs : Int, doShrink : Bool, seed : Random.Seed }
 defaults =
     { runs = 100
-    , doShrink = False
+    , doShrink = True
     , seed = Random.initialSeed 42
     }
 
@@ -258,42 +260,52 @@ fuzzToThunk fuzzer runAssert opts =
             Maybe.withDefault defaults.doShrink opts.doShrink
 
         runWithInput val =
-            ( Just (toString val), runAssert val )
+            let
+                outcome =
+                    runAssert val
+
+                shrunkenVal =
+                    if doShrink && not (Assert.isSuccess outcome) then
+                        Shrink.shrink (runAssert >> Assert.isSuccess >> not) fuzzer.shrinker val
+                    else
+                        val
+
+                shrunkenOutcome =
+                    if doShrink then
+                        runAssert shrunkenVal
+                    else
+                        outcome
+            in
+                ( Just (toString shrunkenVal), shrunkenOutcome )
 
         -- testRuns : Generator (List a)
         testRuns =
             Random.list runs fuzzer.generator
-    in
-        if doShrink then
-            let
-                generators =
-                    -- TODO instead using runAssert alone, do some function
-                    -- that also returns whatever info shrinking needs later
-                    -- in order to only attempt to shrink failures.
-                    Random.map (List.map runAssert) testRuns
 
-                ( preliminaryResults, _ ) =
-                    Random.step generators seed
-            in
-                if List.all Assert.isSuccess preliminaryResults then
-                    Assert.succeed
-                else
-                    -- TODO do shrinking here instead of this logic!
-                    seed
-                        |> Random.step (Random.map (List.map runWithInput) testRuns)
-                        |> fst
-                        |> List.map formatOutcome
-                        |> Assert.concatOutcomes
-        else
-            let
-                generators =
-                    Random.map (List.map runWithInput) testRuns
-            in
-                seed
-                    |> Random.step generators
-                    |> fst
-                    |> List.map formatOutcome
-                    |> Assert.concatOutcomes
+        generators =
+            Random.map (List.map runWithInput) testRuns
+
+        dedupe pairs =
+            pairs
+                |> List.map (\( mk, v ) -> ( Maybe.withDefault "" mk, v ))
+                |> Dict.fromList
+                |> Dict.toList
+                |> List.map
+                    (\( s, v ) ->
+                        ( if s == "" then
+                            Nothing
+                          else
+                            Just s
+                        , v
+                        )
+                    )
+    in
+        seed
+            |> Random.step generators
+            |> fst
+            |> dedupe
+            |> List.map formatOutcome
+            |> Assert.concatOutcomes
 
 
 formatOutcome : ( Maybe String, Outcome ) -> Outcome

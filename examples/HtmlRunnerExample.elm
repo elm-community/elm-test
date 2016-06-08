@@ -7,6 +7,7 @@ $ elm-reactor
 Visit http://localhost:8000 and bring up this file.
 -}
 
+import String
 import Assert
 import Test exposing (..)
 import Test.Runner.Html
@@ -59,6 +60,7 @@ tests =
         , failFuzzSuite
         , actualFuzzSuite
         , fuzzSuite
+        , shrinkableSuite
         ]
 
 
@@ -201,6 +203,43 @@ oxfordifySuite =
                     Assert.equal
                     { expected = "This sentence contains one item, two item, and three item."
                     , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
+                    }
+            ]
+        ]
+
+
+shrinkableSuite : Test
+shrinkableSuite =
+    describe "Some tests that should fail and produce shrunken values"
+        Test.batch
+        [ describe "tests on one integer"
+            (fuzz Fuzzer.int)
+            [ \i ->
+                it "Every integer is 0"
+                    Assert.equal
+                    { expected = 0
+                    , actual = i
+                    }
+            , \i ->
+                it "Every integer is <42"
+                    Assert.lessThan
+                    { expected = 42
+                    , actual = i
+                    }
+            , \i ->
+                it "Every integer is >42"
+                    Assert.greaterThan
+                    { expected = 42
+                    , actual = i
+                    }
+            ]
+        , describe "tests on one string"
+            (fuzz Fuzzer.string)
+            [ \s ->
+                it "Every string equals its reverse"
+                    Assert.equal
+                    { expected = s
+                    , actual = String.reverse s
                     }
             ]
         ]
