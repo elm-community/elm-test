@@ -1,10 +1,10 @@
 module Test.Runner.Log exposing (run)
 
-import Test exposing (Test)
+import Test exposing (Suite)
 import Html
 import Html.App
 import Random.Pcg as Random
-import Assert exposing (Outcome)
+import Assert exposing (Test)
 import String
 
 
@@ -17,7 +17,7 @@ randomSeed =
     Random.initialSeed 42
 
 
-toOutput : (() -> Outcome) -> ( String, Int ) -> ( String, Int )
+toOutput : (() -> Test) -> ( String, Int ) -> ( String, Int )
 toOutput thunk ( output, failureCount ) =
     case Assert.toFailures (thunk ()) of
         Just failures ->
@@ -58,11 +58,11 @@ outputFailures { messages, context } =
             |> String.join "\n"
 
 
-run : Test -> Program Never
-run test =
+run : Suite -> Program Never
+run suite =
     let
         runners =
-            Test.toRunners randomSeed test
+            Test.toRunners randomSeed suite
 
         ( output, failureCount ) =
             List.foldl toOutput ( "", 0 ) runners
@@ -70,13 +70,13 @@ run test =
         _ =
             if failureCount > 0 then
                 output
-                    ++ (toString failureCount ++ " TESTS FAILED!\n\nExit code")
+                    ++ (toString failureCount ++ " SuiteS FAILED!\n\nExit code")
                     |> (flip Debug.log 1)
-                    |> (\_ -> Debug.crash "FAILED TEST RUN")
+                    |> (\_ -> Debug.crash "FAILED Suite RUN")
                     |> (\_ -> ())
             else
                 output
-                    ++ "ALL TESTS PASSED!\n\nExit code"
+                    ++ "ALL SuiteS PASSED!\n\nExit code"
                     |> (flip Debug.log 0)
                     |> (\_ -> ())
     in

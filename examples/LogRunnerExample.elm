@@ -15,22 +15,22 @@ import Test.Runner.Log
 
 main : Program Never
 main =
-    Test.Runner.Log.run tests
+    Test.Runner.Log.run suites
 
 
-tests : Test
-tests =
+suites : Suite
+suites =
     Test.batch [ oxfordifySuite ]
 
 
-{-| stubbed function under test
+{-| stubbed function under Suite
 -}
 oxfordify : a -> b -> c -> String
 oxfordify _ _ _ =
     "Alice, Bob, and Claire"
 
 
-oxfordifySuite : Test
+oxfordifySuite : Suite
 oxfordifySuite =
     describe "oxfordify"
         Test.batch

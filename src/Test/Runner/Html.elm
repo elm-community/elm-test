@@ -1,7 +1,7 @@
 module Test.Runner.Html exposing (run)
 
-import Test exposing (Test)
-import Assert exposing (Outcome)
+import Test exposing (Suite)
+import Assert exposing (Test)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Dict exposing (Dict)
@@ -16,10 +16,10 @@ type alias TestId =
 
 
 type alias Model =
-    { available : Dict TestId (() -> Outcome)
+    { available : Dict TestId (() -> Test)
     , running : Set TestId
     , queue : List TestId
-    , completed : List Outcome
+    , completed : List Test
     }
 
 
@@ -72,12 +72,12 @@ view model =
         summary =
             if isFinished then
                 if List.isEmpty failures then
-                    h2 [ style [ ( "color", "darkgreen" ) ] ] [ text "All tests passed!" ]
+                    h2 [ style [ ( "color", "darkgreen" ) ] ] [ text "All Suites passed!" ]
                 else
-                    h2 [ style [ ( "color", "hsla(3, 100%, 40%, 1.0)" ) ] ] [ text (toString (List.length failures) ++ " of " ++ toString completedCount ++ " Tests Failed:") ]
+                    h2 [ style [ ( "color", "hsla(3, 100%, 40%, 1.0)" ) ] ] [ text (toString (List.length failures) ++ " of " ++ toString completedCount ++ " Suites Failed:") ]
             else
                 div []
-                    [ h2 [] [ text "Running Tests..." ]
+                    [ h2 [] [ text "Running Suites..." ]
                     , div [] [ text (toString completedCount ++ " completed") ]
                     , div [] [ text (toString remainingCount ++ " remaining") ]
                     ]
@@ -88,19 +88,19 @@ view model =
         remainingCount =
             List.length (Dict.keys model.available)
 
-        failures : List Outcome
+        failures : List Test
         failures =
             List.filter (not << Assert.isSuccess) model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
-            , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (List.map viewOutcome failures)
+            , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (List.map viewTest failures)
             ]
 
 
-viewOutcome : Outcome -> Html a
-viewOutcome outcome =
-    case Assert.toFailures outcome of
+viewTest : Test -> Html a
+viewTest Test =
+    case Assert.toFailures Test of
         Just failures ->
             li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failures)
 
@@ -124,13 +124,13 @@ update msg model =
             case model.queue of
                 [] ->
                     ( model, Cmd.none )
-                        |> warn "Attempted to Dispatch when all tests completed!"
+                        |> warn "Attempted to Dispatch when all Suites completed!"
 
-                testId :: newQueue ->
-                    case Dict.get testId model.available of
+                TestId :: newQueue ->
+                    case Dict.get TestId model.available of
                         Nothing ->
                             ( model, Cmd.none )
-                                |> warn ("Could not find testId " ++ toString testId)
+                                |> warn ("Could not find TestId " ++ toString TestId)
 
                         Just run ->
                             let
@@ -138,7 +138,7 @@ update msg model =
                                     model.completed ++ [ run () ]
 
                                 available =
-                                    Dict.remove testId model.available
+                                    Dict.remove TestId model.available
 
                                 newModel =
                                     { model
@@ -148,7 +148,7 @@ update msg model =
                                     }
 
                                 {- Dispatch as a Cmd so as to yield to the UI
-                                   thread in between test executions.
+                                   thread in between Suite executions.
                                 -}
                             in
                                 ( newModel, dispatch )
@@ -160,10 +160,10 @@ dispatch =
         |> Task.perform identity identity
 
 
-init : List (() -> Outcome) -> ( Model, Cmd Msg )
+init : List (() -> Test) -> ( Model, Cmd Msg )
 init thunks =
     let
-        indexedThunks : List ( TestId, () -> Outcome )
+        indexedThunks : List ( TestId, () -> Test )
         indexedThunks =
             List.indexedMap (,) thunks
 
@@ -177,10 +177,10 @@ init thunks =
         ( model, dispatch )
 
 
-run : Test -> Program Never
-run test =
-    Test.Runner.run
-        { test = test
+run : Suite -> Program Never
+run Suite =
+    Suite.Runner.run
+        { Suite = Suite
         , init = init
         , update = update
         , view = view

@@ -33,7 +33,7 @@ usuallyFoo =
         Shrink.string
 
 
-actualFuzzSuite : Test
+actualFuzzSuite : Suite
 actualFuzzSuite =
     describe "actual fuzz suite"
         (Test.fuzz usuallyFoo)
@@ -48,11 +48,11 @@ actualFuzzSuite =
 
 main : Program Never
 main =
-    Test.Runner.Html.run tests
+    Suite.Runner.Html.run Suites
 
 
-tests : Test
-tests =
+Suites : Suite
+Suites =
     Test.batch
         [ oxfordifySuite
         , plainAssertion
@@ -64,7 +64,7 @@ tests =
         ]
 
 
-plainAssertion : Test
+plainAssertion : Suite
 plainAssertion =
     Test.unit
         [ \_ ->
@@ -75,7 +75,7 @@ plainAssertion =
         ]
 
 
-assertionSuite : Test
+assertionSuite : Suite
 assertionSuite =
     describe "basic assertions"
         Test.batch
@@ -110,7 +110,7 @@ assertionSuite =
 {- After this point, we're really just showing that Richard's proposed API compiles. -}
 
 
-{-| stubbed function under test
+{-| stubbed function under Suite
 -}
 oxfordify : a -> b -> c -> String
 oxfordify _ _ _ =
@@ -125,7 +125,7 @@ string =
         Shrink.string
 
 
-fuzzSuite : Test
+fuzzSuite : Suite
 fuzzSuite =
     describe "fuzz suite"
         (Test.fuzz2 string string)
@@ -155,7 +155,7 @@ fuzzSuite =
         ]
 
 
-failFuzzSuite : Test
+failFuzzSuite : Suite
 failFuzzSuite =
     describe "the first element in this fuzz tuple"
         (fuzz2 string string)
@@ -168,7 +168,7 @@ failFuzzSuite =
         ]
 
 
-oxfordifySuite : Test
+oxfordifySuite : Suite
 oxfordifySuite =
     describe "oxfordify"
         Test.batch
@@ -208,11 +208,11 @@ oxfordifySuite =
         ]
 
 
-shrinkableSuite : Test
+shrinkableSuite : Suite
 shrinkableSuite =
-    describe "Some tests that should fail and produce shrunken values"
+    describe "Some Suites that should fail and produce shrunken values"
         Test.batch
-        [ describe "tests on one integer"
+        [ describe "Suites on one integer"
             (fuzz Fuzzer.int)
             [ \i ->
                 it "Every integer is 0"
@@ -233,7 +233,7 @@ shrinkableSuite =
                     , lesser = i
                     }
             ]
-        , describe "tests on one string"
+        , describe "Suites on one string"
             (fuzz Fuzzer.string)
             [ \s ->
                 it "Every string equals its reverse"

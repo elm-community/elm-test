@@ -1,7 +1,7 @@
 module Test.Runner exposing (run)
 
-import Test exposing (Test)
-import Assert exposing (Outcome)
+import Test exposing (Suite)
+import Assert exposing (Test)
 import Html exposing (Html, text)
 import Html.App
 import Task
@@ -15,12 +15,12 @@ type Msg subMsg
 
 
 type Model subMsg subModel
-    = Uninitialized (SubUpdate subMsg subModel) Test (List (() -> Outcome) -> ( subModel, Cmd subMsg ))
+    = Uninitialized (SubUpdate subMsg subModel) Suite (List (() -> Test) -> ( subModel, Cmd subMsg ))
     | Initialized (SubUpdate subMsg subModel) subModel
 
 
-getInitialSeed : Test -> Cmd (Msg a)
-getInitialSeed test =
+getInitialSeed : Cmd (Msg a)
+getInitialSeed =
     Time.now
         |> Task.perform fromNever (\time -> Init (Just (timeToSeed time)))
 
@@ -40,15 +40,15 @@ fromNever a =
 initOrUpdate : Msg subMsg -> Model subMsg subModel -> ( Model subMsg subModel, Cmd (Msg subMsg) )
 initOrUpdate msg maybeModel =
     case maybeModel of
-        Uninitialized update test init ->
+        Uninitialized update suite init ->
             case msg of
                 Init Nothing ->
-                    ( Uninitialized update test init, getInitialSeed test )
+                    ( Uninitialized update suite init, getInitialSeed )
 
                 Init (Just seed) ->
                     let
                         ( subModel, subCmd ) =
-                            init (Test.toRunners seed test)
+                            init (Test.toRunners seed suite)
                     in
                         ( Initialized update subModel, Cmd.map SubMsg subCmd )
 
@@ -89,8 +89,8 @@ type alias SubUpdate msg model =
 
 
 type alias RunnerOptions msg model =
-    { test : Test
-    , init : List (() -> Outcome) -> ( model, Cmd msg )
+    { suite : Suite
+    , init : List (() -> Test) -> ( model, Cmd msg )
     , update : SubUpdate msg model
     , view : model -> Html msg
     , subscriptions : model -> Sub msg
@@ -110,7 +110,7 @@ subscriptions subs model =
 run : RunnerOptions msg model -> Program Never
 run opts =
     Html.App.program
-        { init = ( Uninitialized opts.update opts.test opts.init, initCmd )
+        { init = ( Uninitialized opts.update opts.suite opts.init, initCmd )
         , update = initOrUpdate
         , view = initOrView opts.view
         , subscriptions = subscriptions opts.subscriptions

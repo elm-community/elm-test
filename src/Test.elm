@@ -1,18 +1,18 @@
-module Test exposing (Test, toRunners, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, onFail, withRuns, withSeed, withShrink)
+module Test exposing (Suite, toRunners, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, onFail, withRuns, withSeed, withShrink)
 
 {-|
 
-@docs Test, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, onFail, withRuns, withSeed, withShrink
+@docs Suite, batch, describe, it, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, toRunners, onFail, withRuns, withSeed, withShrink
 -}
 
 import Dict
 import Fuzzer exposing (Fuzzer)
-import Assert exposing (Outcome)
+import Assert exposing (Test)
 import Shrink
 import Random.Pcg as Random exposing (Generator)
 
 
--- none of the types below will be exported, except Test which will be opaque
+-- none of the types below will be exported, except Suite which will be opaque
 
 
 type alias Options =
@@ -40,86 +40,86 @@ defaults =
     }
 
 
-{-| A Test is either
-   * A list of thunks, each of which returns an Outcome
-   * A batch of these tests
+{-| A Suite is either
+   * A list of thunks, each of which returns an Test
+   * A batch of these Suites
 -}
-type Test
-    = Assertions Options (List (Options -> Outcome))
-    | Batch (List Test)
+type Suite
+    = Assertions Options (List (Options -> Test))
+    | Batch (List Suite)
 
 
-{-| Turn a `Test` into a list of thunks that can be run to produce outcomes.
+{-| Turn a `Suite` into a list of thunks that can be run to produce Tests.
 -}
-toRunners : Random.Seed -> Test -> List (() -> Outcome)
-toRunners seed test =
-    case test of
+toRunners : Random.Seed -> Suite -> List (() -> Test)
+toRunners seed suite =
+    case suite of
         Assertions opts thunks ->
-            List.map (toOutcome seed opts) thunks
+            List.map (toTest seed opts) thunks
 
-        Batch tests ->
-            List.concatMap (toRunners seed) tests
+        Batch suites ->
+            List.concatMap (toRunners seed) suites
 
 
-toOutcome : Random.Seed -> Options -> (Options -> Outcome) -> () -> Outcome
-toOutcome seed opts getAssertion _ =
+toTest : Random.Seed -> Options -> (Options -> Test) -> () -> Test
+toTest seed opts getAssertion _ =
     let
-        outcome =
+        test =
             getAssertion { opts | seed = Maybe.oneOf [ opts.seed, Just seed ] }
     in
-        List.foldr Assert.addContext outcome opts.onFail
+        List.foldr Assert.addContext test opts.onFail
 
 
 {-| TODO: docs
 -}
-onFail : String -> Outcome -> Outcome
-onFail str outcome =
-    Assert.formatFailures (\_ -> str) outcome
+onFail : String -> Test -> Test
+onFail str =
+    Assert.formatFailures (\_ -> str)
 
 
 {-| TODO: docs
 -}
-it : String -> (a -> Outcome) -> a -> Outcome
-it str getOutcome arg =
-    Assert.addContext str (getOutcome arg)
+it : String -> (a -> Test) -> a -> Test
+it str getTest arg =
+    Assert.addContext str (getTest arg)
 
 
 {-| TODO: docs
 -}
-withRuns : Int -> Test -> Test
+withRuns : Int -> Suite -> Suite
 withRuns runs =
     mapOptions (\opts -> { opts | runs = Maybe.oneOf [ opts.runs, Just runs ] })
 
 
 {-| TODO: docs
 -}
-withSeed : Random.Seed -> Test -> Test
+withSeed : Random.Seed -> Suite -> Suite
 withSeed seed =
     mapOptions (\opts -> { opts | seed = Maybe.oneOf [ opts.seed, Just seed ] })
 
 
 {-| TODO: docs
 -}
-withShrink : Bool -> Test -> Test
+withShrink : Bool -> Suite -> Suite
 withShrink doShrink =
     mapOptions (\opts -> { opts | doShrink = Maybe.oneOf [ opts.doShrink, Just doShrink ] })
 
 
-mapOptions : (Options -> Options) -> Test -> Test
-mapOptions translate test =
-    case test of
+mapOptions : (Options -> Options) -> Suite -> Suite
+mapOptions translate suite =
+    case suite of
         Assertions opts thunks ->
             Assertions (translate opts) thunks
 
-        Batch tests ->
-            tests
+        Batch suites ->
+            suites
                 |> List.map (mapOptions translate)
                 |> Batch
 
 
 {-| TODO: docs
 -}
-unit : List (() -> Outcome) -> Test
+unit : List (() -> Test) -> Suite
 unit fns =
     fns
         |> List.map (\fn -> (\_ -> fn ()))
@@ -139,10 +139,10 @@ initialUnitOptions =
 -}
 fuzz :
     Fuzzer a
-    -> List (a -> Outcome)
-    -> Test
-fuzz fuzzer fuzzTests =
-    Assertions initialOptions (List.map (fuzzToThunk fuzzer) fuzzTests)
+    -> List (a -> Test)
+    -> Suite
+fuzz fuzzer fuzzSuites =
+    Assertions initialOptions (List.map (fuzzToThunk fuzzer) fuzzSuites)
 
 
 {-| TODO docs
@@ -150,8 +150,8 @@ fuzz fuzzer fuzzTests =
 fuzz2 :
     Fuzzer a
     -> Fuzzer b
-    -> List (a -> b -> Outcome)
-    -> Test
+    -> List (a -> b -> Test)
+    -> Suite
 fuzz2 fuzzA fuzzB =
     let
         fuzzer =
@@ -166,8 +166,8 @@ fuzz3 :
     Fuzzer a
     -> Fuzzer b
     -> Fuzzer c
-    -> List (a -> b -> c -> Outcome)
-    -> Test
+    -> List (a -> b -> c -> Test)
+    -> Suite
 fuzz3 fuzzA fuzzB fuzzC =
     let
         fuzzer =
@@ -183,8 +183,8 @@ fuzz4 :
     -> Fuzzer b
     -> Fuzzer c
     -> Fuzzer d
-    -> List (a -> b -> c -> d -> Outcome)
-    -> Test
+    -> List (a -> b -> c -> d -> Test)
+    -> Suite
 fuzz4 fuzzA fuzzB fuzzC fuzzD =
     let
         fuzzer =
@@ -201,8 +201,8 @@ fuzz5 :
     -> Fuzzer c
     -> Fuzzer d
     -> Fuzzer e
-    -> List (a -> b -> c -> d -> e -> Outcome)
-    -> Test
+    -> List (a -> b -> c -> d -> e -> Test)
+    -> Suite
 fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE =
     let
         fuzzer =
@@ -211,20 +211,20 @@ fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE =
         fuzzN (uncurry5 >> fuzzToThunk fuzzer)
 
 
-{-| Run a list of tests.
+{-| Run a list of Suites.
 
-See [`describe`](#describe) for running tests with a descriptive string.
+See [`describe`](#describe) for running Suites with a descriptive string.
 -}
-batch : List Test -> Test
+batch : List Suite -> Suite
 batch =
     Batch
 
 
-{-| Run a test and associate the given description.
+{-| Run a Suite and associate the given description.
 -}
-describe : String -> (a -> Test) -> a -> Test
-describe desc getTest arg =
-    mapOptions (prependFail desc) (getTest arg)
+describe : String -> (a -> Suite) -> a -> Suite
+describe desc getSuite arg =
+    mapOptions (prependFail desc) (getSuite arg)
 
 
 prependFail : String -> Options -> Options
@@ -247,7 +247,7 @@ uncurry5 fn ( a, b, c, d, e ) =
     fn a b c d e
 
 
-fuzzToThunk : Fuzzer a -> (a -> Outcome) -> Options -> Outcome
+fuzzToThunk : Fuzzer a -> (a -> Test) -> Options -> Test
 fuzzToThunk fuzzer runAssert opts =
     let
         seed =
@@ -261,22 +261,22 @@ fuzzToThunk fuzzer runAssert opts =
 
         runWithInput val =
             let
-                outcome =
+                test =
                     runAssert val
 
                 shrunkenVal =
-                    if doShrink && not (Assert.isSuccess outcome) then
+                    if doShrink && not (Assert.isSuccess test) then
                         Shrink.shrink (runAssert >> Assert.isSuccess >> not) fuzzer.shrinker val
                     else
                         val
 
-                shrunkenOutcome =
+                shrunkenTest =
                     if doShrink then
                         runAssert shrunkenVal
                     else
-                        outcome
+                        test
             in
-                ( Just (toString shrunkenVal), shrunkenOutcome )
+                ( Just (toString shrunkenVal), shrunkenTest )
 
         -- testRuns : Generator (List a)
         testRuns =
@@ -304,13 +304,13 @@ fuzzToThunk fuzzer runAssert opts =
             |> Random.step generators
             |> fst
             |> dedupe
-            |> List.map formatOutcome
-            |> Assert.concatOutcomes
+            |> List.map formatTest
+            |> Assert.concatTests
 
 
-formatOutcome : ( Maybe String, Outcome ) -> Outcome
-formatOutcome ( input, outcome ) =
-    Assert.formatFailures (prependInput input) outcome
+formatTest : ( Maybe String, Test ) -> Test
+formatTest ( input, test ) =
+    Assert.formatFailures (prependInput input) test
 
 
 prependInput : Maybe String -> String -> String
@@ -323,8 +323,8 @@ prependInput input original =
             "Input: " ++ str ++ "\n\n" ++ original
 
 
-fuzzN : (a -> Options -> Outcome) -> List a -> Test
-fuzzN fn fuzzTests =
-    fuzzTests
+fuzzN : (a -> Options -> Test) -> List a -> Suite
+fuzzN fn fuzzSuites =
+    fuzzSuites
         |> List.map fn
         |> Assertions initialOptions

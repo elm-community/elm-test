@@ -1,14 +1,14 @@
-module Assert exposing (succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, equal, lessThan, greaterThan, Outcome)
+module Assert exposing (succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatTests, equal, lessThan, greaterThan, Test)
 
 {-| Making assertions.
 
-@docs succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatOutcomes, equal, lessThan, greaterThan, Outcome
+@docs succeed, fail, isSuccess, formatFailures, addContext, toFailures, concatTests, equal, lessThan, greaterThan, Test
 -}
 
 
-{-| The outcome from running a single test.
+{-| The Test from running a single Suite.
 -}
-type Outcome
+type Test
     = Success
       -- TODO keep context around for success
     | Failure { messages : List String, context : List String }
@@ -16,7 +16,7 @@ type Outcome
 
 {-| TODO: docs
 -}
-equal : { expected : a, actual : a } -> Outcome
+equal : { expected : a, actual : a } -> Test
 equal { expected, actual } =
     if expected == actual then
         succeed
@@ -26,14 +26,14 @@ equal { expected, actual } =
 
 {-| TODO: docs
 -}
-lessThan : { lesser : comparable, greater : comparable } -> Outcome
+lessThan : { lesser : comparable, greater : comparable } -> Test
 lessThan =
     greaterThan
 
 
 {-| TODO: docs
 -}
-greaterThan : { lesser : comparable, greater : comparable } -> Outcome
+greaterThan : { lesser : comparable, greater : comparable } -> Test
 greaterThan { lesser, greater } =
     if lesser < greater then
         succeed
@@ -43,7 +43,7 @@ greaterThan { lesser, greater } =
 
 {-| TODO docs
 -}
-notEqual : a -> a -> Outcome
+notEqual : a -> a -> Test
 notEqual first second =
     if first == second then
         fail ("Expected different values, but both were:\n\n" ++ toString first)
@@ -53,23 +53,23 @@ notEqual first second =
 
 {-| TODO docs
 -}
-fail : String -> Outcome
+fail : String -> Test
 fail str =
     Failure { messages = [ str ], context = [] }
 
 
 {-| TODO docs
 -}
-succeed : Outcome
+succeed : Test
 succeed =
     Success
 
 
 {-| In the event of success, returns [].
 -}
-toFailures : Outcome -> Maybe { messages : List String, context : List String }
-toFailures outcome =
-    case outcome of
+toFailures : Test -> Maybe { messages : List String, context : List String }
+toFailures test =
+    case test of
         Success ->
             Nothing
 
@@ -79,26 +79,26 @@ toFailures outcome =
 
 {-| TODO docs
 -}
-concatOutcomes : List Outcome -> Outcome
-concatOutcomes =
-    concatOutcomesHelp Success
+concatTests : List Test -> Test
+concatTests =
+    concatTestsHelp Success
 
 
 {-| TODO docs
 -}
-isSuccess : Outcome -> Bool
+isSuccess : Test -> Bool
 isSuccess =
     (==) Success
 
 
-concatOutcomesHelp : Outcome -> List Outcome -> Outcome
-concatOutcomesHelp result outcomes =
-    case outcomes of
+concatTestsHelp : Test -> List Test -> Test
+concatTestsHelp result tests =
+    case tests of
         [] ->
             result
 
         Success :: rest ->
-            concatOutcomesHelp result rest
+            concatTestsHelp result rest
 
         ((Failure record) as currentFailure) :: rest ->
             let
@@ -112,14 +112,14 @@ concatOutcomesHelp result outcomes =
                         Success ->
                             currentFailure
             in
-                concatOutcomesHelp newFailure rest
+                concatTestsHelp newFailure rest
 
 
 {-| TODO docs
 -}
-addContext : String -> Outcome -> Outcome
-addContext str outcome =
-    case outcome of
+addContext : String -> Test -> Test
+addContext str test =
+    case test of
         Success ->
             Success
 
@@ -129,11 +129,11 @@ addContext str outcome =
 
 {-| TODO docs
 -}
-formatFailures : (String -> String) -> Outcome -> Outcome
-formatFailures format outcome =
-    case outcome of
+formatFailures : (String -> String) -> Test -> Test
+formatFailures format test =
+    case test of
         Failure record ->
             Failure { record | messages = List.map format record.messages }
 
         Success ->
-            outcome
+            test
