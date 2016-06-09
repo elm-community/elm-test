@@ -46,6 +46,16 @@ greaterThan { expected, actual } =
 
 {-| TODO docs
 -}
+notEqual : a -> a -> Outcome
+notEqual first second =
+    if first == second then
+        fail ("Expected different values, but both were:\n\n" ++ toString first)
+    else
+        succeed
+
+
+{-| TODO docs
+-}
 fail : String -> Outcome
 fail str =
     Failure { messages = [ str ], context = [] }
