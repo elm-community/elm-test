@@ -37,9 +37,9 @@ greaterThan { lesser, greater } =
 
 {-| TODO docs
 -}
-notEqual : a -> a -> Test
-notEqual first second =
-    if first == second then
-        Test.fail ("Expected different values, but both were:\n\n" ++ toString first)
+notEqual : { actual : a, not : a } -> Test
+notEqual record =
+    if record.actual == record.not then
+        Test.fail ("Expected different values, but both were:\n\n" ++ toString record.actual)
     else
         Test.succeed
