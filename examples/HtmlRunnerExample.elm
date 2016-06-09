@@ -223,14 +223,14 @@ shrinkableSuite =
             , \i ->
                 it "Every integer is <42"
                     Assert.lessThan
-                    { expected = 42
-                    , actual = i
+                    { greater = 42
+                    , lesser = i
                     }
             , \i ->
                 it "Every integer is >42"
                     Assert.greaterThan
-                    { expected = 42
-                    , actual = i
+                    { greater = 42
+                    , lesser = i
                     }
             ]
         , describe "tests on one string"

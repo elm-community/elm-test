@@ -26,22 +26,19 @@ equal { expected, actual } =
 
 {-| TODO: docs
 -}
-lessThan : { expected : comparable, actual : comparable } -> Outcome
-lessThan { expected, actual } =
-    if expected >= actual then
-        succeed
-    else
-        fail ("Expected: <" ++ toString expected ++ "\nActual:    " ++ toString actual)
+lessThan : { lesser : comparable, greater : comparable } -> Outcome
+lessThan =
+    greaterThan
 
 
 {-| TODO: docs
 -}
-greaterThan : { expected : comparable, actual : comparable } -> Outcome
-greaterThan { expected, actual } =
-    if expected <= actual then
+greaterThan : { lesser : comparable, greater : comparable } -> Outcome
+greaterThan { lesser, greater } =
+    if lesser < greater then
         succeed
     else
-        fail ("Expected: >" ++ toString expected ++ "\nActual:    " ++ toString actual)
+        fail ("Expected Greater: " ++ toString greater ++ "\nExpected Lesser:  " ++ toString lesser)
 
 
 {-| TODO docs
