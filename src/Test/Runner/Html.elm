@@ -1,7 +1,7 @@
 module Test.Runner.Html exposing (run)
 
-import Test exposing (Suite)
-import Assert exposing (Test)
+import Suite exposing (Suite)
+import Test exposing (Test)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Dict exposing (Dict)
@@ -90,7 +90,7 @@ view model =
 
         failures : List Test
         failures =
-            List.filter (not << Assert.isSuccess) model.completed
+            List.filter ((/=) Test.succeed) model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
@@ -99,8 +99,8 @@ view model =
 
 
 viewTest : Test -> Html a
-viewTest Test =
-    case Assert.toFailures Test of
+viewTest test =
+    case Test.toFailures test of
         Just failures ->
             li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failures)
 
@@ -126,11 +126,11 @@ update msg model =
                     ( model, Cmd.none )
                         |> warn "Attempted to Dispatch when all Suites completed!"
 
-                TestId :: newQueue ->
-                    case Dict.get TestId model.available of
+                testId :: newQueue ->
+                    case Dict.get testId model.available of
                         Nothing ->
                             ( model, Cmd.none )
-                                |> warn ("Could not find TestId " ++ toString TestId)
+                                |> warn ("Could not find testId " ++ toString testId)
 
                         Just run ->
                             let
@@ -138,7 +138,7 @@ update msg model =
                                     model.completed ++ [ run () ]
 
                                 available =
-                                    Dict.remove TestId model.available
+                                    Dict.remove testId model.available
 
                                 newModel =
                                     { model
@@ -178,9 +178,9 @@ init thunks =
 
 
 run : Suite -> Program Never
-run Suite =
-    Suite.Runner.run
-        { Suite = Suite
+run suite =
+    Test.Runner.run
+        { suite = suite
         , init = init
         , update = update
         , view = view

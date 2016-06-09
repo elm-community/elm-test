@@ -1,7 +1,7 @@
 module Test.Runner exposing (run)
 
-import Test exposing (Suite)
-import Assert exposing (Test)
+import Suite exposing (Suite)
+import Test exposing (Test)
 import Html exposing (Html, text)
 import Html.App
 import Task
@@ -48,7 +48,7 @@ initOrUpdate msg maybeModel =
                 Init (Just seed) ->
                     let
                         ( subModel, subCmd ) =
-                            init (Test.toRunners seed suite)
+                            init (Suite.toRunners seed suite)
                     in
                         ( Initialized update subModel, Cmd.map SubMsg subCmd )
 

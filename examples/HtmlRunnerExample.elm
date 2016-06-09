@@ -9,7 +9,8 @@ Visit http://localhost:8000 and bring up this file.
 
 import String
 import Assert
-import Test exposing (..)
+import Test exposing (it, failWith)
+import Suite exposing (..)
 import Test.Runner.Html
 import Fuzzer exposing (Fuzzer)
 import Random.Pcg as Random
@@ -36,24 +37,24 @@ usuallyFoo =
 actualFuzzSuite : Suite
 actualFuzzSuite =
     describe "actual fuzz suite"
-        (Test.fuzz usuallyFoo)
+        (Suite.fuzz usuallyFoo)
         [ \shouldBeFoo ->
             { expected = "foo"
             , actual = shouldBeFoo
             }
                 |> Assert.equal
-                |> onFail "It wasn't \"foo\"."
+                |> failWith "It wasn't \"foo\"."
         ]
 
 
 main : Program Never
 main =
-    Suite.Runner.Html.run Suites
+    Test.Runner.Html.run suites
 
 
-Suites : Suite
-Suites =
-    Test.batch
+suites : Suite
+suites =
+    Suite.batch
         [ oxfordifySuite
         , plainAssertion
         , assertionSuite
@@ -66,7 +67,7 @@ Suites =
 
 plainAssertion : Suite
 plainAssertion =
-    Test.unit
+    Suite.unit
         [ \_ ->
             { expected = "no description"
             , actual = "whatsoever!"
@@ -78,9 +79,9 @@ plainAssertion =
 assertionSuite : Suite
 assertionSuite =
     describe "basic assertions"
-        Test.batch
+        Suite.batch
         [ describe "this should succeed"
-            Test.unit
+            Suite.unit
             [ \_ ->
                 { expected = ()
                 , actual = ()
@@ -88,14 +89,14 @@ assertionSuite =
                     |> Assert.equal
             ]
         , describe "this should fail"
-            Test.unit
+            Suite.unit
             [ \_ ->
                 { expected = "something"
                 , actual = "someting else"
                 }
                     |> Assert.equal
             ]
-        , Test.unit
+        , Suite.unit
             [ \_ ->
                 { expected = "forty-two"
                 , actual = "forty-three"
@@ -128,13 +129,13 @@ string =
 fuzzSuite : Suite
 fuzzSuite =
     describe "fuzz suite"
-        (Test.fuzz2 string string)
+        (Suite.fuzz2 string string)
         [ \name punctuation ->
             { expected = ""
             , actual = oxfordify "This sentence is empty" "." []
             }
                 |> Assert.equal
-                |> onFail "given an empty list, did not return an empty string"
+                |> failWith "given an empty list, did not return an empty string"
         , \name punctuation ->
             { expected = "This sentence contains one item."
             , actual = oxfordify "This sentence contains " "." [ "one item" ]
@@ -145,13 +146,13 @@ fuzzSuite =
             , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
             }
                 |> Assert.equal
-                |> onFail "given an empty list, did not return an empty string"
+                |> failWith "given an empty list, did not return an empty string"
         , \name punctuation ->
             { expected = "This sentence contains one item, two item, and three item."
             , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
             }
                 |> Assert.equal
-                |> onFail "given a list of length 3, did not return an oxford-style sentence"
+                |> failWith "given a list of length 3, did not return an oxford-style sentence"
         ]
 
 
@@ -161,49 +162,49 @@ failFuzzSuite =
         (fuzz2 string string)
         [ \str1 str2 ->
             it "is always \"foo\""
-                Assert.equal
-                { expected = "foo"
-                , actual = str1
-                }
+                <| Assert.equal
+                    { expected = "foo"
+                    , actual = str1
+                    }
         ]
 
 
 oxfordifySuite : Suite
 oxfordifySuite =
     describe "oxfordify"
-        Test.batch
+        Suite.batch
         [ describe "given an empty sentence"
-            Test.unit
+            Suite.unit
             [ \_ ->
                 it "returns an empty string"
-                    Assert.equal
-                    { expected = ""
-                    , actual = oxfordify "This sentence is empty" "." []
-                    }
+                    <| Assert.equal
+                        { expected = ""
+                        , actual = oxfordify "This sentence is empty" "." []
+                        }
             ]
         , describe "given a sentence with one item"
-            Test.unit
+            Suite.unit
             [ \_ ->
                 it "still contains one item"
-                    Assert.equal
-                    { expected = "This sentence contains one item."
-                    , actual = oxfordify "This sentence contains " "." [ "one item" ]
-                    }
+                    <| Assert.equal
+                        { expected = "This sentence contains one item."
+                        , actual = oxfordify "This sentence contains " "." [ "one item" ]
+                        }
             ]
         , describe "given a sentence with multiple items"
-            Test.unit
+            Suite.unit
             [ \_ ->
                 it "returns an oxford-style sentence"
-                    Assert.equal
-                    { expected = "This sentence contains one item and two item."
-                    , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
-                    }
+                    <| Assert.equal
+                        { expected = "This sentence contains one item and two item."
+                        , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
+                        }
             , \_ ->
                 it "returns an oxford-style sentence"
-                    Assert.equal
-                    { expected = "This sentence contains one item, two item, and three item."
-                    , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
-                    }
+                    <| Assert.equal
+                        { expected = "This sentence contains one item, two item, and three item."
+                        , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
+                        }
             ]
         ]
 
@@ -211,35 +212,35 @@ oxfordifySuite =
 shrinkableSuite : Suite
 shrinkableSuite =
     describe "Some Suites that should fail and produce shrunken values"
-        Test.batch
+        Suite.batch
         [ describe "Suites on one integer"
             (fuzz Fuzzer.int)
             [ \i ->
                 it "Every integer is 0"
-                    Assert.equal
-                    { expected = 0
-                    , actual = i
-                    }
+                    <| Assert.equal
+                        { expected = 0
+                        , actual = i
+                        }
             , \i ->
                 it "Every integer is <42"
-                    Assert.lessThan
-                    { greater = 42
-                    , lesser = i
-                    }
+                    <| Assert.lessThan
+                        { greater = 42
+                        , lesser = i
+                        }
             , \i ->
                 it "Every integer is >42"
-                    Assert.greaterThan
-                    { greater = 42
-                    , lesser = i
-                    }
+                    <| Assert.greaterThan
+                        { greater = 42
+                        , lesser = i
+                        }
             ]
         , describe "Suites on one string"
             (fuzz Fuzzer.string)
             [ \s ->
                 it "Every string equals its reverse"
-                    Assert.equal
-                    { expected = s
-                    , actual = String.reverse s
-                    }
+                    <| Assert.equal
+                        { expected = s
+                        , actual = String.reverse s
+                        }
             ]
         ]

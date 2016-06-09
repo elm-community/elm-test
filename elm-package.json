@@ -8,6 +8,7 @@
     ],
     "exposed-modules": [
         "Test",
+        "Suite",
         "Assert",
         "Fuzzer"
     ],

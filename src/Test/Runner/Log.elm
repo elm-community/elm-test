@@ -1,10 +1,10 @@
 module Test.Runner.Log exposing (run)
 
-import Test exposing (Suite)
+import Suite exposing (Suite)
 import Html
 import Html.App
 import Random.Pcg as Random
-import Assert exposing (Test)
+import Test exposing (Test)
 import String
 
 
@@ -19,7 +19,7 @@ randomSeed =
 
 toOutput : (() -> Test) -> ( String, Int ) -> ( String, Int )
 toOutput thunk ( output, failureCount ) =
-    case Assert.toFailures (thunk ()) of
+    case Test.toFailures (thunk ()) of
         Just failures ->
             ( String.join "\n\n" [ output, outputFailures failures ]
             , failureCount + 1
@@ -62,7 +62,7 @@ run : Suite -> Program Never
 run suite =
     let
         runners =
-            Test.toRunners randomSeed suite
+            Suite.toRunners randomSeed suite
 
         ( output, failureCount ) =
             List.foldl toOutput ( "", 0 ) runners
