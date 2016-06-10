@@ -90,7 +90,7 @@ view model =
 
         failures : List Test
         failures =
-            List.filter ((/=) Test.succeed) model.completed
+            List.filter ((/=) Test.pass) model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary

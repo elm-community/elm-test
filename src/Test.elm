@@ -1,105 +1,94 @@
-module Test exposing (Test, failWith, toFailures, formatFailures, it, succeed, fail, concat)
+module Test exposing (Test, failWith, toFailures, formatFailures, it, pass, fail)
 
 {-| Testing
 
-@docs Test, succeed, fail, it, failWith, toFailures, formatFailures, concat
+@docs Test, pass, fail, it, failWith, toFailures, formatFailures
 -}
 
 
-{-| TODO: docs
+{-| If the given test fails, replace its Fail message with the given one.
+
+    import Test exposing (failWith)
+    import Assert
+
+
+    Assert.equal { expected = "foo", actual = "bar" }
+        |> failWith "thought they'd be the same"
+        |> Test.toFailures
+        -- Just { messages = [ "thought they'd be the same" ], context = [] }
 -}
 failWith : String -> Test -> Test
 failWith str =
     formatFailures (\_ -> str)
 
 
-{-| TODO: docs
+{-| Apply a description to a `Test`.
+
+-- TODO give a code example.
 -}
 it : String -> Test -> Test
 it str test =
     case test of
-        Success ->
-            Success
+        Pass ->
+            Pass
 
-        Failure record ->
-            Failure { record | context = str :: record.context }
+        Fail record ->
+            Fail { record | context = str :: record.context }
 
 
-{-| The Test from running a single Suite.
+{-| A single test run. This can either be a [`pass`](#pass) or [`fail`](#fail).
+
+Use [`toFailures`](#toFailures) to convert a `Test` into appropriately
+contextualized failure messages.
 -}
 type Test
-    = Success
-    | Failure { messages : List String, context : List String }
+    = Pass
+    | Fail { messages : List String, context : List String }
 
 
-{-| TODO docs
+{-| A [`Test`](#Test) which failed with the given message.
+
+-- TODO code sample
 -}
 fail : String -> Test
 fail str =
-    Failure { messages = [ str ], context = [] }
+    Fail { messages = [ str ], context = [] }
 
 
-{-| TODO docs
+{-| A [`Test`](#Test) which passed.
+
+-- TODO code sample
 -}
-succeed : Test
-succeed =
-    Success
+pass : Test
+pass =
+    Pass
 
 
-{-| In the event of success, returns Nothing.
+{-| Return contextualized failure messages from the given [`Test`](#Test).
+
+Note that fuzz tests may return multiple failure messages from a single `Test`!
+
+-- TODO code sample
 -}
 toFailures : Test -> Maybe { messages : List String, context : List String }
 toFailures test =
     case test of
-        Success ->
+        Pass ->
             Nothing
 
-        Failure record ->
+        Fail record ->
             Just record
 
 
-{-| TODO docs
+{-| Format all the failure messages in a given `Test`.
+
+-- TODO code sample
 -}
 formatFailures : (String -> String) -> Test -> Test
 formatFailures format test =
     case test of
-        Failure record ->
-            Failure { record | messages = List.map format record.messages }
+        Fail record ->
+            Fail { record | messages = List.map format record.messages }
 
-        Success ->
+        Pass ->
             test
-
-
-{-| TODO docs
--}
-concat : List Test -> Test
-concat =
-    concatHelp Success
-
-
-
--- INTERNAL HELPERS --
-
-
-concatHelp : Test -> List Test -> Test
-concatHelp result tests =
-    case tests of
-        [] ->
-            result
-
-        Success :: rest ->
-            concatHelp result rest
-
-        ((Failure record) as currentFailure) :: rest ->
-            let
-                newFailure =
-                    case result of
-                        Failure { messages } ->
-                            -- NOTE: we use the first context we get, and
-                            -- assume all other contexts are the same.
-                            Failure { record | messages = record.messages ++ messages }
-
-                        Success ->
-                            currentFailure
-            in
-                concatHelp newFailure rest

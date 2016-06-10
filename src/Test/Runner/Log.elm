@@ -70,13 +70,13 @@ run suite =
         _ =
             if failureCount > 0 then
                 output
-                    ++ (toString failureCount ++ " SuiteS FAILED!\n\nExit code")
+                    ++ (toString failureCount ++ " TESTS FAILED!\n\nExit code")
                     |> (flip Debug.log 1)
-                    |> (\_ -> Debug.crash "FAILED Suite RUN")
+                    |> (\_ -> Debug.crash "FAILED TEST RUN")
                     |> (\_ -> ())
             else
                 output
-                    ++ "ALL SuiteS PASSED!\n\nExit code"
+                    ++ "ALL TESTS PASSED!\n\nExit code"
                     |> (flip Debug.log 0)
                     |> (\_ -> ())
     in

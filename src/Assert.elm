@@ -1,6 +1,7 @@
 module Assert exposing (equal, notEqual, lessThan, greaterThan)
 
-{-| Making assertions.
+{-| Functions that call `Test.pass` and `Test.fail` with helpful output when
+things fail.
 
 @docs equal, notEqual, lessThan, greaterThan
 -}
@@ -8,38 +9,47 @@ module Assert exposing (equal, notEqual, lessThan, greaterThan)
 import Test exposing (Test)
 
 
-{-| TODO: docs
+{-| Fails if `expected /= actual`.
 -}
 equal : { expected : a, actual : a } -> Test
 equal { expected, actual } =
     if expected == actual then
-        Test.succeed
+        Test.pass
     else
         Test.fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
 
 
-{-| TODO: docs
+{-| Fails if `actual == wasNot`.
+-}
+notEqual : { actual : a, wasNot : a } -> Test
+notEqual record =
+    if record.actual == record.wasNot then
+        Test.fail ("Expected different values, but both were:\n\n" ++ toString record.actual)
+    else
+        Test.pass
+
+
+{-| Fails if `lesser >= greater`.
+
+(This function is identical to [`greaterThan`](#greaterThan).)
 -}
 lessThan : { lesser : comparable, greater : comparable } -> Test
 lessThan =
     greaterThan
 
 
-{-| TODO: docs
+{-| Fails if `lesser >= greater`.
+
+(This function is identical to [`lessThan`](#lessThan).)
 -}
 greaterThan : { lesser : comparable, greater : comparable } -> Test
 greaterThan { lesser, greater } =
     if lesser < greater then
-        Test.succeed
+        Test.pass
     else
         Test.fail ("Expected Greater: " ++ toString greater ++ "\nExpected Lesser:  " ++ toString lesser)
 
 
-{-| TODO docs
--}
-notEqual : { actual : a, not : a } -> Test
-notEqual record =
-    if record.actual == record.not then
-        Test.fail ("Expected different values, but both were:\n\n" ++ toString record.actual)
-    else
-        Test.succeed
+
+-- TODO should add something like equalLists, equalDicts, and equalSets, which
+-- output useful diffs on failure.
