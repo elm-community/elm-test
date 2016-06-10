@@ -69,3 +69,10 @@ oxfordifySuite =
                         }
             ]
         ]
+
+
+{-| TODO get rid of this once elm-format puts <| on the same line
+-}
+describe : String -> (a -> Suite) -> a -> Suite
+describe str fn arg =
+    Suite.describe str (fn arg)
