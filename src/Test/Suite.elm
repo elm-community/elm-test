@@ -1,4 +1,4 @@
-module Suite exposing (Suite, toRunners, batch, describe, withRuns, withSeed, withShrink, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
+module Test.Suite exposing (Suite, toRunners, batch, describe, withRuns, withSeed, withShrink, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
 
 {-| A collection of Tests.
 
@@ -8,7 +8,7 @@ module Suite exposing (Suite, toRunners, batch, describe, withRuns, withSeed, wi
 import Dict
 import Shrink
 import Random.Pcg as Random exposing (Generator)
-import Test exposing (Test)
+import Test.Outcome exposing (Test, Outcome)
 import Fuzzer exposing (Fuzzer)
 
 
@@ -19,7 +19,7 @@ Use [`toRunners`](#toRunners) to convert a `Suite` into a list of
 `() -> Test` functions, which can then be evaluated.
 -}
 type Suite
-    = Tests Options (List (Options -> List Test))
+    = Tests (List String) (List Test)
     | Batch (List Suite)
 
 
@@ -27,8 +27,8 @@ type Suite
 
 -- TODO code example
 -}
-toRunners : Random.Seed -> Suite -> List (() -> Test)
-toRunners seed suite =
+toRunners : Random.Seed -> Int -> Suite -> List (() -> Outcome)
+toRunners seed runs suite =
     case suite of
         Tests opts thunks ->
             List.concatMap (toTests seed opts) thunks
@@ -241,10 +241,9 @@ defaults =
     }
 
 
-toTests : Random.Seed -> Options -> (Options -> List Test) -> List (() -> Test)
-toTests seed opts getTests =
-    { opts | seed = Maybe.oneOf [ opts.seed, Just seed ] }
-        |> getTests
+toTests : List String -> Random.Seed -> Int -> (Random.Seed -> Int -> List Outcome) -> List (() -> Outcome)
+toTests context seed runs getTests =
+    getTests seed runs
         |> List.map (\test _ -> List.foldr Test.it test opts.onFail)
 
 
