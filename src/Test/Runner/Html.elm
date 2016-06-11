@@ -1,7 +1,6 @@
 module Test.Runner.Html exposing (run)
 
-import Suite exposing (Suite)
-import Test exposing (Test)
+import Test exposing (Test, Outcome)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Dict exposing (Dict)
@@ -9,6 +8,7 @@ import Task
 import Set exposing (Set)
 import Test.Runner
 import String
+import Random.Pcg as Random
 
 
 type alias TestId =
@@ -16,10 +16,10 @@ type alias TestId =
 
 
 type alias Model =
-    { available : Dict TestId (() -> Test)
+    { available : Dict TestId (() -> Outcome)
     , running : Set TestId
     , queue : List TestId
-    , completed : List Test
+    , completed : List Outcome
     }
 
 
@@ -27,8 +27,8 @@ type Msg
     = Dispatch
 
 
-viewFailures : { messages : List String, context : List String } -> List (Html a)
-viewFailures { messages, context } =
+viewFailures : String -> List String -> List (Html a)
+viewFailures message context =
     let
         ( maybeLastContext, otherContexts ) =
             case List.reverse context of
@@ -54,7 +54,7 @@ viewFailures { messages, context } =
                 |> List.map (withColorChar '↓' "darkgray")
                 |> div []
     in
-        viewContext :: List.map viewMessage messages
+        [ viewContext ] ++ [ viewMessage message ]
 
 
 withColorChar : Char -> String -> String -> Html a
@@ -88,24 +88,32 @@ view model =
         remainingCount =
             List.length (Dict.keys model.available)
 
-        failures : List Test
+        failures : List Outcome
         failures =
-            List.filter ((/=) Test.pass) model.completed
+            List.filter Test.isFail model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
-            , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (List.map viewTest failures)
+            , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (viewOutcomes failures)
             ]
 
 
-viewTest : Test -> Html a
-viewTest test =
-    case Test.toFailures test of
-        Just failures ->
-            li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failures)
+viewOutcomes : List Outcome -> List (Html a)
+viewOutcomes outcomes =
+    outcomes
+        |> List.concatMap (Test.toFailures)
+        |> List.filterMap viewOutcome
+
+
+viewOutcome : { context : List String, failure : Maybe String } -> Maybe (Html a)
+viewOutcome record =
+    case record.failure of
+        Just failure ->
+            li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failure record.context)
+                |> Just
 
         Nothing ->
-            text ""
+            Nothing
 
 
 warn : String -> a -> a
@@ -160,10 +168,10 @@ dispatch =
         |> Task.perform identity identity
 
 
-init : List (() -> Test) -> ( Model, Cmd Msg )
+init : List (() -> Outcome) -> ( Model, Cmd Msg )
 init thunks =
     let
-        indexedThunks : List ( TestId, () -> Test )
+        indexedThunks : List ( TestId, () -> Outcome )
         indexedThunks =
             List.indexedMap (,) thunks
 
@@ -177,10 +185,17 @@ init thunks =
         ( model, dispatch )
 
 
-run : Suite -> Program Never
-run suite =
+run : List Test -> Program Never
+run =
+    runWithOptions Nothing 100
+
+
+runWithOptions : Maybe Random.Seed -> Int -> List Test -> Program Never
+runWithOptions maybeSeed runs tests =
     Test.Runner.run
-        { suite = suite
+        { tests = tests
+        , runs = runs
+        , seed = maybeSeed
         , init = init
         , update = update
         , view = view

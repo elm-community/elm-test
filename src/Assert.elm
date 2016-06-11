@@ -6,12 +6,12 @@ things fail.
 @docs equal, notEqual, lessThan, greaterThan
 -}
 
-import Test exposing (Test)
+import Test exposing (Outcome)
 
 
 {-| Fails if `expected /= actual`.
 -}
-equal : { expected : a, actual : a } -> Test
+equal : { expected : a, actual : a } -> Outcome
 equal { expected, actual } =
     if expected == actual then
         Test.pass
@@ -21,7 +21,7 @@ equal { expected, actual } =
 
 {-| Fails if `actual == wasNot`.
 -}
-notEqual : { actual : a, wasNot : a } -> Test
+notEqual : { actual : a, wasNot : a } -> Outcome
 notEqual record =
     if record.actual == record.wasNot then
         Test.fail ("Expected different values, but both were:\n\n" ++ toString record.actual)
@@ -33,7 +33,7 @@ notEqual record =
 
 (This function is identical to [`greaterThan`](#greaterThan).)
 -}
-lessThan : { lesser : comparable, greater : comparable } -> Test
+lessThan : { lesser : comparable, greater : comparable } -> Outcome
 lessThan =
     greaterThan
 
@@ -42,7 +42,7 @@ lessThan =
 
 (This function is identical to [`lessThan`](#lessThan).)
 -}
-greaterThan : { lesser : comparable, greater : comparable } -> Test
+greaterThan : { lesser : comparable, greater : comparable } -> Outcome
 greaterThan { lesser, greater } =
     if lesser < greater then
         Test.pass

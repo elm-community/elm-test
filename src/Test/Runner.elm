@@ -1,7 +1,6 @@
 module Test.Runner exposing (run)
 
-import Suite exposing (Suite)
-import Test exposing (Test)
+import Test exposing (Test, Outcome)
 import Html exposing (Html, text)
 import Html.App
 import Task
@@ -15,7 +14,7 @@ type Msg subMsg
 
 
 type Model subMsg subModel
-    = Uninitialized (SubUpdate subMsg subModel) Suite (List (() -> Test) -> ( subModel, Cmd subMsg ))
+    = Uninitialized (SubUpdate subMsg subModel) Int (List Test) (List (() -> Outcome) -> ( subModel, Cmd subMsg ))
     | Initialized (SubUpdate subMsg subModel) subModel
 
 
@@ -40,15 +39,15 @@ fromNever a =
 initOrUpdate : Msg subMsg -> Model subMsg subModel -> ( Model subMsg subModel, Cmd (Msg subMsg) )
 initOrUpdate msg maybeModel =
     case maybeModel of
-        Uninitialized update suite init ->
+        Uninitialized update runs tests init ->
             case msg of
                 Init Nothing ->
-                    ( Uninitialized update suite init, getInitialSeed )
+                    ( Uninitialized update runs tests init, getInitialSeed )
 
                 Init (Just seed) ->
                     let
                         ( subModel, subCmd ) =
-                            init (Suite.toRunners seed suite)
+                            init (Test.toRunners seed runs tests)
                     in
                         ( Initialized update subModel, Cmd.map SubMsg subCmd )
 
@@ -77,7 +76,7 @@ initCmd =
 initOrView : (subModel -> Html subMsg) -> Model subMsg subModel -> Html (Msg subMsg)
 initOrView view model =
     case model of
-        Uninitialized _ _ _ ->
+        Uninitialized _ _ _ _ ->
             text ""
 
         Initialized _ subModel ->
@@ -89,8 +88,10 @@ type alias SubUpdate msg model =
 
 
 type alias RunnerOptions msg model =
-    { suite : Suite
-    , init : List (() -> Test) -> ( model, Cmd msg )
+    { tests : List Test
+    , seed : Maybe Random.Seed
+    , runs : Int
+    , init : List (() -> Outcome) -> ( model, Cmd msg )
     , update : SubUpdate msg model
     , view : model -> Html msg
     , subscriptions : model -> Sub msg
@@ -100,7 +101,7 @@ type alias RunnerOptions msg model =
 subscriptions : (subModel -> Sub subMsg) -> Model subMsg subModel -> Sub (Msg subMsg)
 subscriptions subs model =
     case model of
-        Uninitialized _ _ _ ->
+        Uninitialized _ _ _ _ ->
             Sub.none
 
         Initialized _ subModel ->
@@ -109,9 +110,22 @@ subscriptions subs model =
 
 run : RunnerOptions msg model -> Program Never
 run opts =
-    Html.App.program
-        { init = ( Uninitialized opts.update opts.suite opts.init, initCmd )
-        , update = initOrUpdate
-        , view = initOrView opts.view
-        , subscriptions = subscriptions opts.subscriptions
-        }
+    let
+        init =
+            case opts.seed of
+                Just seed ->
+                    let
+                        ( subModel, subCmd ) =
+                            opts.init (Test.toRunners seed opts.runs opts.tests)
+                    in
+                        ( Initialized opts.update subModel, Cmd.map SubMsg subCmd )
+
+                Nothing ->
+                    ( Uninitialized opts.update opts.runs opts.tests opts.init, initCmd )
+    in
+        Html.App.program
+            { init = init
+            , update = initOrUpdate
+            , view = initOrView opts.view
+            , subscriptions = subscriptions opts.subscriptions
+            }
