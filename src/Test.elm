@@ -1,15 +1,26 @@
-module Test exposing (Test, Outcome, Suite(..), unit, failWith, toFailures, it, formatFailure, pass, fail, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
+module Test exposing (Test, Outcome, Suite(..), unit, failWith, it, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
 
 {-| Testing
 
-@docs Test, Outcome, Suite, pass, fail, it, unit, failWith, toFailures, formatFailure, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
+@docs Test, Outcome, Suite, it, unit, failWith, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
 -}
 
 import Random.Pcg as Random
+import Test.Outcome exposing (pass, fail)
 import Dict
 import Shrink
 import Random.Pcg as Random exposing (Generator)
 import Fuzzer exposing (Fuzzer)
+
+
+{-| the result of a single test run. this can either be a [`pass`](#pass) or
+[`fail`](#fail).
+
+use [`tofailures`](#tofailures) to convert an `outcome` into appropriately
+contextualized failure messages.
+-}
+type alias Outcome =
+    Test.Outcome.Outcome
 
 
 {-| A batch of Tests which have yet to be evaluated. Execution order is not
@@ -37,83 +48,6 @@ type Suite
 it : String -> Test -> Suite
 it str test =
     Labeled str (Suite [ test ])
-
-
-{-| The result of a single test run. This can either be a [`pass`](#pass) or
-[`fail`](#fail).
-
-Use [`toFailures`](#toFailures) to convert an `Outcome` into appropriately
-contextualized failure messages.
--}
-type Outcome
-    = Pass
-    | Fail (List String)
-
-
-{-| If the given test fails, replace its Fail message with the given one.
-
-    import Test exposing (failWith)
-    import Assert
-
-
-    Assert.equal { expected = "foo", actual = "bar" }
-        |> failWith "thought they'd be the same"
-        |> Test.toFailures
-        -- Just { messages = [ "thought they'd be the same" ], context = [] }
--}
-failWith : String -> Outcome -> Outcome
-failWith str =
-    formatFailure (\_ -> str)
-
-
-{-| A [`Test`](#Test) which failed with the given message.
-
--- TODO code sample
--}
-fail : String -> Outcome
-fail str =
-    Fail [ str ]
-
-
-{-| A [`Test`](#Test) which passed.
-
--- TODO code sample
--}
-pass : Outcome
-pass =
-    Pass
-
-
-{-| Return contextualized failure messages from the given [`Test`](#Test).
-
-Note that fuzz tests may return multiple failure messages from a single `Test`!
-
--- TODO code sample
--}
-toFailures : Outcome -> Maybe (List String)
-toFailures outcome =
-    case outcome of
-        Pass ->
-            Nothing
-
-        Fail failures ->
-            Just failures
-
-
-{-| Format all the failure messages in a given `Test`.
-
--- TODO code sample
--}
-formatFailure : (String -> String) -> Outcome -> Outcome
-formatFailure format outcome =
-    case outcome of
-        Fail messages ->
-            messages
-                |> List.map format
-                |> Fail
-
-        Pass ->
-            outcome
 
 
 {-| Apply a description to a list of tests.
@@ -294,7 +228,7 @@ fuzzTest fuzzer getOutcome =
                     |> fst
                     |> dedupe
                     |> List.map formatOutcome
-                    |> concatOutcomes
+                    |> Test.Outcome.concat
     in
         run
 
@@ -314,37 +248,9 @@ uncurry5 fn ( a, b, c, d, e ) =
     fn a b c d e
 
 
-concatOutcomes : List Outcome -> Outcome
-concatOutcomes =
-    concatOutcomesHelp pass
-
-
-concatOutcomesHelp : Outcome -> List Outcome -> Outcome
-concatOutcomesHelp result outcomes =
-    case outcomes of
-        [] ->
-            result
-
-        Pass :: rest ->
-            case result of
-                Pass ->
-                    concatOutcomesHelp result rest
-
-                (Fail _) as failure ->
-                    concatOutcomesHelp failure rest
-
-        ((Fail newFailures) as first) :: rest ->
-            case result of
-                Pass ->
-                    concatOutcomesHelp first rest
-
-                Fail oldFailures ->
-                    concatOutcomesHelp (Fail (oldFailures ++ newFailures)) rest
-
-
 formatOutcome : ( Maybe String, Outcome ) -> Outcome
 formatOutcome ( input, outcome ) =
-    formatFailure (prependInput input) outcome
+    Test.Outcome.formatFailure (prependInput input) outcome
 
 
 prependInput : Maybe String -> String -> String
@@ -355,3 +261,22 @@ prependInput input original =
 
         Just str ->
             "Input: " ++ str ++ "\n\n" ++ original
+
+
+{-| If the given test fails, replace its Fail message with the given one.
+
+    import Test exposing (failWith)
+    import Assert
+
+
+    Assert.equal { expected = "foo", actual = "bar" }
+        |> failWith "thought they'd be the same"
+        |> Test.toFailures
+        -- Just { messages = [ "thought they'd be the same" ], context = [] }
+-}
+failWith : String -> Outcome -> Outcome
+failWith str outcome =
+    if outcome == pass then
+        pass
+    else
+        fail str
