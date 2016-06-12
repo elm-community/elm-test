@@ -1,4 +1,4 @@
-module Test.Runner exposing (run)
+module Test.Runner exposing (run, toRunners)
 
 import Test exposing (Test, Outcome, Suite)
 import Html exposing (Html, text)
@@ -118,7 +118,7 @@ toRunnersHelp labels seed runs suite =
     case suite of
         Test.Suite tests ->
             tests
-                |> List.map (\test _ -> ( List.reverse labels, Test.run seed runs test ))
+                |> List.map (\test _ -> ( List.reverse labels, test { seed = seed, runs = runs } ))
 
         Test.Labeled label suite ->
             toRunnersHelp (label :: labels) seed runs suite

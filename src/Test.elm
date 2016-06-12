@@ -1,8 +1,8 @@
-module Test exposing (Test, Outcome, Suite(..), RunnerConfig, unit, failWith, toFailures, it, formatFailure, pass, fail, run, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
+module Test exposing (Test, Outcome, Suite(..), unit, failWith, toFailures, it, formatFailure, pass, fail, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
 
 {-| Testing
 
-@docs Test, Outcome, Suite, RunnerConfig, pass, fail, it, unit, failWith, toFailures, formatFailure, run, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
+@docs Test, Outcome, Suite, pass, fail, it, unit, failWith, toFailures, formatFailure, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
 -}
 
 import Random.Pcg as Random
@@ -19,7 +19,7 @@ Use [`toRunners`](#toRunners) to convert a `Suite` into a list of
 `() -> Test` functions, which can then be evaluated.
 -}
 type alias Test =
-    RunnerConfig -> Outcome
+    { runs : Int, seed : Random.Seed } -> Outcome
 
 
 {-| TODO document
@@ -30,12 +30,6 @@ type Suite
     | Batch (List Suite)
 
 
-{-| TODO document
--}
-type RunnerConfig
-    = RunnerConfig Random.Seed Int
-
-
 {-| Apply a description to a `Test`.
 
 -- TODO give a code example.
@@ -43,15 +37,6 @@ type RunnerConfig
 it : String -> Test -> Suite
 it str test =
     Labeled str (Suite [ test ])
-
-
-{-| Turn a `Test` into an `Outcome`
-
--- TODO code example
--}
-run : Random.Seed -> Int -> Test -> Outcome
-run seed runs test =
-    test (RunnerConfig seed runs)
 
 
 {-| The result of a single test run. This can either be a [`pass`](#pass) or
@@ -264,7 +249,7 @@ defaults =
 fuzzTest : Fuzzer a -> (a -> Outcome) -> Test
 fuzzTest fuzzer getOutcome =
     let
-        run (RunnerConfig seed runs) =
+        run { seed, runs } =
             let
                 runWithInput val =
                     let

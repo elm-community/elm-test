@@ -10,7 +10,6 @@ Note that this always uses an initial seed of 42, since it can't do effects.
 
 import Assert
 import Test exposing (..)
-import Suite exposing (..)
 import Test.Runner.Log
 
 
@@ -21,7 +20,7 @@ main =
 
 suites : Suite
 suites =
-    Suite.batch [ oxfordifySuite ]
+    oxfordifySuite
 
 
 {-| stubbed function under Suite
@@ -34,45 +33,34 @@ oxfordify _ _ _ =
 oxfordifySuite : Suite
 oxfordifySuite =
     describe "oxfordify"
-        Suite.batch
         [ describe "given an empty sentence"
-            Suite.unit
-            [ \_ ->
-                it "returns an empty string"
-                    <| Assert.equal
+            [ it "returns an empty string"
+                <| \_ ->
+                    Assert.equal
                         { expected = ""
                         , actual = oxfordify "This sentence is empty" "." []
                         }
             ]
         , describe "given a sentence with one item"
-            Suite.unit
-            [ \_ ->
-                it "still contains one item"
-                    <| Assert.equal
+            [ it "still contains one item"
+                <| \_ ->
+                    Assert.equal
                         { expected = "This sentence contains one item."
                         , actual = oxfordify "This sentence contains " "." [ "one item" ]
                         }
             ]
         , describe "given a sentence with multiple items"
-            Suite.unit
-            [ \_ ->
-                it "returns an oxford-style sentence"
-                    <| Assert.equal
+            [ it "returns an oxford-style sentence"
+                <| \_ ->
+                    Assert.equal
                         { expected = "This sentence contains one item and two item."
                         , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
                         }
-            , \_ ->
-                it "returns an oxford-style sentence"
-                    <| Assert.equal
+            , it "returns an oxford-style sentence"
+                <| \_ ->
+                    Assert.equal
                         { expected = "This sentence contains one item, two item, and three item."
                         , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
                         }
             ]
         ]
-
-
-{-| TODO get rid of this once elm-format puts <| on the same line
--}
-describe : String -> (a -> Suite) -> a -> Suite
-describe str fn arg =
-    Suite.describe str (fn arg)

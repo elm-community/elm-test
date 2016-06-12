@@ -1,28 +1,32 @@
-module Test.Runner.String exposing (run)
+module Test.Runner.String exposing (run, runWithOptions)
 
-import Suite exposing (Suite)
 import Random.Pcg as Random
-import Test exposing (Test)
+import Test exposing (Test, Suite, Outcome)
 import String
+import Test.Runner exposing (toRunners)
 
 
-toOutput : (() -> Test) -> ( String, Int ) -> ( String, Int )
+toOutput : (() -> ( List String, Outcome )) -> ( String, Int ) -> ( String, Int )
 toOutput thunk ( output, failureCount ) =
-    case Test.toFailures (thunk ()) of
-        Just failures ->
-            ( String.join "\n\n" [ output, outputFailures failures ]
-            , failureCount + 1
-            )
+    let
+        ( labels, outcome ) =
+            thunk ()
+    in
+        case Test.toFailures outcome of
+            Just failures ->
+                ( String.join "\n\n" (output :: List.map (outputFailures labels) failures)
+                , failureCount + 1
+                )
 
-        Nothing ->
-            ( output, failureCount )
+            Nothing ->
+                ( output, failureCount )
 
 
-outputFailures : { messages : List String, context : List String } -> String
-outputFailures { messages, context } =
+outputFailures : List String -> String -> String
+outputFailures labels message =
     let
         ( maybeLastContext, otherContexts ) =
-            case List.reverse context of
+            case List.reverse labels of
                 [] ->
                     ( Nothing, [] )
 
@@ -43,12 +47,21 @@ outputFailures { messages, context } =
                 |> List.map ((++) "↓ ")
                 |> String.join "\n"
     in
-        (outputContext :: List.map outputMessage messages)
-            |> String.join "\n"
+        outputContext ++ "\n" ++ message
 
 
-run : Random.Seed -> Suite -> ( String, Int )
-run seed suite =
+defaultSeed : Random.Seed
+defaultSeed =
+    Random.initialSeed 42
+
+
+run : Suite -> ( String, Int )
+run =
+    runWithOptions defaultSeed 100
+
+
+runWithOptions : Random.Seed -> Int -> Suite -> ( String, Int )
+runWithOptions seed runs suite =
     suite
-        |> Suite.toRunners seed
+        |> toRunners seed runs
         |> List.foldl toOutput ( "", 0 )
