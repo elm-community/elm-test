@@ -33,7 +33,7 @@ usuallyFoo =
         Shrink.string
 
 
-actualFuzzSuite : List Test
+actualFuzzSuite : Suite
 actualFuzzSuite =
     describe "actual fuzz suite"
         [ Test.unit
@@ -52,9 +52,9 @@ main =
     Test.Runner.Html.run suites
 
 
-suites : List Test
+suites : Suite
 suites =
-    List.concat
+    Batch
         [ oxfordifySuite
         , plainAssertion
         , assertionSuite
@@ -65,17 +65,17 @@ suites =
         ]
 
 
-plainAssertion : List Test
+plainAssertion : Suite
 plainAssertion =
-    [ \_ ->
-        { expected = "no description"
-        , actual = "whatsoever!"
-        }
-            |> Assert.equal
-    ]
+    Test.unit
+        <| \_ ->
+            { expected = "no description"
+            , actual = "whatsoever!"
+            }
+                |> Assert.equal
 
 
-assertionSuite : List Test
+assertionSuite : Suite
 assertionSuite =
     describe "basic assertions"
         [ describe "this should succeed"
@@ -94,12 +94,12 @@ assertionSuite =
                     }
                         |> Assert.equal
             ]
-        , [ \_ ->
+        , Test.unit
+            <| \_ ->
                 { expected = "forty-two"
                 , actual = "forty-three"
                 }
                     |> Assert.equal
-          ]
         ]
 
 
@@ -123,7 +123,7 @@ string =
         Shrink.string
 
 
-fuzzSuite : List Test
+fuzzSuite : Suite
 fuzzSuite =
     describe "fuzz suite"
         [ Test.unit
@@ -160,7 +160,7 @@ fuzzSuite =
         ]
 
 
-failFuzzSuite : List Test
+failFuzzSuite : Suite
 failFuzzSuite =
     describe "the first element in this fuzz tuple"
         [ it "is always \"foo\""
@@ -173,7 +173,7 @@ failFuzzSuite =
         ]
 
 
-oxfordifySuite : List Test
+oxfordifySuite : Suite
 oxfordifySuite =
     describe "oxfordify"
         [ describe "given an empty sentence"
@@ -209,7 +209,7 @@ oxfordifySuite =
         ]
 
 
-shrinkableSuite : List Test
+shrinkableSuite : Suite
 shrinkableSuite =
     describe "Some Suites that should fail and produce shrunken values"
         [ describe "a randomly generated integer"

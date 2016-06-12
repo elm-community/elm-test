@@ -1,6 +1,6 @@
 module Test.Runner exposing (run)
 
-import Test exposing (Test, Outcome)
+import Test exposing (Test, Outcome, Suite)
 import Html exposing (Html, text)
 import Html.App
 import Task
@@ -14,7 +14,7 @@ type Msg subMsg
 
 
 type Model subMsg subModel
-    = Uninitialized (SubUpdate subMsg subModel) Int (List Test) (List (() -> Outcome) -> ( subModel, Cmd subMsg ))
+    = Uninitialized (SubUpdate subMsg subModel) Int Suite (List (() -> ( List String, Outcome )) -> ( subModel, Cmd subMsg ))
     | Initialized (SubUpdate subMsg subModel) subModel
 
 
@@ -39,15 +39,15 @@ fromNever a =
 initOrUpdate : Msg subMsg -> Model subMsg subModel -> ( Model subMsg subModel, Cmd (Msg subMsg) )
 initOrUpdate msg maybeModel =
     case maybeModel of
-        Uninitialized update runs tests init ->
+        Uninitialized update runs suite init ->
             case msg of
                 Init Nothing ->
-                    ( Uninitialized update runs tests init, getInitialSeed )
+                    ( Uninitialized update runs suite init, getInitialSeed )
 
                 Init (Just seed) ->
                     let
                         ( subModel, subCmd ) =
-                            init (Test.toRunners seed runs tests)
+                            init (toRunners seed runs suite)
                     in
                         ( Initialized update subModel, Cmd.map SubMsg subCmd )
 
@@ -88,10 +88,10 @@ type alias SubUpdate msg model =
 
 
 type alias RunnerOptions msg model =
-    { tests : List Test
+    { suite : Suite
     , seed : Maybe Random.Seed
     , runs : Int
-    , init : List (() -> Outcome) -> ( model, Cmd msg )
+    , init : List (() -> ( List String, Outcome )) -> ( model, Cmd msg )
     , update : SubUpdate msg model
     , view : model -> Html msg
     , subscriptions : model -> Sub msg
@@ -108,6 +108,25 @@ subscriptions subs model =
             Sub.map SubMsg (subs subModel)
 
 
+toRunners : Random.Seed -> Int -> Suite -> List (() -> ( List String, Outcome ))
+toRunners =
+    toRunnersHelp []
+
+
+toRunnersHelp : List String -> Random.Seed -> Int -> Suite -> List (() -> ( List String, Outcome ))
+toRunnersHelp labels seed runs suite =
+    case suite of
+        Test.Suite tests ->
+            tests
+                |> List.map (\test _ -> ( List.reverse labels, Test.run seed runs test ))
+
+        Test.Labeled label suite ->
+            toRunnersHelp (label :: labels) seed runs suite
+
+        Test.Batch suites ->
+            List.concatMap (toRunnersHelp labels seed runs) suites
+
+
 run : RunnerOptions msg model -> Program Never
 run opts =
     let
@@ -116,12 +135,12 @@ run opts =
                 Just seed ->
                     let
                         ( subModel, subCmd ) =
-                            opts.init (Test.toRunners seed opts.runs opts.tests)
+                            opts.init (toRunners seed opts.runs opts.suite)
                     in
                         ( Initialized opts.update subModel, Cmd.map SubMsg subCmd )
 
                 Nothing ->
-                    ( Uninitialized opts.update opts.runs opts.tests opts.init, initCmd )
+                    ( Uninitialized opts.update opts.runs opts.suite opts.init, initCmd )
     in
         Html.App.program
             { init = init

@@ -1,8 +1,8 @@
-module Test exposing (Test, Outcome, RunnerConfig, isPass, unit, failWith, toFailures, it, formatFailure, pass, fail, isFail, toRunners, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
+module Test exposing (Test, Outcome, Suite(..), RunnerConfig, unit, failWith, toFailures, it, formatFailure, pass, fail, run, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
 
 {-| Testing
 
-@docs Test, Outcome, RunnerConfig, pass, fail, it, unit, failWith, toFailures, isPass, isFail, formatFailure, toRunners, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
+@docs Test, Outcome, Suite, RunnerConfig, pass, fail, it, unit, failWith, toFailures, formatFailure, run, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
 -}
 
 import Random.Pcg as Random
@@ -22,8 +22,12 @@ type alias Test =
     RunnerConfig -> Outcome
 
 
-type alias Suite =
-    List Test
+{-| TODO document
+-}
+type Suite
+    = Suite (List Test)
+    | Labeled String Suite
+    | Batch (List Suite)
 
 
 {-| TODO document
@@ -36,36 +40,18 @@ type RunnerConfig
 
 -- TODO give a code example.
 -}
-it : String -> Test -> List Test
-it str getOutcome =
-    let
-        run : RunnerConfig -> Outcome
-        run context =
-            case getOutcome context of
-                Pass records ->
-                    records
-                        |> List.map (\{ context } -> { context = str :: context })
-                        |> Pass
-
-                Fail records ->
-                    records
-                        |> List.map (\record -> { record | context = str :: record.context })
-                        |> Fail
-    in
-        [ run ]
+it : String -> Test -> Suite
+it str test =
+    Labeled str (Suite [ test ])
 
 
-{-| Turn a `Suite` into a list of thunks that can be run to produce Tests.
+{-| Turn a `Test` into an `Outcome`
 
 -- TODO code example
 -}
-toRunners : Random.Seed -> Int -> List Test -> List (() -> Outcome)
-toRunners seed runs =
-    let
-        config =
-            RunnerConfig seed runs
-    in
-        List.map (\run _ -> run config)
+run : Random.Seed -> Int -> Test -> Outcome
+run seed runs test =
+    test (RunnerConfig seed runs)
 
 
 {-| The result of a single test run. This can either be a [`pass`](#pass) or
@@ -75,8 +61,8 @@ Use [`toFailures`](#toFailures) to convert an `Outcome` into appropriately
 contextualized failure messages.
 -}
 type Outcome
-    = Pass (List { context : List String })
-    | Fail (List { context : List String, message : String })
+    = Pass
+    | Fail (List String)
 
 
 {-| If the given test fails, replace its Fail message with the given one.
@@ -101,7 +87,7 @@ failWith str =
 -}
 fail : String -> Outcome
 fail str =
-    Fail [ { message = str, context = [] } ]
+    Fail [ str ]
 
 
 {-| A [`Test`](#Test) which passed.
@@ -110,7 +96,7 @@ fail str =
 -}
 pass : Outcome
 pass =
-    Pass [ { context = [] } ]
+    Pass
 
 
 {-| Return contextualized failure messages from the given [`Test`](#Test).
@@ -119,16 +105,14 @@ Note that fuzz tests may return multiple failure messages from a single `Test`!
 
 -- TODO code sample
 -}
-toFailures : Outcome -> List { context : List String, failure : Maybe String }
-toFailures test =
-    case test of
-        Pass records ->
-            records
-                |> List.map (\{ context } -> { context = context, failure = Nothing })
+toFailures : Outcome -> Maybe (List String)
+toFailures outcome =
+    case outcome of
+        Pass ->
+            Nothing
 
-        Fail records ->
-            records
-                |> List.map (\{ context, message } -> { context = context, failure = Just message })
+        Fail failures ->
+            Just failures
 
 
 {-| Format all the failure messages in a given `Test`.
@@ -138,12 +122,12 @@ toFailures test =
 formatFailure : (String -> String) -> Outcome -> Outcome
 formatFailure format outcome =
     case outcome of
-        Fail records ->
-            records
-                |> List.map (\record -> { record | message = format record.message })
+        Fail messages ->
+            messages
+                |> List.map format
                 |> Fail
 
-        Pass _ ->
+        Pass ->
             outcome
 
 
@@ -151,16 +135,16 @@ formatFailure format outcome =
 
 -- TODO give a code example.
 -}
-describe : String -> List (List Test) -> List Test
+describe : String -> List Suite -> Suite
 describe desc =
-    List.concatMap (List.concatMap (it desc))
+    Batch >> Labeled desc
 
 
 {-| TODO docs
 -}
-unit : Test -> List Test
+unit : Test -> Suite
 unit test =
-    [ test ]
+    Suite [ test ]
 
 
 {-| Run the given tests several times, using a randomly-generated input from a
@@ -288,8 +272,8 @@ fuzzTest fuzzer getOutcome =
                             getOutcome val
 
                         shrunkenVal =
-                            if isFail outcome then
-                                Shrink.shrink (getOutcome >> isFail) fuzzer.shrinker val
+                            if outcome /= pass then
+                                Shrink.shrink (getOutcome >> (/=) pass) fuzzer.shrinker val
                             else
                                 val
 
@@ -330,25 +314,6 @@ fuzzTest fuzzer getOutcome =
         run
 
 
-{-| TODO document
--}
-isPass : Outcome -> Bool
-isPass outcome =
-    case outcome of
-        Pass _ ->
-            True
-
-        Fail _ ->
-            False
-
-
-{-| TODO document
--}
-isFail : Outcome -> Bool
-isFail =
-    not << isPass
-
-
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
 uncurry3 fn ( a, b, c ) =
     fn a b c
@@ -375,21 +340,21 @@ concatOutcomesHelp result outcomes =
         [] ->
             result
 
-        ((Pass records) as first) :: rest ->
+        Pass :: rest ->
             case result of
-                Pass newRecords ->
-                    concatOutcomesHelp (Pass (records ++ newRecords)) rest
+                Pass ->
+                    concatOutcomesHelp result rest
 
-                Fail newRecords ->
-                    concatOutcomesHelp (Fail newRecords) rest
+                (Fail _) as failure ->
+                    concatOutcomesHelp failure rest
 
-        ((Fail records) as first) :: rest ->
+        ((Fail newFailures) as first) :: rest ->
             case result of
-                Pass _ ->
+                Pass ->
                     concatOutcomesHelp first rest
 
-                Fail newRecords ->
-                    concatOutcomesHelp (Fail (records ++ newRecords)) rest
+                Fail oldFailures ->
+                    concatOutcomesHelp (Fail (oldFailures ++ newFailures)) rest
 
 
 formatOutcome : ( Maybe String, Outcome ) -> Outcome

@@ -1,6 +1,6 @@
 module Test.Runner.Html exposing (run)
 
-import Test exposing (Test, Outcome)
+import Test exposing (Test, Outcome, Suite)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Dict exposing (Dict)
@@ -16,10 +16,10 @@ type alias TestId =
 
 
 type alias Model =
-    { available : Dict TestId (() -> Outcome)
+    { available : Dict TestId (() -> ( List String, Outcome ))
     , running : Set TestId
     , queue : List TestId
-    , completed : List Outcome
+    , completed : List ( List String, Outcome )
     }
 
 
@@ -88,32 +88,30 @@ view model =
         remainingCount =
             List.length (Dict.keys model.available)
 
-        failures : List Outcome
+        failures : List ( List String, Outcome )
         failures =
-            List.filter Test.isFail model.completed
+            List.filter (snd >> (/=) Test.pass) model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
-            , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (viewOutcomes failures)
+            , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (viewContextualOutcomes failures)
             ]
 
 
-viewOutcomes : List Outcome -> List (Html a)
-viewOutcomes outcomes =
-    outcomes
-        |> List.concatMap (Test.toFailures)
-        |> List.filterMap viewOutcome
+viewContextualOutcomes : List ( List String, Outcome ) -> List (Html a)
+viewContextualOutcomes =
+    List.concatMap viewOutcome
 
 
-viewOutcome : { context : List String, failure : Maybe String } -> Maybe (Html a)
-viewOutcome record =
-    case record.failure of
-        Just failure ->
-            li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failure record.context)
-                |> Just
+viewOutcome : ( List String, Outcome ) -> List (Html a)
+viewOutcome ( descriptions, outcome ) =
+    case Test.toFailures outcome of
+        Just failures ->
+            failures
+                |> List.map (\failure -> li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failure descriptions))
 
         Nothing ->
-            Nothing
+            []
 
 
 warn : String -> a -> a
@@ -168,10 +166,10 @@ dispatch =
         |> Task.perform identity identity
 
 
-init : List (() -> Outcome) -> ( Model, Cmd Msg )
+init : List (() -> ( List String, Outcome )) -> ( Model, Cmd Msg )
 init thunks =
     let
-        indexedThunks : List ( TestId, () -> Outcome )
+        indexedThunks : List ( TestId, () -> ( List String, Outcome ) )
         indexedThunks =
             List.indexedMap (,) thunks
 
@@ -185,15 +183,15 @@ init thunks =
         ( model, dispatch )
 
 
-run : List Test -> Program Never
+run : Suite -> Program Never
 run =
     runWithOptions Nothing 100
 
 
-runWithOptions : Maybe Random.Seed -> Int -> List Test -> Program Never
-runWithOptions maybeSeed runs tests =
+runWithOptions : Maybe Random.Seed -> Int -> Suite -> Program Never
+runWithOptions maybeSeed runs suite =
     Test.Runner.run
-        { tests = tests
+        { suite = suite
         , runs = runs
         , seed = maybeSeed
         , init = init
