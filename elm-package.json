@@ -8,7 +8,7 @@
     ],
     "exposed-modules": [
         "Test",
-        "Suite",
+        "Test.Outcome",
         "Assert",
         "Fuzzer"
     ],

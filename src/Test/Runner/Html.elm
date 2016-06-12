@@ -1,6 +1,7 @@
 module Test.Runner.Html exposing (run)
 
-import Test exposing (Test, Outcome, Suite)
+import Test exposing (Test, Suite)
+import Test.Outcome exposing (Outcome)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Dict exposing (Dict)
@@ -90,7 +91,7 @@ view model =
 
         failures : List ( List String, Outcome )
         failures =
-            List.filter (snd >> (/=) Test.pass) model.completed
+            List.filter (snd >> (/=) Test.Outcome.pass) model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
@@ -105,7 +106,7 @@ viewContextualOutcomes =
 
 viewOutcome : ( List String, Outcome ) -> List (Html a)
 viewOutcome ( descriptions, outcome ) =
-    case Test.toFailures outcome of
+    case Test.Outcome.toFailures outcome of
         Just failures ->
             failures
                 |> List.map (\failure -> li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failure descriptions))

@@ -1,6 +1,7 @@
 module Test.Runner exposing (run, toRunners)
 
-import Test exposing (Test, Suite, Outcome)
+import Test exposing (Test, Suite)
+import Test.Outcome exposing (Outcome)
 import Html exposing (Html, text)
 import Html.App
 import Task

@@ -36,14 +36,14 @@ usuallyFoo =
 actualFuzzSuite : Suite
 actualFuzzSuite =
     describe "actual fuzz suite"
-        [ Test.unit
+        [ Test.singleton
             <| Test.fuzz usuallyFoo
             <| \shouldBeFoo ->
                 { expected = "foo"
                 , actual = shouldBeFoo
                 }
                     |> Assert.equal
-                    |> failWith "It wasn't \"foo\"."
+                    |> Assert.failWith "It wasn't \"foo\"."
         ]
 
 
@@ -67,7 +67,7 @@ suites =
 
 plainAssertion : Suite
 plainAssertion =
-    Test.unit
+    Test.singleton
         <| \_ ->
             { expected = "no description"
             , actual = "whatsoever!"
@@ -79,7 +79,7 @@ assertionSuite : Suite
 assertionSuite =
     describe "basic assertions"
         [ describe "this should succeed"
-            [ Test.unit
+            [ Test.singleton
                 <| \_ ->
                     { expected = ()
                     , actual = ()
@@ -87,14 +87,14 @@ assertionSuite =
                         |> Assert.equal
             ]
         , describe "this should fail"
-            [ Test.unit
+            [ Test.singleton
                 <| \_ ->
                     { expected = "something"
                     , actual = "someting else"
                     }
                         |> Assert.equal
             ]
-        , Test.unit
+        , Test.singleton
             <| \_ ->
                 { expected = "forty-two"
                 , actual = "forty-three"
@@ -126,37 +126,37 @@ string =
 fuzzSuite : Suite
 fuzzSuite =
     describe "fuzz suite"
-        [ Test.unit
+        [ Test.singleton
             <| (fuzz2 string string)
             <| \name punctuation ->
                 { expected = ""
                 , actual = oxfordify "This sentence is empty" "." []
                 }
                     |> Assert.equal
-                    |> failWith "given an empty list, did not return an empty string"
-        , Test.unit
+                    |> Assert.failWith "given an empty list, did not return an empty string"
+        , Test.singleton
             <| (fuzz2 string string)
             <| \name punctuation ->
                 { expected = "This sentence contains one item."
                 , actual = oxfordify "This sentence contains " "." [ "one item" ]
                 }
                     |> Assert.equal
-        , Test.unit
+        , Test.singleton
             <| (fuzz2 string string)
             <| \name punctuation ->
                 { expected = "This sentence contains one item and two item."
                 , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
                 }
                     |> Assert.equal
-                    |> failWith "given an empty list, did not return an empty string"
-        , Test.unit
+                    |> Assert.failWith "given an empty list, did not return an empty string"
+        , Test.singleton
             <| (fuzz2 string string)
             <| \name punctuation ->
                 { expected = "This sentence contains one item, two item, and three item."
                 , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
                 }
                     |> Assert.equal
-                    |> failWith "given a list of length 3, did not return an oxford-style sentence"
+                    |> Assert.failWith "given a list of length 3, did not return an oxford-style sentence"
         ]
 
 

@@ -1,13 +1,15 @@
 module Test.Outcome exposing (Outcome, pass, fail, toFailures, concat, formatFailure)
 
 {-| Functions for working with test outcomes.
+
+@docs Outcome, pass, fail, toFailures, concat, formatFailure
 -}
 
 
-{-| the result of a single test run. this can either be a [`pass`](#pass) or
+{-| The result of a single test run: either be a [`pass`](#pass) or a
 [`fail`](#fail).
 
-use [`tofailures`](#tofailures) to convert an `outcome` into appropriately
+Use [`toFailures`](#toFailures) to convert an `Outcome` into appropriately
 contextualized failure messages.
 -}
 type Outcome
@@ -57,9 +59,7 @@ formatFailure : (String -> String) -> Outcome -> Outcome
 formatFailure format outcome =
     case outcome of
         Fail messages ->
-            messages
-                |> List.map format
-                |> Fail
+            Fail (List.map format messages)
 
         Pass ->
             outcome

@@ -1,12 +1,12 @@
-module Assert exposing (equal, notEqual, lessThan, greaterThan)
+module Assert exposing (success, failure, equal, notEqual, lessThan, greaterThan, failWith)
 
 {-| Functions that call `Test.pass` and `Test.fail` with helpful output when
 things fail.
 
-@docs equal, notEqual, lessThan, greaterThan
+@docs success, failure, equal, notEqual, lessThan, greaterThan, failWith
 -}
 
-import Test exposing (Outcome)
+import Test.Outcome exposing (Outcome, pass, fail)
 
 
 {-| Fails if `expected /= actual`.
@@ -14,9 +14,9 @@ import Test exposing (Outcome)
 equal : { expected : a, actual : a } -> Outcome
 equal { expected, actual } =
     if expected == actual then
-        Test.pass
+        pass
     else
-        Test.fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
+        fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
 
 
 {-| Fails if `actual == wasNot`.
@@ -24,9 +24,9 @@ equal { expected, actual } =
 notEqual : { actual : a, wasNot : a } -> Outcome
 notEqual record =
     if record.actual == record.wasNot then
-        Test.fail ("Expected different values, but both were:\n\n" ++ toString record.actual)
+        fail ("Expected different values, but both were:\n\n" ++ toString record.actual)
     else
-        Test.pass
+        pass
 
 
 {-| Fails if `lesser >= greater`.
@@ -45,9 +45,46 @@ lessThan =
 greaterThan : { lesser : comparable, greater : comparable } -> Outcome
 greaterThan { lesser, greater } =
     if lesser < greater then
-        Test.pass
+        pass
     else
-        Test.fail ("Expected Greater: " ++ toString greater ++ "\nExpected Lesser:  " ++ toString lesser)
+        fail ("Expected Greater: " ++ toString greater ++ "\nExpected Lesser:  " ++ toString lesser)
+
+
+{-| Always passes.
+
+-- TODO code sample
+-}
+success : Outcome
+success =
+    pass
+
+
+{-| Fails with the given message.
+
+-- TODO code sample
+-}
+failure : String -> Outcome
+failure =
+    fail
+
+
+{-| If the given test fails, replace its Fail message with the given one.
+
+    import Test exposing (failWith)
+    import Assert
+
+
+    Assert.equal { expected = "foo", actual = "bar" }
+        |> failWith "thought they'd be the same"
+        |> Test.toFailures
+        -- Just { messages = [ "thought they'd be the same" ], context = [] }
+-}
+failWith : String -> Outcome -> Outcome
+failWith str outcome =
+    if outcome == pass then
+        pass
+    else
+        fail str
 
 
 

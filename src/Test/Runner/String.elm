@@ -1,7 +1,8 @@
 module Test.Runner.String exposing (run, runWithOptions)
 
 import Random.Pcg as Random
-import Test exposing (Test, Suite, Outcome)
+import Test exposing (Test, Suite)
+import Test.Outcome exposing (Outcome)
 import String
 import Test.Runner exposing (toRunners)
 
@@ -12,7 +13,7 @@ toOutput thunk ( output, failureCount ) =
         ( labels, outcome ) =
             thunk ()
     in
-        case Test.toFailures outcome of
+        case Test.Outcome.toFailures outcome of
             Just failures ->
                 ( String.join "\n\n" (output :: List.map (outputFailures labels) failures)
                 , failureCount + 1

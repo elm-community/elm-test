@@ -1,26 +1,16 @@
-module Test exposing (Test, Outcome, Suite(..), unit, failWith, it, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
+module Test exposing (Test, Suite(..), singleton, it, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
 
 {-| Testing
 
-@docs Test, Outcome, Suite, it, unit, failWith, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
+@docs Test, Suite, singleton, it, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
 -}
 
 import Random.Pcg as Random
-import Test.Outcome exposing (pass, fail)
+import Test.Outcome exposing (Outcome, pass, fail)
 import Dict
 import Shrink
 import Random.Pcg as Random exposing (Generator)
 import Fuzzer exposing (Fuzzer)
-
-
-{-| the result of a single test run. this can either be a [`pass`](#pass) or
-[`fail`](#fail).
-
-use [`tofailures`](#tofailures) to convert an `outcome` into appropriately
-contextualized failure messages.
--}
-type alias Outcome =
-    Test.Outcome.Outcome
 
 
 {-| A batch of Tests which have yet to be evaluated. Execution order is not
@@ -61,8 +51,8 @@ describe desc =
 
 {-| TODO docs
 -}
-unit : Test -> Suite
-unit test =
+singleton : Test -> Suite
+singleton test =
     Suite [ test ]
 
 
@@ -261,22 +251,3 @@ prependInput input original =
 
         Just str ->
             "Input: " ++ str ++ "\n\n" ++ original
-
-
-{-| If the given test fails, replace its Fail message with the given one.
-
-    import Test exposing (failWith)
-    import Assert
-
-
-    Assert.equal { expected = "foo", actual = "bar" }
-        |> failWith "thought they'd be the same"
-        |> Test.toFailures
-        -- Just { messages = [ "thought they'd be the same" ], context = [] }
--}
-failWith : String -> Outcome -> Outcome
-failWith str outcome =
-    if outcome == pass then
-        pass
-    else
-        fail str

@@ -3,7 +3,7 @@ module Test.Runner.Log exposing (run)
 import Html
 import Html.App
 import Random.Pcg as Random
-import Test exposing (Test, Suite, Outcome)
+import Test exposing (Test, Suite)
 import Test.Runner.String
 
 
