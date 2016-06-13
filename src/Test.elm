@@ -1,87 +1,89 @@
-module Test exposing (Test, Runnable(..), describe, toRunnable, batch, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5)
+module Test exposing (Test, describe, batch, test, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
 {-| Testing
 
-## Specifying Tests
+## Testing
 
-@docs Test, describe, batch, unit, fuzz, fuzz2, fuzz3, fuzz4, fuzz5
+@docs Test, test
 
-## Running Tests
+## Grouping Tests
 
-@docs Runnable, toRunnable
+@docs describe, batch
+
+## Fuzz Testing
+
+@docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith
 -}
 
 import Random.Pcg as Random
-import Test.Assertion exposing (Assertion(..))
-import Assert
-import Dict
-import Shrink
+import Test.Test
+import Assert exposing (Assertion)
 import Random.Pcg as Random exposing (Generator)
 import Fuzz exposing (Fuzzer)
-
-
-{-| TODO document
--}
-type Runnable
-    = Runnable (() -> Assertion)
-    | Runnables (Maybe String) (List Runnable)
 
 
 {-| A Test which has yet to be evaluated.
 
 -}
-type Test
-    = Test (Random.Seed -> Int -> Assertion)
-    | Labeled String Test
-    | Batch (List Test)
+type alias Test =
+    Test.Test.Test
 
 
 {-| Run all the given tests. (Execution order is not guaranteed.)
 
+-- TODO give a code example.
 -}
 batch : List Test -> Test
 batch =
-    Batch
+    Test.Test.Batch
 
 
-{-| TODO document
--}
-toRunnable : Random.Seed -> Int -> Test -> Runnable
-toRunnable seed runs test =
-    case test of
-        Test run ->
-            Runnable (\_ -> run seed runs)
-
-        Labeled label subSuite ->
-            [ toRunnable seed runs subSuite ]
-                |> Runnables (Just label)
-
-        Batch suites ->
-            suites
-                |> List.map (toRunnable seed runs)
-                |> Runnables Nothing
-
-
-{-| Apply a description to a list of tests.
+{-| Apply a description to a [`batch`](#batch) of tests.
 
 -- TODO give a code example.
 -}
 describe : String -> List Test -> Test
 describe desc =
-    Batch >> Labeled desc
+    Test.Test.Batch >> Test.Test.Labeled desc
 
 
 {-| Run a single `Test`.
 
 -- TODO give a code example.
 -}
-unit : String -> (() -> Assertion) -> Test
-unit desc thunk =
-    Labeled desc (Test (\_ _ -> thunk ()))
+test : String -> (() -> Assertion) -> Test
+test desc thunk =
+    Test.Test.Labeled desc (Test.Test.Test (\_ _ -> [ thunk () ]))
 
 
-{-| Run the given tests several times, using a randomly-generated input from a
-`Fuzzer` each time. By default, runs each test 100 times with different inputs,
+type alias FuzzOptions =
+    { runs : Int }
+
+
+{-| TODO document
+-}
+fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Assertion) -> Test
+fuzzWith options fuzzer desc getTest =
+    fuzzWithHelp options (Test.Test.fuzzTest desc fuzzer getTest)
+
+
+fuzzWithHelp : FuzzOptions -> Test -> Test
+fuzzWithHelp options test =
+    case test of
+        Test.Test.Test run ->
+            Test.Test.Test (\seed _ -> run seed options.runs)
+
+        Test.Test.Labeled label subTest ->
+            Test.Test.Labeled label (fuzzWithHelp options subTest)
+
+        Test.Test.Batch tests ->
+            tests
+                |> List.map (fuzzWithHelp options)
+                |> Test.Test.Batch
+
+
+{-| Run the given test several times, using a randomly-generated input from a
+`Fuzzer` each time. By default, runs the test 100 times with different inputs,
 but you can configure the run count using [`withRuns`](#withRuns).
 
 These are called "[fuzz tests](https://en.wikipedia.org/wiki/Fuzz_testing)" because of the randomness.
@@ -92,12 +94,12 @@ You may find them elsewhere called [property-based tests](http://blog.jessitron.
 -- TODO code sample
 -}
 fuzz :
-    String
-    -> Fuzzer a
+    Fuzzer a
+    -> String
     -> (a -> Assertion)
     -> Test
-fuzz desc fuzzer =
-    fuzzTest desc fuzzer
+fuzz fuzzer desc =
+    Test.Test.fuzzTest desc fuzzer
 
 
 {-| Run a [fuzz test](#fuzz) using two random inputs.
@@ -108,17 +110,17 @@ This is a convenicence function that lets you skip calling `Fuzz.tuple`.
 -- TODO code sample
 -}
 fuzz2 :
-    String
-    -> Fuzzer a
+    Fuzzer a
     -> Fuzzer b
+    -> String
     -> (a -> b -> Assertion)
     -> Test
-fuzz2 desc fuzzA fuzzB =
+fuzz2 fuzzA fuzzB desc =
     let
         fuzzer =
             Fuzz.tuple ( fuzzA, fuzzB )
     in
-        uncurry >> fuzzTest desc fuzzer
+        uncurry >> Test.Test.fuzzTest desc fuzzer
 
 
 {-| Run a [fuzz test](#fuzz) using three random inputs.
@@ -128,18 +130,18 @@ This is a convenicence function that lets you skip calling `Fuzz.tuple3`.
 -- TODO code sample
 -}
 fuzz3 :
-    String
-    -> Fuzzer a
+    Fuzzer a
     -> Fuzzer b
     -> Fuzzer c
+    -> String
     -> (a -> b -> c -> Assertion)
     -> Test
-fuzz3 desc fuzzA fuzzB fuzzC =
+fuzz3 fuzzA fuzzB fuzzC desc =
     let
         fuzzer =
             Fuzz.tuple3 ( fuzzA, fuzzB, fuzzC )
     in
-        uncurry3 >> fuzzTest desc fuzzer
+        uncurry3 >> Test.Test.fuzzTest desc fuzzer
 
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
@@ -149,19 +151,19 @@ This is a convenicence function that lets you skip calling `Fuzz.tuple4`.
 -- TODO code sample
 -}
 fuzz4 :
-    String
-    -> Fuzzer a
+    Fuzzer a
     -> Fuzzer b
     -> Fuzzer c
     -> Fuzzer d
+    -> String
     -> (a -> b -> c -> d -> Assertion)
     -> Test
-fuzz4 desc fuzzA fuzzB fuzzC fuzzD =
+fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
     let
         fuzzer =
             Fuzz.tuple4 ( fuzzA, fuzzB, fuzzC, fuzzD )
     in
-        uncurry4 >> fuzzTest desc fuzzer
+        uncurry4 >> Test.Test.fuzzTest desc fuzzer
 
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
@@ -184,7 +186,7 @@ fuzz5 desc fuzzA fuzzB fuzzC fuzzD fuzzE =
         fuzzer =
             Fuzz.tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE )
     in
-        uncurry5 >> fuzzTest desc fuzzer
+        uncurry5 >> Test.Test.fuzzTest desc fuzzer
 
 
 
@@ -196,59 +198,6 @@ defaults =
     { runs = 100
     , seed = Random.initialSeed 42
     }
-
-
-fuzzTest : String -> Fuzzer a -> (a -> Assertion) -> Test
-fuzzTest desc fuzzer getOutcome =
-    let
-        run seed runs =
-            let
-                runWithInput val =
-                    let
-                        outcome =
-                            getOutcome val
-
-                        shrunkenVal =
-                            if outcome /= Assert.pass then
-                                Shrink.shrink (getOutcome >> (/=) Assert.pass) fuzzer.shrinker val
-                            else
-                                val
-
-                        shrunkenTest =
-                            getOutcome shrunkenVal
-                    in
-                        ( Just (toString shrunkenVal), shrunkenTest )
-
-                -- testRuns : Generator (List a)
-                testRuns =
-                    Random.list runs fuzzer.generator
-
-                generators =
-                    Random.map (List.map runWithInput) testRuns
-
-                dedupe pairs =
-                    pairs
-                        |> List.map (\( mk, v ) -> ( Maybe.withDefault "" mk, v ))
-                        |> Dict.fromList
-                        |> Dict.toList
-                        |> List.map
-                            (\( s, v ) ->
-                                ( if s == "" then
-                                    Nothing
-                                  else
-                                    Just s
-                                , v
-                                )
-                            )
-            in
-                seed
-                    |> Random.step generators
-                    |> fst
-                    |> dedupe
-                    |> List.map formatAssertion
-                    |> concatAssertions
-    in
-        Labeled desc (Test run)
 
 
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
@@ -264,58 +213,3 @@ uncurry4 fn ( a, b, c, d ) =
 uncurry5 : (a -> b -> c -> d -> e -> f) -> ( a, b, c, d, e ) -> f
 uncurry5 fn ( a, b, c, d, e ) =
     fn a b c d e
-
-
-formatAssertion : ( Maybe String, Assertion ) -> Assertion
-formatAssertion ( input, outcome ) =
-    formatFailure (prependInput input) outcome
-
-
-prependInput : Maybe String -> String -> String
-prependInput input original =
-    case input of
-        Nothing ->
-            original
-
-        Just str ->
-            "Input: " ++ str ++ "\n\n" ++ original
-
-
-{-| TODO document
--}
-concatAssertions : List Assertion -> Assertion
-concatAssertions =
-    concatAssertionsHelp Pass
-
-
-concatAssertionsHelp : Assertion -> List Assertion -> Assertion
-concatAssertionsHelp result outcomes =
-    case outcomes of
-        [] ->
-            result
-
-        Pass :: rest ->
-            case result of
-                Pass ->
-                    concatAssertionsHelp result rest
-
-                (Fail _) as failure ->
-                    concatAssertionsHelp failure rest
-
-        ((Fail newFailures) as first) :: rest ->
-            case result of
-                Pass ->
-                    concatAssertionsHelp first rest
-
-                Fail oldFailures ->
-                    concatAssertionsHelp (Fail (oldFailures ++ newFailures)) rest
-
-
-formatFailure : (String -> String) -> Assertion -> Assertion
-formatFailure format outcome =
-    case outcome of
-        Fail messages ->
-            Fail (List.map format messages)
-
-        Pass ->
-            outcome

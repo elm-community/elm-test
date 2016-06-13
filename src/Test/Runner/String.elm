@@ -1,26 +1,49 @@
 module Test.Runner.String exposing (run, runWithOptions)
 
+{-| # String Runner
+
+@docs run, runWithOptions
+-}
+
 import Random.Pcg as Random
-import Test exposing (Test, Suite)
-import Test.Outcome exposing (Outcome)
+import Test exposing (Test)
+import Assert exposing (Assertion)
 import String
-import Test.Runner exposing (toRunners)
+import Test.Runner exposing (Runner(..))
 
 
-toOutput : (() -> ( List String, Outcome )) -> ( String, Int ) -> ( String, Int )
-toOutput thunk ( output, failureCount ) =
-    let
-        ( labels, outcome ) =
-            thunk ()
-    in
-        case Test.Outcome.toFailures outcome of
-            Just failures ->
-                ( String.join "\n\n" (output :: List.map (outputFailures labels) failures)
+toOutput : ( String, Int ) -> Runner -> ( String, Int )
+toOutput =
+    flip (toOutputHelp [])
+
+
+toOutputHelp : List String -> Runner -> ( String, Int ) -> ( String, Int )
+toOutputHelp labels runner tuple =
+    case runner of
+        Runnable runnable ->
+            List.foldl (fromAssertion labels) tuple (Test.Runner.run runnable)
+
+        Labeled label subRunner ->
+            toOutputHelp (label :: labels) subRunner tuple
+
+        Batch runners ->
+            List.foldl (toOutputHelp labels) tuple runners
+
+
+fromAssertion : List String -> Assertion -> ( String, Int ) -> ( String, Int )
+fromAssertion labels assertion tuple =
+    case Assert.getFailure assertion of
+        Nothing ->
+            tuple
+
+        Just message ->
+            let
+                ( output, failureCount ) =
+                    tuple
+            in
+                ( String.join "\n\n" [ output, outputFailures labels message ]
                 , failureCount + 1
                 )
-
-            Nothing ->
-                ( output, failureCount )
 
 
 outputFailures : List String -> String -> String
@@ -56,13 +79,22 @@ defaultSeed =
     Random.initialSeed 42
 
 
-run : Suite -> ( String, Int )
+defaultRuns : Int
+defaultRuns =
+    100
+
+
+{-| TODO document
+-}
+run : Test -> ( String, Int )
 run =
-    runWithOptions defaultSeed 100
+    runWithOptions defaultSeed defaultRuns
 
 
-runWithOptions : Random.Seed -> Int -> Suite -> ( String, Int )
-runWithOptions seed runs suite =
-    suite
-        |> toRunners seed runs
-        |> List.foldl toOutput ( "", 0 )
+{-| TODO document
+-}
+runWithOptions : Random.Seed -> Int -> Test -> ( String, Int )
+runWithOptions seed runs test =
+    test
+        |> Test.Runner.fromTest seed runs
+        |> toOutput ( "", 0 )

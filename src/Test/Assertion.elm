@@ -1,6 +1,16 @@
-module Test.Assertion exposing (Assertion(..))
+module Test.Assertion exposing (Assertion(..), formatFailure)
 
 
 type Assertion
     = Pass
-    | Fail (List String)
+    | Fail String
+
+
+formatFailure : (String -> String) -> Assertion -> Assertion
+formatFailure format outcome =
+    case outcome of
+        Fail message ->
+            Fail (format message)
+
+        Pass ->
+            outcome

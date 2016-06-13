@@ -1,8 +1,19 @@
-module Assert exposing (Assertion, pass, fail, equal, notEqual, lessThan, greaterThan, failWith)
+module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, lessThan, greaterThan, onFail)
 
 {-| Making assertions.
 
-@docs Assertion, pass, fail, equal, notEqual, lessThan, greaterThan, failWith
+
+## Basic Assertions
+
+@docs Assertion, pass, fail, getFailure
+
+## Comparisons
+
+@docs equal, notEqual, lessThan, greaterThan
+
+## Customizing
+
+@docs onFail
 -}
 
 import Test.Assertion
@@ -70,23 +81,35 @@ pass =
 -- TODO code sample
 -}
 fail : String -> Assertion
-fail desc =
-    Test.Assertion.Fail [ desc ]
+fail =
+    Test.Assertion.Fail
+
+
+{-| Fails with the given message.
+
+-- TODO code sample
+-}
+getFailure : Assertion -> Maybe String
+getFailure assertion =
+    case assertion of
+        Test.Assertion.Pass ->
+            Nothing
+
+        Test.Assertion.Fail desc ->
+            Just desc
 
 
 {-| If the given test fails, replace its Fail message with the given one.
 
-    import Test exposing (failWith)
+    import Test exposing (onFail)
     import Assert
 
 
     Assert.equal { expected = "foo", actual = "bar" }
-        |> failWith "thought they'd be the same"
-        |> Test.toFailures
-        -- Just { messages = [ "thought they'd be the same" ], context = [] }
+        |> Assert.onFail "thought they'd be the same"
 -}
-failWith : String -> Assertion -> Assertion
-failWith str assertion =
+onFail : String -> Assertion -> Assertion
+onFail str assertion =
     case assertion of
         Test.Assertion.Pass ->
             assertion

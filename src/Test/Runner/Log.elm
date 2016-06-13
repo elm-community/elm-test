@@ -1,26 +1,33 @@
-module Test.Runner.Log exposing (run)
+module Test.Runner.Log exposing (run, runWithOptions)
 
-import Html
-import Html.App
+{-| # Log Runner
+
+@docs run, runWithOptions
+-}
+
 import Random.Pcg as Random
-import Test exposing (Test, Suite)
+import Test exposing (Test)
 import Test.Runner.String
 
 
-run : Suite -> Program Never
-run suite =
-    Test.Runner.String.run suite
+{-| TODO document
+-}
+run : Test -> a -> a
+run test =
+    Test.Runner.String.run test
         |> logOutput
 
 
-runWithOptions : Random.Seed -> Int -> Suite -> Program Never
-runWithOptions seed runs suite =
-    Test.Runner.String.runWithOptions seed runs suite
+{-| TODO document
+-}
+runWithOptions : Random.Seed -> Int -> Test -> a -> a
+runWithOptions seed runs test =
+    Test.Runner.String.runWithOptions seed runs test
         |> logOutput
 
 
-logOutput : ( String, Int ) -> Program Never
-logOutput ( output, failureCount ) =
+logOutput : ( String, Int ) -> a -> a
+logOutput ( output, failureCount ) arg =
     let
         _ =
             if failureCount > 0 then
@@ -33,8 +40,4 @@ logOutput ( output, failureCount ) =
                     |> (flip Debug.log 0)
                     |> (\_ -> ())
     in
-        Html.App.beginnerProgram
-            { model = ()
-            , update = \_ model -> model
-            , view = \_ -> Html.text ""
-            }
+        arg

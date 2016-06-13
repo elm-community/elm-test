@@ -8,13 +8,15 @@
     ],
     "exposed-modules": [
         "Test",
+        "Test.Runner",
+        "Test.Runner.String",
+        "Test.Runner.Log",
         "Assert",
         "Fuzz"
     ],
     "dependencies": {
         "elm-community/shrink": "1.1.0 <= v < 2.0.0",
         "elm-lang/core": "4.0.0 <= v < 5.0.0",
-        "elm-lang/html": "1.0.0 <= v < 2.0.0",
         "mgold/elm-random-pcg": "2.1.0 <= v < 3.0.0"
     },
     "elm-version": "0.17.0 <= v < 0.18.0"
