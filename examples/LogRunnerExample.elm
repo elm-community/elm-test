@@ -11,16 +11,18 @@ Note that this always uses an initial seed of 42, since it can't do effects.
 import Assert
 import Test exposing (..)
 import Test.Runner.Log
+import Html.App
+import Html
 
 
 main : Program Never
 main =
-    Test.Runner.Log.run suites
-
-
-suites : Suite
-suites =
-    oxfordifySuite
+    Html.App.beginnerProgram
+        { model = ()
+        , update = \_ _ -> ()
+        , view = \_ -> Html.text "Check the console for useful output!"
+        }
+        |> Test.Runner.Log.run testOxfordify
 
 
 {-| stubbed function under Suite
@@ -30,11 +32,11 @@ oxfordify _ _ _ =
     "Alice, Bob, and Claire"
 
 
-oxfordifySuite : Suite
-oxfordifySuite =
+testOxfordify : Test
+testOxfordify =
     describe "oxfordify"
         [ describe "given an empty sentence"
-            [ unit "returns an empty string"
+            [ test "returns an empty string"
                 <| \_ ->
                     Assert.equal
                         { expected = ""
@@ -42,25 +44,22 @@ oxfordifySuite =
                         }
             ]
         , describe "given a sentence with one item"
-            [ unit "still contains one item"
+            [ test "still contains one item"
                 <| \_ ->
-                <| Test.unit
                     Assert.equal
                         { expected = "This sentence contains one item."
                         , actual = oxfordify "This sentence contains " "." [ "one item" ]
                         }
             ]
         , describe "given a sentence with multiple items"
-            [ unit "returns an oxford-style sentence"
+            [ test "returns an oxford-style sentence"
                 <| \_ ->
-                <| Test.unit
                     Assert.equal
                         { expected = "This sentence contains one item and two item."
                         , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
                         }
-            , unit "returns an oxford-style sentence"
+            , test "returns an oxford-style sentence"
                 <| \_ ->
-                <| Test.unit
                     Assert.equal
                         { expected = "This sentence contains one item, two item, and three item."
                         , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
