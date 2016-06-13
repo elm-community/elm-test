@@ -44,6 +44,7 @@ oxfordifySuite =
         , describe "given a sentence with one item"
             [ it "still contains one item"
                 <| \_ ->
+                <| Test.unit
                     Assert.equal
                         { expected = "This sentence contains one item."
                         , actual = oxfordify "This sentence contains " "." [ "one item" ]
@@ -52,12 +53,14 @@ oxfordifySuite =
         , describe "given a sentence with multiple items"
             [ it "returns an oxford-style sentence"
                 <| \_ ->
+                <| Test.unit
                     Assert.equal
                         { expected = "This sentence contains one item and two item."
                         , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
                         }
             , it "returns an oxford-style sentence"
                 <| \_ ->
+                <| Test.unit
                     Assert.equal
                         { expected = "This sentence contains one item, two item, and three item."
                         , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]

@@ -1,17 +1,23 @@
-module Assert exposing (success, failure, equal, notEqual, lessThan, greaterThan, failWith)
+module Assert exposing (Assertion, pass, fail, equal, notEqual, lessThan, greaterThan, failWith)
 
-{-| Functions that call `Test.pass` and `Test.fail` with helpful output when
-things fail.
+{-| Making assertions.
 
-@docs success, failure, equal, notEqual, lessThan, greaterThan, failWith
+@docs Assertion, pass, fail, equal, notEqual, lessThan, greaterThan, failWith
 -}
 
-import Test.Outcome exposing (Outcome, pass, fail)
+import Test.Assertion
+
+
+{-| The result of a single test run: either be a [`pass`](#pass) or a
+[`fail`](#fail).
+-}
+type alias Assertion =
+    Test.Assertion.Assertion
 
 
 {-| Fails if `expected /= actual`.
 -}
-equal : { expected : a, actual : a } -> Outcome
+equal : { expected : a, actual : a } -> Assertion
 equal { expected, actual } =
     if expected == actual then
         pass
@@ -21,7 +27,7 @@ equal { expected, actual } =
 
 {-| Fails if `actual == wasNot`.
 -}
-notEqual : { actual : a, wasNot : a } -> Outcome
+notEqual : { actual : a, wasNot : a } -> Assertion
 notEqual record =
     if record.actual == record.wasNot then
         fail ("Expected different values, but both were:\n\n" ++ toString record.actual)
@@ -33,7 +39,7 @@ notEqual record =
 
 (This function is identical to [`greaterThan`](#greaterThan).)
 -}
-lessThan : { lesser : comparable, greater : comparable } -> Outcome
+lessThan : { lesser : comparable, greater : comparable } -> Assertion
 lessThan =
     greaterThan
 
@@ -42,7 +48,7 @@ lessThan =
 
 (This function is identical to [`lessThan`](#lessThan).)
 -}
-greaterThan : { lesser : comparable, greater : comparable } -> Outcome
+greaterThan : { lesser : comparable, greater : comparable } -> Assertion
 greaterThan { lesser, greater } =
     if lesser < greater then
         pass
@@ -54,18 +60,18 @@ greaterThan { lesser, greater } =
 
 -- TODO code sample
 -}
-success : Outcome
-success =
-    pass
+pass : Assertion
+pass =
+    Test.Assertion.Pass
 
 
 {-| Fails with the given message.
 
 -- TODO code sample
 -}
-failure : String -> Outcome
-failure =
-    fail
+fail : String -> Assertion
+fail desc =
+    Test.Assertion.Fail [ desc ]
 
 
 {-| If the given test fails, replace its Fail message with the given one.
@@ -79,12 +85,14 @@ failure =
         |> Test.toFailures
         -- Just { messages = [ "thought they'd be the same" ], context = [] }
 -}
-failWith : String -> Outcome -> Outcome
-failWith str outcome =
-    if outcome == pass then
-        pass
-    else
-        fail str
+failWith : String -> Assertion -> Assertion
+failWith str assertion =
+    case assertion of
+        Test.Assertion.Pass ->
+            assertion
+
+        Test.Assertion.Fail _ ->
+            fail str
 
 
 

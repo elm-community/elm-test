@@ -8,9 +8,8 @@
     ],
     "exposed-modules": [
         "Test",
-        "Test.Outcome",
         "Assert",
-        "Fuzzer"
+        "Fuzz"
     ],
     "dependencies": {
         "elm-community/shrink": "1.1.0 <= v < 2.0.0",

@@ -186,10 +186,10 @@ init thunks =
 
 run : Suite -> Program Never
 run =
-    runWithOptions Nothing 100
+    runWithOptions Nothing Nothing
 
 
-runWithOptions : Maybe Random.Seed -> Int -> Suite -> Program Never
+runWithOptions : Maybe Random.Seed -> Maybe Int -> Suite -> Program Never
 runWithOptions maybeSeed runs suite =
     Test.Runner.run
         { suite = suite

@@ -127,7 +127,7 @@ fuzzSuite : Suite
 fuzzSuite =
     describe "fuzz suite"
         [ Test.singleton
-            <| (fuzz2 string string)
+            <| (Test.fuzz2 string string)
             <| \name punctuation ->
                 { expected = ""
                 , actual = oxfordify "This sentence is empty" "." []
@@ -135,14 +135,14 @@ fuzzSuite =
                     |> Assert.equal
                     |> Assert.failWith "given an empty list, did not return an empty string"
         , Test.singleton
-            <| (fuzz2 string string)
+            <| (Test.fuzz2 string string)
             <| \name punctuation ->
                 { expected = "This sentence contains one item."
                 , actual = oxfordify "This sentence contains " "." [ "one item" ]
                 }
                     |> Assert.equal
         , Test.singleton
-            <| (fuzz2 string string)
+            <| (Test.fuzz2 string string)
             <| \name punctuation ->
                 { expected = "This sentence contains one item and two item."
                 , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
@@ -150,7 +150,7 @@ fuzzSuite =
                     |> Assert.equal
                     |> Assert.failWith "given an empty list, did not return an empty string"
         , Test.singleton
-            <| (fuzz2 string string)
+            <| (Test.fuzz2 string string)
             <| \name punctuation ->
                 { expected = "This sentence contains one item, two item, and three item."
                 , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
@@ -164,7 +164,7 @@ failFuzzSuite : Suite
 failFuzzSuite =
     describe "the first element in this fuzz tuple"
         [ it "is always \"foo\""
-            <| fuzz2 string string
+            <| Test.fuzz2 string string
             <| \str1 str2 ->
                 Assert.equal
                     { expected = "foo"
@@ -213,22 +213,22 @@ shrinkableSuite : Suite
 shrinkableSuite =
     describe "Some Suites that should fail and produce shrunken values"
         [ describe "a randomly generated integer"
-            [ it "is for sure exactly 0"
-                <| (fuzz Fuzzer.int)
+            [ fuzz "is for sure exactly 0"
+                int
                 <| \i ->
                     Assert.equal
                         { expected = 0
                         , actual = i
                         }
-            , it "is <42"
-                <| (fuzz Fuzzer.int)
+            , fuzz "is <42"
+                int
                 <| \i ->
                     Assert.lessThan
                         { greater = 42
                         , lesser = i
                         }
             , it "is also >42"
-                <| (fuzz Fuzzer.int)
+                <| (Test.fuzz Fuzzer.int)
                 <| \i ->
                     Assert.greaterThan
                         { greater = 42
@@ -237,7 +237,7 @@ shrinkableSuite =
             ]
         , describe "a randomly generated string"
             [ it "equals its reverse"
-                <| (fuzz Fuzzer.string)
+                <| (Test.fuzz Fuzzer.string)
                 <| \s ->
                     Assert.equal
                         { expected = s

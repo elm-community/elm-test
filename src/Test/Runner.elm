@@ -88,11 +88,14 @@ type alias SubUpdate msg model =
     msg -> model -> ( model, Cmd msg )
 
 
-type alias RunnerOptions msg model =
-    { suite : Suite
-    , seed : Maybe Random.Seed
-    , runs : Int
-    , init : List (() -> ( List String, Outcome )) -> ( model, Cmd msg )
+type alias RunnerOptions =
+    { seed : Maybe Random.Seed
+    , runs : Maybe Int
+    }
+
+
+type alias AppOptions msg model =
+    { init : List (() -> ( List String, Outcome )) -> ( model, Cmd msg )
     , update : SubUpdate msg model
     , view : model -> Html msg
     , subscriptions : model -> Sub msg
@@ -128,24 +131,32 @@ toRunnersHelp labels seed runs suite =
             List.concatMap (toRunnersHelp labels seed runs) suites
 
 
-run : RunnerOptions msg model -> Program Never
-run opts =
+run : RunnerOptions -> AppOptions msg model -> Suite -> Program Never
+run runnerOpts appOpts suite =
     let
+        runs =
+            Maybe.withDefault defaultRunCount runnerOpts.runs
+
         init =
-            case opts.seed of
+            case runnerOpts.seed of
                 Just seed ->
                     let
                         ( subModel, subCmd ) =
-                            opts.init (toRunners seed opts.runs opts.suite)
+                            appOpts.init (toRunners seed runs suite)
                     in
-                        ( Initialized opts.update subModel, Cmd.map SubMsg subCmd )
+                        ( Initialized appOpts.update subModel, Cmd.map SubMsg subCmd )
 
                 Nothing ->
-                    ( Uninitialized opts.update opts.runs opts.suite opts.init, initCmd )
+                    ( Uninitialized appOpts.update runs suite appOpts.init, initCmd )
     in
         Html.App.program
             { init = init
             , update = initOrUpdate
-            , view = initOrView opts.view
-            , subscriptions = subscriptions opts.subscriptions
+            , view = initOrView appOpts.view
+            , subscriptions = subscriptions appOpts.subscriptions
             }
+
+
+defaultRunCount : Int
+defaultRunCount =
+    100

@@ -1,4 +1,4 @@
-module Fuzzer exposing (..)
+module Fuzz exposing (..)
 
 {-| This is a library of `Fuzzer`s you can use to supply values to your fuzz Suites.
 You can typically pick out which ones you need according to their types.
