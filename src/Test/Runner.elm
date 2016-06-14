@@ -28,7 +28,6 @@ run (Thunk fn) =
 -}
 fromTest : Random.Seed -> Int -> Test -> Runner
 fromTest seed runs test =
-    -- TODO independentSeed
     case test of
         Test.Test.Test run ->
             Thunk (\_ -> run seed runs)
@@ -39,10 +38,39 @@ fromTest seed runs test =
                 |> fromTest seed runs
                 |> Labeled label
 
-        Test.Test.Batch tests ->
-            tests
-                |> List.map (fromTest seed runs)
+        Test.Test.Batch subTests ->
+            subTests
+                |> List.foldl (distributeSeeds runs) ( seed, [] )
+                |> snd
                 |> Batch
+
+
+distributeSeeds : Int -> Test -> ( Random.Seed, List Runner ) -> ( Random.Seed, List Runner )
+distributeSeeds runs test ( startingSeed, runners ) =
+    case test of
+        Test.Test.Test run ->
+            let
+                ( seed, nextSeed ) =
+                    Random.step Random.independentSeed startingSeed
+            in
+                ( nextSeed, runners ++ [ Runnable (Thunk (\_ -> run seed runs)) ] )
+
+        Test.Test.Labeled label subTest ->
+            let
+                ( nextSeed, nextRunners ) =
+                    distributeSeeds runs subTest ( startingSeed, [] )
+
+                finalRunners =
+                    List.map (Labeled label) nextRunners
+            in
+                ( nextSeed, runners ++ finalRunners )
+
+        Test.Test.Batch tests ->
+            let
+                ( nextSeed, nextRunners ) =
+                    List.foldl (distributeSeeds runs) ( startingSeed, [] ) tests
+            in
+                ( nextSeed, [ Batch (runners ++ nextRunners) ] )
 
 
 {-| TODO document
