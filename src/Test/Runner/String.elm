@@ -88,13 +88,13 @@ defaultRuns =
 -}
 run : Test -> ( String, Int )
 run =
-    runWithOptions defaultSeed defaultRuns
+    runWithOptions defaultRuns defaultSeed
 
 
 {-| TODO document
 -}
-runWithOptions : Random.Seed -> Int -> Test -> ( String, Int )
-runWithOptions seed runs test =
+runWithOptions : Int -> Random.Seed -> Test -> ( String, Int )
+runWithOptions runs seed test =
     test
-        |> Test.Runner.fromTest seed runs
+        |> Test.Runner.fromTest runs seed
         |> toOutput ( "", 0 )

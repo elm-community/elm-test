@@ -26,8 +26,8 @@ run (Thunk fn) =
 
 {-| TODO document
 -}
-fromTest : Random.Seed -> Int -> Test -> Runner
-fromTest seed runs test =
+fromTest : Int -> Random.Seed -> Test -> Runner
+fromTest runs seed test =
     case test of
         Test.Test.Test run ->
             Thunk (\_ -> run seed runs)
@@ -35,7 +35,7 @@ fromTest seed runs test =
 
         Test.Test.Labeled label subTest ->
             subTest
-                |> fromTest seed runs
+                |> fromTest runs seed
                 |> Labeled label
 
         Test.Test.Batch subTests ->

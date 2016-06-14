@@ -20,9 +20,9 @@ run test =
 
 {-| TODO document
 -}
-runWithOptions : Random.Seed -> Int -> Test -> a -> a
-runWithOptions seed runs test =
-    Test.Runner.String.runWithOptions seed runs test
+runWithOptions : Int -> Random.Seed -> Test -> a -> a
+runWithOptions runs seed test =
+    Test.Runner.String.runWithOptions runs seed test
         |> logOutput
 
 
