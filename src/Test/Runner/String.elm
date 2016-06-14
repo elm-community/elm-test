@@ -50,7 +50,7 @@ outputFailures : List String -> String -> String
 outputFailures labels message =
     let
         ( maybeLastContext, otherContexts ) =
-            case List.reverse labels of
+            case labels of
                 [] ->
                     ( Nothing, [] )
 
