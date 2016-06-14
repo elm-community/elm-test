@@ -1,4 +1,4 @@
-module Fuzz exposing (..)
+module Fuzz exposing (Fuzzer, unit, bool, order, array, char, convert, filter, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, maybe, intRange, list)
 
 {-| This is a library of `Fuzzer`s you can use to supply values to your fuzz tests.
 You can typically pick out which ones you need according to their types.
