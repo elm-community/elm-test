@@ -41,15 +41,20 @@ fromAssertion labels assertion tuple =
                 ( output, failureCount ) =
                     tuple
             in
-                ( String.join "\n\n" [ output, outputFailures labels message ]
+                ( String.join "\n\n" [ output, (withoutEmptyStrings >> outputFailures message) labels ]
                 , failureCount + 1
                 )
 
 
-outputFailures : List String -> String -> String
-outputFailures labels message =
+withoutEmptyStrings : List String -> List String
+withoutEmptyStrings =
+    List.filter ((/=) "")
+
+
+outputFailures : String -> List String -> String
+outputFailures message labels =
     let
-        ( maybeLastContext, otherContexts ) =
+        ( maybeLastLabel, otherLabels ) =
             case labels of
                 [] ->
                     ( Nothing, [] )
@@ -58,20 +63,20 @@ outputFailures labels message =
                     ( Just first, List.reverse rest )
 
         outputMessage message =
-            case maybeLastContext of
-                Just lastContext ->
+            case maybeLastLabel of
+                Just label ->
                     String.join "\n\n"
-                        [ "✗ " ++ lastContext, message ]
+                        [ "✗ " ++ label, message ]
 
                 Nothing ->
                     message
 
         outputContext =
-            otherContexts
+            otherLabels
                 |> List.map ((++) "↓ ")
                 |> String.join "\n"
     in
-        outputContext ++ "\n" ++ message
+        outputContext ++ "\n" ++ outputMessage message
 
 
 defaultSeed : Random.Seed
