@@ -25,7 +25,7 @@ main =
         |> Test.Runner.Log.run testOxfordify
 
 
-{-| stubbed function under Suite
+{-| stubbed function under test
 -}
 oxfordify : a -> b -> c -> String
 oxfordify _ _ _ =

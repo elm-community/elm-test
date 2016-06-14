@@ -1,6 +1,6 @@
 module Fuzz exposing (..)
 
-{-| This is a library of `Fuzzer`s you can use to supply values to your fuzz Suites.
+{-| This is a library of `Fuzzer`s you can use to supply values to your fuzz tests.
 You can typically pick out which ones you need according to their types.
 
 A `Fuzzer a` knows how to create values of type `a`. It can create them
@@ -30,9 +30,9 @@ import Random.Pcg as Random exposing (Generator)
 
 
 {-| An Fuzzer type is a
-[Random](http://package.elm-lang.org/packages/elm-lang/core/laSuite/Random)
+[Random](http://package.elm-lang.org/packages/elm-lang/core/latest/Random)
 `Generator` paired with a shrinking strategy, or `Shrinker`. Shrinkers are defined
-in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/laSuite/).
+in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/latest/).
 You will need to be familiar with both libraries to write custom fuzzers for your own types.
 Here is an example for a record:
 
@@ -289,7 +289,7 @@ tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE ) =
 
 
 {-| Filter the values from a Fuzzer. The resulting Fuzzer will only generate
-random Suite values or shrunken values that satisfy the predicate. The predicate
+random test values or shrunken values that satisfy the predicate. The predicate
 must be satisfiable.
 -}
 filter : (a -> Bool) -> Fuzzer a -> Fuzzer a
@@ -299,9 +299,9 @@ filter predicate fuzz =
 
 
 {-| Convert the output of one fuzzer to another type. This is useful if
-you're Suiteing a function that expects a large model record, but you only need
+you're testing a function that expects a large model record, but you only need
 to randomize a few fields. You might do this several different ways for a single
-model, so you generate and shrink only the fields relevant to each Suite.
+model, so you generate and shrink only the fields relevant to each test.
 
     type alias Person =
       { first : String, last : String, age : String }
