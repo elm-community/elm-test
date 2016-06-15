@@ -1,8 +1,6 @@
-module Test exposing (Test, describe, batch, test, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, batch, test, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
-{-| Testing
-
-## Testing
+{-| ## Testing
 
 @docs Test, test
 
@@ -12,7 +10,7 @@ module Test exposing (Test, describe, batch, test, fuzz, fuzz2, fuzz3, fuzz4, fu
 
 ## Fuzz Testing
 
-@docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith
+@docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, FuzzOptions
 -}
 
 import Random.Pcg as Random
@@ -22,8 +20,10 @@ import Random.Pcg as Random exposing (Generator)
 import Fuzz exposing (Fuzzer)
 
 
-{-| A Test which has yet to be evaluated.
+{-| A test which has yet to be evaluated. When evaluated, it produces one
+or more [`Assertion`](../Assert#Assertion)s.
 
+See [`test`](#test) and [`fuzz`](#fuzz) for some ways to create a `Test`.
 -}
 type alias Test =
     Test.Test.Test
@@ -31,7 +31,10 @@ type alias Test =
 
 {-| Run all the given tests. (Execution order is not guaranteed.)
 
--- TODO give a code example.
+    import Test exposing (batch)
+
+
+    batch [ testDecoder, testSorting ]
 -}
 batch : List Test -> Test
 batch =
@@ -40,27 +43,96 @@ batch =
 
 {-| Apply a description to a [`batch`](#batch) of tests.
 
--- TODO give a code example.
+    import Test exposing (describe, test, fuzz)
+    import Fuzz expoing (int)
+    import Assert
+
+
+    describe "List"
+        [ describe "reverse"
+            [ test "has no effect on an empty list" <|
+                \_ ->
+                    Assert.equal
+                        { expected = []
+                        , actual = List.reverse []
+                        }
+            , fuzz int "has no effect on a one-item list" <|
+                \num ->
+                    Assert.equal
+                        { expected = [ num ]
+                        , actual = List.reverse [ num ]
+                        }
+            ]
+        ]
 -}
 describe : String -> List Test -> Test
 describe desc =
     Test.Test.Batch >> Test.Test.Labeled desc
 
 
-{-| Run a single `Test`.
+{-| Return a [`Test`](#Test) that evaluates a single
+[`Assertion`](../Assert#Assertion).
 
--- TODO give a code example.
+    import Test exposing (fuzz)
+    import Assert
+
+
+    test "the empty list has 0 length" <|
+        \_ ->
+            Assert.equal
+                { expected = 0
+                , actual = List.length []
+                }
 -}
 test : String -> (() -> Assertion) -> Test
 test desc thunk =
     Test.Test.Labeled desc (Test.Test.Test (\_ _ -> [ thunk () ]))
 
 
+{-| Options [`fuzzWith`](#fuzzWith) accepts.
+
+### `runs`
+
+The number of times to run each fuzz test. (Default is 100.)
+
+    import Test exposing (fuzzWith)
+    import Fuzz exposing (list, int)
+    import Assert
+
+
+    fuzzWith { runs = 350 } (list int) "List.length should never be negative" <|
+        -- This anonymous function will be run 350 times, each time with a
+        -- randomly-generated fuzzList value. (It will always be a list of ints
+        -- because of (list int) above.)
+        \fuzzList ->
+            Assert.lessThan
+                { lesser = -1
+                , greater = List.length fuzzList
+                }
+-}
 type alias FuzzOptions =
     { runs : Int }
 
 
-{-| TODO document
+{-| Run a `fuzz` test with the given [`FuzzOptions`](#FuzzOptions).
+
+Note that there is no `fuzzWith2`, but you can always pass more fuzz values in
+using [`Fuzz.tuple`](../Fuzz#tuple), [`Fuzz.tuple3`](../Fuzz#tuple3),
+for example like this:
+
+    import Test exposing (fuzzWith)
+    import Fuzz exposing (tuple, list, int)
+    import Assert
+
+
+    fuzzWith { runs = 4200 }
+        (tuple ( list int, int ))
+        "List.reverse never influences List.member" <|
+            \(nums, target) ->
+                Assert.equal
+                    { expected = List.member target nums
+                    , actual = List.member target (List.reverse nums)
+                    }
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Assertion) -> Test
 fuzzWith options fuzzer desc getTest =
