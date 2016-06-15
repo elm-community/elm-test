@@ -52,16 +52,12 @@ batch =
         [ describe "reverse"
             [ test "has no effect on an empty list" <|
                 \_ ->
-                    Assert.equal
-                        { expected = []
-                        , actual = List.reverse []
-                        }
+                    List.reverse []
+                        |> Assert.equal []
             , fuzz int "has no effect on a one-item list" <|
                 \num ->
-                    Assert.equal
-                        { expected = [ num ]
-                        , actual = List.reverse [ num ]
-                        }
+                     List.reverse [ num ]
+                        |> Assert.equal [ num ]
             ]
         ]
 -}
@@ -79,10 +75,8 @@ describe desc =
 
     test "the empty list has 0 length" <|
         \_ ->
-            Assert.equal
-                { expected = 0
-                , actual = List.length []
-                }
+            List.length []
+                |> Assert.equal 0
 -}
 test : String -> (() -> Assertion) -> Test
 test desc thunk =
@@ -105,7 +99,9 @@ The number of times to run each fuzz test. (Default is 100.)
         -- randomly-generated fuzzList value. (It will always be a list of ints
         -- because of (list int) above.)
         \fuzzList ->
-            Assert.atLeast 0 (List.length fuzzList)
+            fuzzList
+                |> List.length
+                |> Assert.atLeast 0
 -}
 type alias FuzzOptions =
     { runs : Int }
@@ -126,10 +122,8 @@ for example like this:
         (tuple ( list int, int ))
         "List.reverse never influences List.member" <|
             \(nums, target) ->
-                Assert.equal
-                    { expected = List.member target nums
-                    , actual = List.member target (List.reverse nums)
-                    }
+                List.member target (List.reverse nums)
+                    |> Assert.equal (List.member target nums)
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Assertion) -> Test
 fuzzWith options fuzzer desc getTest =
@@ -170,7 +164,9 @@ You may find them elsewhere called [property-based tests](http://blog.jessitron.
         -- randomly-generated fuzzList value. (You can configure the run count
         -- using Fuzz.fuzzWith, or by giving your test runner a different default.)
         \fuzzList ->
-            Assert.atLeast 0 (List.length fuzzList)
+            fuzzList
+                |> List.length
+                |> Assert.atLeast 0
 -}
 fuzz :
     Fuzzer a
@@ -193,10 +189,8 @@ See [`fuzzWith`](#fuzzWith) for an example of writing this in tuple style.
 
     fuzz2 (list int) int "List.reverse never influences List.member" <|
         \nums target ->
-            Assert.equal
-                { expected = List.member target nums
-                , actual = List.member target (List.reverse nums)
-                }
+            List.member target (List.reverse nums)
+                |> Assert.equal (List.member target nums)
 -}
 fuzz2 :
     Fuzzer a

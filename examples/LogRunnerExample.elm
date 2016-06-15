@@ -38,31 +38,23 @@ testOxfordify =
         [ describe "given an empty sentence"
             [ test "returns an empty string"
                 <| \_ ->
-                    Assert.equal
-                        { expected = ""
-                        , actual = oxfordify "This sentence is empty" "." []
-                        }
+                    oxfordify "This sentence is empty" "." []
+                        |> Assert.equal ""
             ]
         , describe "given a sentence with one item"
             [ test "still contains one item"
                 <| \_ ->
-                    Assert.equal
-                        { expected = "This sentence contains one item."
-                        , actual = oxfordify "This sentence contains " "." [ "one item" ]
-                        }
+                    oxfordify "This sentence contains " "." [ "one item" ]
+                        |> Assert.equal "This sentence contains one item."
             ]
         , describe "given a sentence with multiple items"
             [ test "returns an oxford-style sentence"
                 <| \_ ->
-                    Assert.equal
-                        { expected = "This sentence contains one item and two item."
-                        , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
-                        }
+                    oxfordify "This sentence contains " "." [ "one item", "two item" ]
+                        |> Assert.equal "This sentence contains one item and two item."
             , test "returns an oxford-style sentence"
                 <| \_ ->
-                    Assert.equal
-                        { expected = "This sentence contains one item, two item, and three item."
-                        , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
-                        }
+                    oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
+                        |> Assert.equal "This sentence contains one item, two item, and three item."
             ]
         ]

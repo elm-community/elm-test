@@ -2,7 +2,6 @@ module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, less
 
 {-| Making assertions.
 
-
 ## Basic Assertions
 
 @docs Assertion, pass, fail, getFailure, equal, notEqual
@@ -33,30 +32,51 @@ type alias Assertion =
     Test.Assertion.Assertion
 
 
-{-| Fails if `expected /= actual`.
+{-| Passes if the arguments are equal.
+
+    List.length []
+        |> Assert.equal 5
+
+The failure message from this assertion would be:
+
+    Expected 0
+    to equal 5
 -}
-equal : { expected : a, actual : a } -> Assertion
-equal { expected, actual } =
+equal : a -> a -> Assertion
+equal expected actual =
     if expected == actual then
         pass
     else
-        fail ("Expected: " ++ toString expected ++ "\nActual:   " ++ toString actual)
+        fail ("Expected " ++ toString expected ++ "\nto equal " ++ toString actual)
 
 
-{-| Fails if `actual == wasNot`.
+{-| Passes if the arguments are not equal.
+
+    (90 + 10)
+        |> Assert.notEqual 100
+
+The failure message from this assertion would be:
+
+    Expected different values, but both were:
+
+    100
 -}
-notEqual : { actual : a, wasNot : a } -> Assertion
-notEqual record =
-    if record.actual == record.wasNot then
-        fail ("Expected different values, but both were:\n\n" ++ toString record.actual)
+notEqual : a -> a -> Assertion
+notEqual expected actual =
+    if expected == actual then
+        fail ("Expected different values, but both were:\n\n" ++ toString actual)
     else
         pass
 
 
-{-| Passes if `secondArgument < firstArgument`
+{-| Passes if the second argument is less than the first.
 
-    -- This assertion will PASS.
-    Assert.lessThan 1 (List.length [])
+    List.length []
+        |> Assert.lessThan -1
+
+The failure message from this assertion would be:
+
+    Expected 0 to be less than -1.
 
 See the [Comparisons Table](#Comparisons) for other comparisons.
 -}
@@ -68,10 +88,14 @@ lessThan greater lesser =
         fail ("Expected " ++ toString lesser ++ " to be less than " ++ toString greater)
 
 
-{-| Passes if `secondArgument <= firstArgument`
+{-| Passes if the second argument is less than or equal to the first.
 
-    -- This assertion will PASS.
-    Assert.atMost 0 (List.length [])
+    List.length []
+        |> Assert.atMost -3
+
+The failure message from this assertion would be:
+
+    Expected 0 to be at most -3.
 
 See the [Comparisons Table](#Comparisons) for other comparisons.
 -}
@@ -83,10 +107,14 @@ atMost greater lesserOrEqual =
         fail ("Expected " ++ toString lesserOrEqual ++ " to be at most " ++ toString greater)
 
 
-{-| Passes if `secondArgument > firstArgument`
+{-| Passes if the second argument is greater than the first.
 
-    -- This assertion will FAIL.
-    Assert.greaterThan 0 (List.length [])
+    List.length []
+        |> Assert.greaterThan 1
+
+The failure message from this assertion would be:
+
+    Expected 0 to be greater than 1.
 
 See the [Comparisons Table](#Comparisons) for other comparisons.
 -}
@@ -98,10 +126,14 @@ greaterThan lesser greater =
         fail ("Expected the value " ++ toString greater ++ "\nto be greater than " ++ toString lesser)
 
 
-{-| Passes if `secondArgument >= firstArgument`
+{-| Passes if the second argument is greater than or equal to the first.
 
-    -- This assertion will PASS.
-    Assert.atLeast 0 (List.length [])
+    List.length []
+        |> Assert.atLeast 3
+
+The failure message from this assertion would be:
+
+    Expected 0 to be at least 3.
 
 See the [Comparisons Table](#Comparisons) for other comparisons.
 -}
@@ -176,12 +208,9 @@ getFailure assertion =
 
 {-| If the given test fails, replace its Fail message with the given one.
 
-    import Test exposing (onFail)
-    import Assert
-
-
-    Assert.equal { expected = "foo", actual = "bar" }
-        |> Assert.onFail "thought they'd be the same"
+    "something"
+        |> Assert.equal "something else"
+        |> Assert.onFail "thought those two strings would be the same"
 -}
 onFail : String -> Assertion -> Assertion
 onFail str assertion =
