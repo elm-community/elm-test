@@ -215,8 +215,6 @@ fuzz2 fuzzA fuzzB desc =
 {-| Run a [fuzz test](#fuzz) using three random inputs.
 
 This is a convenicence function that lets you skip calling [`Fuzz.tuple3`](../Fuzz#tuple3).
-
--- TODO code sample
 -}
 fuzz3 :
     Fuzzer a
