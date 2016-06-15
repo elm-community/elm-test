@@ -2,7 +2,11 @@ module Test.Runner.String exposing (run, runWithOptions)
 
 {-| # String Runner
 
-Run
+Run a test and present its results as a nicely-formatted String, along with
+a count of how many tests failed.
+
+This is a quick way to get decent test outputs which can then be presented in
+various different environments. See `Test.Runner.Log` for an example.
 
 @docs run, runWithOptions
 -}
@@ -83,7 +87,7 @@ outputFailures message labels =
 
 defaultSeed : Random.Seed
 defaultSeed =
-    Random.initialSeed 42
+    Random.initialSeed 4295183
 
 
 defaultRuns : Int
@@ -91,14 +95,18 @@ defaultRuns =
     100
 
 
-{-| TODO document
+{-| Run a test and return a tuple of the output message and the number of
+tests that failed.
+
+Fuzz tests use a default run count of 100, and a fixed initial seed.
 -}
 run : Test -> ( String, Int )
 run =
     runWithOptions defaultRuns defaultSeed
 
 
-{-| TODO document
+{-| Run a test and return a tuple of the output message and the number of
+tests that failed.
 -}
 runWithOptions : Int -> Random.Seed -> Test -> ( String, Int )
 runWithOptions runs seed test =

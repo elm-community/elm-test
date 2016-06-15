@@ -2,6 +2,18 @@ module Test.Runner.Log exposing (run, runWithOptions)
 
 {-| # Log Runner
 
+Runs a test and outputs its results using `Debug.log`, then calls `Debug.crash`
+if there are any failures.
+
+This is not the prettiest runner, but it is simple and cross-platform. For
+example, you can use it as a crude Node runner like so:
+
+    $ elm-make LogRunnerExample.elm --output=elm.js
+    $ node elm.js
+
+This will log the test results to the console, then exit with exit code 0
+if the tests all passed, and 1 if any failed.
+
 @docs run, runWithOptions
 -}
 
@@ -10,7 +22,7 @@ import Test exposing (Test)
 import Test.Runner.String
 
 
-{-| TODO document
+{-| Run the test using the default `Test.Runner.String` options.
 -}
 run : Test -> a -> a
 run test =
@@ -18,7 +30,7 @@ run test =
         |> logOutput
 
 
-{-| TODO document
+{-| Run the test using the provided options.
 -}
 runWithOptions : Int -> Random.Seed -> Test -> a -> a
 runWithOptions runs seed test =

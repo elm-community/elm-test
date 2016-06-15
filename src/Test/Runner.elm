@@ -2,7 +2,13 @@ module Test.Runner exposing (Runnable, Runner(..), run, fromTest)
 
 {-| Running tests.
 
-@docs Runnable, Runner, run, fromTest
+## Runner
+
+@docs Runner, fromTest
+
+## Runnable
+
+@docs Runnable, run
 -}
 
 import Test exposing (Test)
@@ -11,20 +17,37 @@ import Assert exposing (Assertion)
 import Random.Pcg as Random
 
 
-{-| TODO document
+{-| An unevaluated test. Run it with [`run`](#run) to evaluate it into a
+list of `Assertion`s.
 -}
 type Runnable
     = Thunk (() -> List Assertion)
 
 
-{-| TODO document
+{-| A structured test runner, incorporating:
+
+* The assertions to run
+* The hierarchy of description strings that describe the results
+-}
+type Runner
+    = Runnable Runnable
+    | Labeled String Runner
+    | Batch (List Runner)
+
+
+{-| Evaluate a [`Runnable`](#Runnable) to get a list of `Assertion`s.
 -}
 run : Runnable -> List Assertion
 run (Thunk fn) =
     fn ()
 
 
-{-| TODO document
+{-| Convert a `Test` into a `Runner`. It requires a default run count as well
+as an initial `Random.Seed` in order to run any fuzz tests that the `Test` may
+have.
+
+It's customary to use `100` as the initial run count and the current system time
+to generate the initial seed.
 -}
 fromTest : Int -> Random.Seed -> Test -> Runner
 fromTest runs seed test =
@@ -71,11 +94,3 @@ distributeSeeds runs test ( startingSeed, runners ) =
                     List.foldl (distributeSeeds runs) ( startingSeed, [] ) tests
             in
                 ( nextSeed, [ Batch (runners ++ nextRunners) ] )
-
-
-{-| TODO document
--}
-type Runner
-    = Runnable Runnable
-    | Labeled String Runner
-    | Batch (List Runner)
