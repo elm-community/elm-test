@@ -100,21 +100,18 @@ The number of times to run each fuzz test. (Default is 100.)
     import Assert
 
 
-    fuzzWith { runs = 350 } (list int) "List.length should never be negative" <|
+    fuzzWith { runs = 350 } (list int) "List.length should always be positive" <|
         -- This anonymous function will be run 350 times, each time with a
         -- randomly-generated fuzzList value. (It will always be a list of ints
         -- because of (list int) above.)
         \fuzzList ->
-            Assert.lessThan
-                { lesser = -1
-                , greater = List.length fuzzList
-                }
+            Assert.atLeast 0 (List.length fuzzList)
 -}
 type alias FuzzOptions =
     { runs : Int }
 
 
-{-| Run a `fuzz` test with the given [`FuzzOptions`](#FuzzOptions).
+{-| Run a [`fuzz`](#fuzz) test with the given [`FuzzOptions`](#FuzzOptions).
 
 Note that there is no `fuzzWith2`, but you can always pass more fuzz values in
 using [`Fuzz.tuple`](../Fuzz#tuple), [`Fuzz.tuple3`](../Fuzz#tuple3),
@@ -163,7 +160,17 @@ You may find them elsewhere called [property-based tests](http://blog.jessitron.
 [generative tests](http://www.pivotaltracker.com/community/tracker-blog/generative-testing), or
 [QuickCheck-style tests](https://en.wikipedia.org/wiki/QuickCheck).
 
--- TODO code sample
+    import Test exposing (fuzz)
+    import Fuzz exposing (list, int)
+    import Assert
+
+
+    fuzz (list int) "List.length should always be positive" <|
+        -- This anonymous function will be run 100 times, each time with a
+        -- randomly-generated fuzzList value. (You can configure the run count
+        -- using Fuzz.fuzzWith, or by giving your test runner a different default.)
+        \fuzzList ->
+            Assert.atLeast 0 (List.length fuzzList)
 -}
 fuzz :
     Fuzzer a
@@ -176,10 +183,20 @@ fuzz fuzzer desc =
 
 {-| Run a [fuzz test](#fuzz) using two random inputs.
 
-This is a convenicence function that lets you skip calling `Fuzz.tuple`.
+This is a convenicence function that lets you skip calling [`Fuzz.tuple`](../Fuzz#tuple).
+
+See [`fuzzWith`](#fuzzWith) for an example of writing this in tuple style.
+
+    import Test exposing (fuzz2)
+    import Fuzz exposing (list, int)
 
 
--- TODO code sample
+    fuzz2 (list int) int "List.reverse never influences List.member" <|
+        \nums target ->
+            Assert.equal
+                { expected = List.member target nums
+                , actual = List.member target (List.reverse nums)
+                }
 -}
 fuzz2 :
     Fuzzer a
@@ -197,7 +214,7 @@ fuzz2 fuzzA fuzzB desc =
 
 {-| Run a [fuzz test](#fuzz) using three random inputs.
 
-This is a convenicence function that lets you skip calling `Fuzz.tuple3`.
+This is a convenicence function that lets you skip calling [`Fuzz.tuple3`](../Fuzz#tuple3).
 
 -- TODO code sample
 -}
@@ -218,9 +235,7 @@ fuzz3 fuzzA fuzzB fuzzC desc =
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
 
-This is a convenicence function that lets you skip calling `Fuzz.tuple4`.
-
--- TODO code sample
+This is a convenicence function that lets you skip calling [`Fuzz.tuple4`](../Fuzz#tuple4).
 -}
 fuzz4 :
     Fuzzer a
@@ -240,9 +255,7 @@ fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
 
-This is a convenicence function that lets you skip calling `Fuzz.tuple5`.
-
--- TODO code sample
+This is a convenicence function that lets you skip calling [`Fuzz.tuple5`](../Fuzz#tuple5).
 -}
 fuzz5 :
     String
