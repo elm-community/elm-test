@@ -1,4 +1,4 @@
-module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, lessThan, atMost, greaterThan, atLeast, onFail)
+module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, lessThan, atMost, greaterThan, atLeast, onFail, all)
 
 {-| Determining whether tests pass or fail.
 
@@ -13,7 +13,7 @@ module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, less
 
 ## Basic Assertions
 
-@docs Assertion, equal, notEqual
+@docs Assertion, equal, notEqual, all
 
 ## Comparisons
 
@@ -25,6 +25,7 @@ module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, less
 -}
 
 import Test.Assertion
+import String
 
 
 {-| The result of a single test run: either a [`pass`](#pass) or a
@@ -259,3 +260,32 @@ onFail str assertion =
 
         Test.Assertion.Fail _ ->
             fail str
+
+
+{-| Translate each element in a list into an [`Assertion`](#Assertion). If
+they all pass, return a pass. If any fail, return a fail whose message includes
+all the other failure messages.
+
+    [ 0, 1, 2, 3, 4, 5 ]
+        |> Assert.all (Assert.lessThan 3)
+
+    {-
+
+    Expected 3 to be less than 3
+
+    Expected 4 to be less than 3
+
+    Expected 5 to be less than 3
+
+    -}
+-}
+all : (a -> Assertion) -> List a -> Assertion
+all getAssertion list =
+    case List.filterMap (getAssertion >> getFailure) list of
+        [] ->
+            pass
+
+        failures ->
+            failures
+                |> String.join "\n\n"
+                |> fail
