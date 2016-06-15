@@ -5,11 +5,18 @@ module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, less
 
 ## Basic Assertions
 
-@docs Assertion, pass, fail, getFailure
+@docs Assertion, pass, fail, getFailure, equal, notEqual
 
 ## Comparisons
 
-@docs equal, notEqual, lessThan, atMost, greaterThan, atLeast
+function | passes if
+--- | ---
+[`lessThan`](#lessThan) | `secondArgument < firstArgument`
+[`atMost`](#atMost) | `secondArgument <= firstArgument`
+[`greaterThan`](#greaterThan) | `secondArgument > firstArgument`
+[`atLeast`](#atLeast) | `secondArgument >= firstArgument`
+
+@docs lessThan, atMost, greaterThan, atLeast
 
 ## Customizing
 
@@ -51,12 +58,7 @@ notEqual record =
     -- This assertion will PASS.
     Assert.lessThan 1 (List.length [])
 
-function | passes if
---- | ---
-[`lessThan`](#lessThan) | `secondArgument < firstArgument`
-[`atMost`](#atMost) | `secondArgument <= firstArgument`
-[`greaterThan`](#greaterThan) | `secondArgument > firstArgument`
-[`atLeast`](#atLeast) | `secondArgument >= firstArgument`
+See the [Comparisons Table](#Comparisons) for other comparisons.
 -}
 lessThan : comparable -> comparable -> Assertion
 lessThan greater lesser =
@@ -71,12 +73,7 @@ lessThan greater lesser =
     -- This assertion will PASS.
     Assert.atMost 0 (List.length [])
 
-function | passes if
---- | ---
-[`lessThan`](#lessThan) | `secondArgument < firstArgument`
-[`atMost`](#atMost) | `secondArgument <= firstArgument`
-[`greaterThan`](#greaterThan) | `secondArgument > firstArgument`
-[`atLeast`](#atLeast) | `secondArgument >= firstArgument`
+See the [Comparisons Table](#Comparisons) for other comparisons.
 -}
 atMost : comparable -> comparable -> Assertion
 atMost greater lesserOrEqual =
@@ -91,12 +88,7 @@ atMost greater lesserOrEqual =
     -- This assertion will FAIL.
     Assert.greaterThan 0 (List.length [])
 
-function | passes if
---- | ---
-[`lessThan`](#lessThan) | `secondArgument < firstArgument`
-[`atMost`](#atMost) | `secondArgument <= firstArgument`
-[`greaterThan`](#greaterThan) | `secondArgument > firstArgument`
-[`atLeast`](#atLeast) | `secondArgument >= firstArgument`
+See the [Comparisons Table](#Comparisons) for other comparisons.
 -}
 greaterThan : comparable -> comparable -> Assertion
 greaterThan lesser greater =
@@ -111,12 +103,7 @@ greaterThan lesser greater =
     -- This assertion will PASS.
     Assert.atLeast 0 (List.length [])
 
-function | passes if
---- | ---
-[`lessThan`](#lessThan) | `secondArgument < firstArgument`
-[`atMost`](#atMost) | `secondArgument <= firstArgument`
-[`greaterThan`](#greaterThan) | `secondArgument > firstArgument`
-[`atLeast`](#atLeast) | `secondArgument >= firstArgument`
+See the [Comparisons Table](#Comparisons) for other comparisons.
 -}
 atLeast : comparable -> comparable -> Assertion
 atLeast greaterOrEqual lesser =
