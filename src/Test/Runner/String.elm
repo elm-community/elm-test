@@ -2,6 +2,8 @@ module Test.Runner.String exposing (run, runWithOptions)
 
 {-| # String Runner
 
+Run
+
 @docs run, runWithOptions
 -}
 

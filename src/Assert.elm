@@ -1,31 +1,33 @@
 module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, lessThan, atMost, greaterThan, atLeast, onFail)
 
-{-| Making assertions.
+{-| Determining whether tests pass or fail.
+
+## Quick Reference
+
+* [`equal`](#equal) `(arg2 == arg1)`
+* [`notEqual`](#notEqual) `(arg2 /= arg1)`
+* [`lessThan`](#lessThan) `(arg2 < arg1)`
+* [`atMost`](#atMost) `(arg2 <= arg1)`
+* [`greaterThan`](#greaterThan) `(arg2 > arg1)`
+* [`atLeast`](#atLeast) `(arg2 >= arg1)`
 
 ## Basic Assertions
 
-@docs Assertion, pass, fail, getFailure, equal, notEqual
+@docs Assertion, equal, notEqual
 
 ## Comparisons
-
-function | passes if
---- | ---
-[`lessThan`](#lessThan) | `secondArgument < firstArgument`
-[`atMost`](#atMost) | `secondArgument <= firstArgument`
-[`greaterThan`](#greaterThan) | `secondArgument > firstArgument`
-[`atLeast`](#atLeast) | `secondArgument >= firstArgument`
 
 @docs lessThan, atMost, greaterThan, atLeast
 
 ## Customizing
 
-@docs onFail
+@docs pass, fail, onFail, getFailure
 -}
 
 import Test.Assertion
 
 
-{-| The result of a single test run: either be a [`pass`](#pass) or a
+{-| The result of a single test run: either a [`pass`](#pass) or a
 [`fail`](#fail).
 -}
 type alias Assertion =
@@ -34,13 +36,21 @@ type alias Assertion =
 
 {-| Passes if the arguments are equal.
 
+    Assert.equal 5 (List.length [])
+
+Failure messages line up nicely with assertions written in pipeline style:
+
+    -- Fails because (0 == 5) is False
     List.length []
         |> Assert.equal 5
 
-The failure message from this assertion would be:
+
+    {-
 
     Expected 0
     to equal 5
+
+    -}
 -}
 equal : a -> a -> Assertion
 equal expected actual =
@@ -52,14 +62,22 @@ equal expected actual =
 
 {-| Passes if the arguments are not equal.
 
+    Assert.notEqual 100 (90 + 10)
+
+Failure messages line up nicely with assertions written in pipeline style:
+
+    -- Fails because (100 /= 100) is False
     (90 + 10)
         |> Assert.notEqual 100
 
-The failure message from this assertion would be:
+
+    {-
 
     Expected different values, but both were:
 
     100
+
+    -}
 -}
 notEqual : a -> a -> Assertion
 notEqual expected actual =
@@ -71,14 +89,20 @@ notEqual expected actual =
 
 {-| Passes if the second argument is less than the first.
 
+    Assert.lessThan -1 (List.length [])
+
+Failure messages line up nicely with assertions written in pipeline style:
+
+    -- Fails because (0 < -1) is False
     List.length []
         |> Assert.lessThan -1
 
-The failure message from this assertion would be:
+
+    {-
 
     Expected 0 to be less than -1.
 
-See the [Comparisons Table](#Comparisons) for other comparisons.
+    -}
 -}
 lessThan : comparable -> comparable -> Assertion
 lessThan greater lesser =
@@ -90,14 +114,19 @@ lessThan greater lesser =
 
 {-| Passes if the second argument is less than or equal to the first.
 
+    Assert.atMost -3 (List.length [])
+
+Failure messages line up nicely with assertions written in pipeline style:
+
+    -- Fails because (0 <= -3) is False
     List.length []
         |> Assert.atMost -3
 
-The failure message from this assertion would be:
+    {-
 
     Expected 0 to be at most -3.
 
-See the [Comparisons Table](#Comparisons) for other comparisons.
+    -}
 -}
 atMost : comparable -> comparable -> Assertion
 atMost greater lesserOrEqual =
@@ -109,14 +138,19 @@ atMost greater lesserOrEqual =
 
 {-| Passes if the second argument is greater than the first.
 
+    Assert.greaterThan 1 List.length []
+
+Failure messages line up nicely with assertions written in pipeline style:
+
+    -- Fails because (0 > 1) is False
     List.length []
         |> Assert.greaterThan 1
 
-The failure message from this assertion would be:
+    {-
 
     Expected 0 to be greater than 1.
 
-See the [Comparisons Table](#Comparisons) for other comparisons.
+    -}
 -}
 greaterThan : comparable -> comparable -> Assertion
 greaterThan lesser greater =
@@ -128,14 +162,19 @@ greaterThan lesser greater =
 
 {-| Passes if the second argument is greater than or equal to the first.
 
+    Assert.atLeast 3 (List.length [])
+
+Failure messages line up nicely with assertions written in pipeline style:
+
+    -- Fails because (0 >= 3) is False
     List.length []
         |> Assert.atLeast 3
 
-The failure message from this assertion would be:
+    {-
 
     Expected 0 to be at least 3.
 
-See the [Comparisons Table](#Comparisons) for other comparisons.
+    -}
 -}
 atLeast : comparable -> comparable -> Assertion
 atLeast greaterOrEqual lesser =
@@ -206,7 +245,7 @@ getFailure assertion =
             Just desc
 
 
-{-| If the given test fails, replace its Fail message with the given one.
+{-| If the given assertion fails, replace its failure message with a custom one.
 
     "something"
         |> Assert.equal "something else"

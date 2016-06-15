@@ -1,6 +1,6 @@
 module Test exposing (Test, FuzzOptions, describe, batch, test, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
-{-| ## Testing
+{-| Writing tests.
 
 @docs Test, test
 

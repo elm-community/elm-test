@@ -1,6 +1,6 @@
 module Test.Runner exposing (Runnable, Runner(..), run, fromTest)
 
-{-| Running tests
+{-| Running tests.
 
 @docs Runnable, Runner, run, fromTest
 -}
