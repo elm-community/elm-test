@@ -1,14 +1,14 @@
-module Test.Runner.String exposing (run, runWithOptions)
+module Test.Runner.String exposing (Summary, run, runWithOptions)
 
 {-| # String Runner
 
 Run a test and present its results as a nicely-formatted String, along with
-a count of how many tests failed.
+a count of how many tests passed and failed.
 
 This is a quick way to get decent test outputs which can then be presented in
 various different environments. See `Test.Runner.Log` for an example.
 
-@docs run, runWithOptions
+@docs Summary, run, runWithOptions
 -}
 
 import Random.Pcg as Random
@@ -18,38 +18,42 @@ import String
 import Test.Runner exposing (Runner(..))
 
 
-toOutput : ( String, Int ) -> Runner -> ( String, Int )
+{-| The output string, the number of passed tests,
+and the number of failed tests.
+-}
+type alias Summary =
+    { output : String, passed : Int, failed : Int }
+
+
+toOutput : Summary -> Runner -> Summary
 toOutput =
     flip (toOutputHelp [])
 
 
-toOutputHelp : List String -> Runner -> ( String, Int ) -> ( String, Int )
-toOutputHelp labels runner tuple =
+toOutputHelp : List String -> Runner -> Summary -> Summary
+toOutputHelp labels runner summary =
     case runner of
         Runnable runnable ->
-            List.foldl (fromAssertion labels) tuple (Test.Runner.run runnable)
+            List.foldl (fromAssertion labels) summary (Test.Runner.run runnable)
 
         Labeled label subRunner ->
-            toOutputHelp (label :: labels) subRunner tuple
+            toOutputHelp (label :: labels) subRunner summary
 
         Batch runners ->
-            List.foldl (toOutputHelp labels) tuple runners
+            List.foldl (toOutputHelp labels) summary runners
 
 
-fromAssertion : List String -> Assertion -> ( String, Int ) -> ( String, Int )
-fromAssertion labels assertion tuple =
+fromAssertion : List String -> Assertion -> Summary -> Summary
+fromAssertion labels assertion summary =
     case Assert.getFailure assertion of
         Nothing ->
-            tuple
+            { summary | passed = summary.passed + 1 }
 
         Just message ->
-            let
-                ( output, failureCount ) =
-                    tuple
-            in
-                ( String.join "\n\n" [ output, (withoutEmptyStrings >> outputFailures message) labels ]
-                , failureCount + 1
-                )
+            { output = String.join "\n\n" [ summary.output, (withoutEmptyStrings >> outputFailures message) labels ]
+            , failed = summary.failed + 1
+            , passed = summary.passed
+            }
 
 
 withoutEmptyStrings : List String -> List String
@@ -100,7 +104,7 @@ tests that failed.
 
 Fuzz tests use a default run count of 100, and a fixed initial seed.
 -}
-run : Test -> ( String, Int )
+run : Test -> Summary
 run =
     runWithOptions defaultRuns defaultSeed
 
@@ -108,8 +112,8 @@ run =
 {-| Run a test and return a tuple of the output message and the number of
 tests that failed.
 -}
-runWithOptions : Int -> Random.Seed -> Test -> ( String, Int )
+runWithOptions : Int -> Random.Seed -> Test -> Summary
 runWithOptions runs seed test =
     test
         |> Test.Runner.fromTest runs seed
-        |> toOutput ( "", 0 )
+        |> toOutput { output = "", passed = 0, failed = 0 }

@@ -19,7 +19,8 @@ if the tests all passed, and 1 if any failed.
 
 import Random.Pcg as Random
 import Test exposing (Test)
-import Test.Runner.String
+import Test.Runner.String exposing (Summary)
+import String
 
 
 {-| Run the test using the default `Test.Runner.String` options.
@@ -38,17 +39,37 @@ runWithOptions runs seed test =
         |> logOutput
 
 
-logOutput : ( String, Int ) -> a -> a
-logOutput ( output, failureCount ) arg =
+summarize : Summary -> String
+summarize { output, passed, failed } =
     let
+        headline =
+            if failed > 0 then
+                "TEST RUN FAILED"
+            else
+                "TEST RUN PASSED"
+    in
+        String.join "\n"
+            [ output ++ "\n\n"
+            , headline ++ "\n"
+            , "Passed: " ++ toString passed
+            , "Failed: " ++ toString failed
+            ]
+
+
+logOutput : Summary -> a -> a
+logOutput summary arg =
+    let
+        output =
+            summarize summary ++ "\n\nExit code"
+
         _ =
-            if failureCount > 0 then
-                (output ++ "\n\n\n" ++ toString failureCount ++ " TESTS FAILED!\n\nExit code")
+            if summary.failed > 0 then
+                output
                     |> (flip Debug.log 1)
                     |> (\_ -> Debug.crash "FAILED TEST RUN")
                     |> (\_ -> ())
             else
-                (output ++ "\n\n\nALL TESTS PASSED!\n\nExit code")
+                output
                     |> (flip Debug.log 0)
                     |> (\_ -> ())
     in
