@@ -77,7 +77,7 @@ prependInput input original =
             original
 
         Just str ->
-            "Input: " ++ str ++ "\n\n" ++ original
+            "► Given " ++ str ++ "\n\n" ++ original
 
 
 isFail : Assertion -> Bool
