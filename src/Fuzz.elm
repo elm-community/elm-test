@@ -29,7 +29,7 @@ import Shrink exposing (Shrinker)
 import Random.Pcg as Random exposing (Generator)
 
 
-{-| An Fuzzer type is a
+{-| A Fuzzer is a
 [Random](http://package.elm-lang.org/packages/elm-lang/core/latest/Random)
 `Generator` paired with a shrinking strategy, or `Shrinker`. Shrinkers are defined
 in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/latest/).
@@ -205,7 +205,7 @@ maybe fuzz =
         Fuzzer (Random.maybe genBool fuzz.generator) (Shrink.maybe fuzz.shrinker)
 
 
-{-| Given fuzzers for an error type and a success type, createa a fuzzer for
+{-| Given fuzzers for an error type and a success type, create a fuzzer for
 a result.
 -}
 result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
@@ -288,7 +288,7 @@ tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE ) =
         (Shrink.tuple5 ( fuzzA.shrinker, fuzzB.shrinker, fuzzC.shrinker, fuzzD.shrinker, fuzzE.shrinker ))
 
 
-{-| Filter the values from a Fuzzer. The resulting Fuzzer will only generate
+{-| Filter the values from a fuzzer. The resulting Fuzzer will only generate
 random test values or shrunken values that satisfy the predicate. The predicate
 must be satisfiable.
 -}
@@ -318,7 +318,7 @@ convert f g fuzz =
         (Shrink.convert f g fuzz.shrinker)
 
 
-{-| Map a function over an fuzzer. This works exactly like `convert`,
+{-| Map a function over a fuzzer. This works exactly like `convert`,
 except it does not require an inverse function, and consequently does no
 shrinking.
 -}
