@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, unit, bool, order, array, char, convert, filter, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, maybe, intRange, list)
+module Fuzz exposing (Fuzzer, unit, bool, order, array, char, convert, filter, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, maybe, intRange, list, frequency, frequencyOrCrash)
 
 {-| This is a library of `Fuzzer`s you can use to supply values to your fuzz tests.
 You can typically pick out which ones you need according to their types.
@@ -11,7 +11,7 @@ filtered and mapped over.
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
-@docs Fuzzer, filter, convert, map
+@docs Fuzzer, filter, convert, map, frequency, frequencyOrCrash
 
 ## Tuple Fuzzers
 Instead of using a tuple, consider using `fuzzN`.
@@ -326,3 +326,71 @@ map : (a -> b) -> Fuzzer a -> Fuzzer b
 map f fuzz =
     Fuzzer (Random.map f fuzz.generator)
         Shrink.noShrink
+
+
+{-| Create a new `Fuzzer` by providing a list of probabilistic weights to use
+with other fuzzers.
+
+For example, to create a `Fuzzer` that has a 1/4 chance of generating an int
+between -1 and -100, and a 3/4 chance of generating one between 1 and 100,
+you could do this:
+
+    Fuzz.freuqency
+        [ (1, Fuzz.intRange (-100, -1))
+        , (3, Fuzz.intRange (1, 100))
+        ]
+
+This returns a `Result` because it can fail in a few ways:
+
+* If you provide an empy list of frequencies
+* If any of the weights are less than 0
+* If the weights sum to 0
+
+Any of these will lead to a result of `Err`, with a `String` explaining what
+went wrong.
+-}
+frequency : List ( Float, Fuzzer a ) -> Result String (Fuzzer a)
+frequency list =
+    case List.head list of
+        Nothing ->
+            Err "You must provide at least one frequency pair."
+
+        Just ( _, { shrinker } ) ->
+            if List.any (\( weight, _ ) -> weight < 0) list then
+                Err "No frequency weights can be less than 0."
+            else if List.sum (List.map fst list) <= 0 then
+                Err "Frequency weights must sum to more than 0."
+            else
+                let
+                    generator =
+                        list
+                            |> List.map toGeneratorFrequency
+                            |> Random.frequency
+                in
+                    Ok (Fuzzer generator shrinker)
+
+
+{-| Calls `frequency` and handles `Err` results by crashing with the given
+error message.
+
+This is useful in tests, where a crash will simply cause the test run to fail.
+There is no danger to a production system there.
+-}
+frequencyOrCrash : List ( Float, Fuzzer a ) -> Fuzzer a
+frequencyOrCrash =
+    frequency >> okOrCrash
+
+
+okOrCrash : Result String a -> a
+okOrCrash result =
+    case result of
+        Ok a ->
+            a
+
+        Err str ->
+            Debug.crash str
+
+
+toGeneratorFrequency : ( Float, Fuzzer a ) -> ( Float, Generator a )
+toGeneratorFrequency ( weight, { generator } ) =
+    ( weight, generator )
