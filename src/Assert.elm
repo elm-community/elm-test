@@ -58,7 +58,25 @@ equal expected actual =
     if expected == actual then
         pass
     else
-        fail ("Expected " ++ toString expected ++ "\nto equal " ++ toString actual)
+        let
+            expectedStr =
+                toString expected
+
+            actualStr =
+                toString actual
+
+            report =
+                if String.length expectedStr < compactModeLength && String.length actualStr < compactModeLength then
+                    "Expected " ++ expectedStr ++ "\nto equal " ++ actualStr
+                else
+                    "Expected\n---------\n" ++ expectedStr ++ "\n\nActual\n------\n" ++ actualStr
+        in
+            fail report
+
+
+compactModeLength : Int
+compactModeLength =
+    64
 
 
 {-| Passes if the arguments are not equal.
