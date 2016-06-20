@@ -1,4 +1,4 @@
-module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, lessThan, atMost, greaterThan, atLeast, onFail, all)
+module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, lessThan, atMost, greaterThan, atLeast, true, false, onFail, all)
 
 {-| Determining whether tests pass or fail.
 
@@ -10,6 +10,8 @@ module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, less
 * [`atMost`](#atMost) `(arg2 <= arg1)`
 * [`greaterThan`](#greaterThan) `(arg2 > arg1)`
 * [`atLeast`](#atLeast) `(arg2 >= arg1)`
+* [`true`](#true) `(arg == True)`
+* [`false`](#false) `(arg == False)`
 
 ## Basic Assertions
 
@@ -18,6 +20,10 @@ module Assert exposing (Assertion, pass, fail, getFailure, equal, notEqual, less
 ## Comparisons
 
 @docs lessThan, atMost, greaterThan, atLeast
+
+## Booleans
+
+@docs true, false
 
 ## Customizing
 
@@ -201,6 +207,46 @@ atLeast greaterOrEqual lesser =
         pass
     else
         fail ("Expected " ++ toString lesser ++ " to be at least " ++ toString greaterOrEqual)
+
+
+{-| Passes if the argument is 'True', and fails otherwise.
+
+    -- Fails because the list is not empty, but we expect True.
+    List.isEmpty [42]
+        |> Assert.true
+
+    {-
+
+    Expected True, but got False.
+
+    -}
+-}
+true : Bool -> Assertion
+true bool =
+    if bool then
+        pass
+    else
+        fail ("Expected True, but got False.")
+
+
+{-| Passes if the argument is 'False', and fails otherwise.
+
+    -- Fails because the list is empty, but we expect False.
+    List.isEmpty []
+        |> Assert.false
+
+    {-
+
+    Expected False, but got True.
+
+    -}
+-}
+false : Bool -> Assertion
+false bool =
+    if bool then
+        fail ("Expected `False`, but got `True`.")
+    else
+        pass
 
 
 {-| Always passes.
