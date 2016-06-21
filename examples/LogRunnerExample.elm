@@ -20,7 +20,7 @@ main =
     Html.App.beginnerProgram
         { model = ()
         , update = \_ _ -> ()
-        , view = \_ -> Html.text "Check the console for useful output!"
+        , view = \() -> Html.text "Check the console for useful output!"
         }
         |> Test.Runner.Log.run testOxfordify
 
@@ -37,29 +37,29 @@ testOxfordify =
     describe "oxfordify"
         [ describe "given an empty sentence"
             [ test "returns an empty string" <|
-                \_ ->
+                \() ->
                     oxfordify "This sentence is empty" "." []
                         |> Assert.equal ""
             ]
         , describe "given a sentence with one item"
             [ test "still contains one item" <|
-                \_ ->
+                \() ->
                     oxfordify "This sentence contains " "." [ "one item" ]
                         |> Assert.equal "This sentence contains one item."
             ]
         , describe "given a sentence with multiple items"
             [ test "returns an oxford-style sentence" <|
-                \_ ->
+                \() ->
                     oxfordify "This sentence contains " "." [ "one item", "two item" ]
                         |> Assert.equal "This sentence contains one item and two item."
             , test "returns an oxford-style sentence" <|
-                \_ ->
+                \() ->
                     oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
                         |> Assert.equal "This sentence contains one item, two item, and three item."
             ]
         , describe "a long failure message"
             [ test "long failure!" <|
-                \_ ->
+                \() ->
                     Assert.equal "html, body {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\npadding: 0;\nmargin: 0;\n}\n\nbody {\nmin-width: 1280px;\noverflow-x: auto;\n}\n\nbody > div {\nwidth: 100%;\nheight: 100%;\n}\n\n.dreamwriterHidden {\ndisplay: none !important;\n}\n\n#dreamwriterPage {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\nmargin: 0;\npadding: 8px;\nbackground-color: rgb(100, 90, 128);\ncolor: rgb(40, 35, 76);\n}"
                         "html, body {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\npadding: 0;\nmargin: 0;\n}\n\nbody {\nmin-width: 1280px;\noverflow-x: auto;\n}\n\nbody > div {\nwidth: 100%;\nheight: 100%;\n}\n\n.dreamwriterHidden {\ndisplay: none !important;\n}\n\n#Page {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\nmargin: 0;\npadding: 8px;\nbackground-color: rgb(100, 90, 128);\ncolor: rgb(40, 35, 76);\n}"
             ]

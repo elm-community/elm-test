@@ -51,7 +51,7 @@ batch =
     describe "List"
         [ describe "reverse"
             [ test "has no effect on an empty list" <|
-                \_ ->
+                \() ->
                     List.reverse []
                         |> Assert.equal []
             , fuzz int "has no effect on a one-item list" <|
@@ -74,7 +74,7 @@ describe desc =
 
 
     test "the empty list has 0 length" <|
-        \_ ->
+        \() ->
             List.length []
                 |> Assert.equal 0
 -}

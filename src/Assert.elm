@@ -257,7 +257,7 @@ false message bool =
 
 
     test "Json.Decode.int can decode the number 42." <|
-        \_ ->
+        \() ->
             case decodeString int "42" of
                 Ok _ ->
                     Assert.pass
@@ -278,7 +278,7 @@ pass =
 
 
     test "Json.Decode.int can decode the number 42." <|
-        \_ ->
+        \() ->
             case decodeString int "42" of
                 Ok _ ->
                     Assert.pass

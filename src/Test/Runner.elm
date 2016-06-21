@@ -53,7 +53,7 @@ fromTest : Int -> Random.Seed -> Test -> Runner
 fromTest runs seed test =
     case test of
         Test.Test.Test run ->
-            Thunk (\_ -> run seed runs)
+            Thunk (\() -> run seed runs)
                 |> Runnable
 
         Test.Test.Labeled label subTest ->
@@ -76,7 +76,7 @@ distributeSeeds runs test ( startingSeed, runners ) =
                 ( seed, nextSeed ) =
                     Random.step Random.independentSeed startingSeed
             in
-                ( nextSeed, runners ++ [ Runnable (Thunk (\_ -> run seed runs)) ] )
+                ( nextSeed, runners ++ [ Runnable (Thunk (\() -> run seed runs)) ] )
 
         Test.Test.Labeled label subTest ->
             let
