@@ -212,12 +212,13 @@ result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
 result errFuzz valFuzz =
     Fuzzer
         (Random.bool
-            `Random.andThen` (\b ->
-                                if b then
-                                    Random.map Err errFuzz.generator
-                                else
-                                    Random.map Ok valFuzz.generator
-                             )
+            `Random.andThen`
+                (\b ->
+                    if b then
+                        Random.map Err errFuzz.generator
+                    else
+                        Random.map Ok valFuzz.generator
+                )
         )
         (Shrink.result errFuzz.shrinker valFuzz.shrinker)
 
