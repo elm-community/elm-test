@@ -209,42 +209,42 @@ atLeast greaterOrEqual lesser =
         fail ("Expected " ++ toString lesser ++ " to be at least " ++ toString greaterOrEqual)
 
 
-{-| Passes if the argument is 'True', and fails otherwise.
+{-| Passes if the argument is 'True', and otherwise fails with the given message.
 
     -- Fails because the list is not empty, but we expect True.
-    List.isEmpty [42]
-        |> Assert.true
+    List.isEmpty [ 42 ]
+        |> Assert.true "List should have been empty"
 
     {-
 
-    Expected True, but got False.
+    List should have been empty
 
     -}
 -}
-true : Bool -> Assertion
-true bool =
+true : String -> Bool -> Assertion
+true message bool =
     if bool then
         pass
     else
-        fail ("Expected True, but got False.")
+        fail message
 
 
-{-| Passes if the argument is 'False', and fails otherwise.
+{-| Passes if the argument is 'False', and otherwise fails with the given message.
 
     -- Fails because the list is empty, but we expect False.
     List.isEmpty []
-        |> Assert.false
+        |> Assert.false "List shouldn't have been empty"
 
     {-
 
-    Expected False, but got True.
+    List shouldn't have been empty
 
     -}
 -}
-false : Bool -> Assertion
-false bool =
+false : String -> Bool -> Assertion
+false message bool =
     if bool then
-        fail ("Expected `False`, but got `True`.")
+        fail message
     else
         pass
 
