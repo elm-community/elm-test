@@ -256,7 +256,7 @@ false message bool =
     import Assert
 
 
-    test "Jon.Decode.int can decode the number 42." <|
+    test "Json.Decode.int can decode the number 42." <|
         \_ ->
             case decodeString int "42" of
                 Ok _ ->
@@ -277,7 +277,7 @@ pass =
     import Assert
 
 
-    test "Jon.Decode.int can decode the number 42." <|
+    test "Json.Decode.int can decode the number 42." <|
         \_ ->
             case decodeString int "42" of
                 Ok _ ->
