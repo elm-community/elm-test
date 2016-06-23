@@ -45,7 +45,8 @@ type alias Assertion =
 
     Assert.equal 5 (List.length [])
 
-Failure messages line up nicely with assertions written in pipeline style:
+The first argument is the expected value. This makes things nice when writing
+in pipeline style.
 
     -- Fails because (0 == 5) is False
     List.length []
@@ -54,51 +55,48 @@ Failure messages line up nicely with assertions written in pipeline style:
 
     {-
 
-    Expected 0
-    to equal 5
+    We expected arg2 == arg1, but got:
+
+    Assert.equal
+
+    5
+
+    0
 
     -}
 -}
 equal : a -> a -> Assertion
 equal expected actual =
-    if expected == actual then
+    if actual == expected then
         pass
     else
-        let
-            expectedStr =
-                toString expected
-
-            actualStr =
-                toString actual
-
-            report =
-                if String.length expectedStr < compactModeLength && String.length actualStr < compactModeLength then
-                    "Expected " ++ expectedStr ++ "\nto equal " ++ actualStr
-                else
-                    "Expected\n---------\n" ++ expectedStr ++ "\n\nActual\n------\n" ++ actualStr
-        in
-            fail report
-
-
-compactModeLength : Int
-compactModeLength =
-    64
+        [ "We expected arg2 == arg1, but got:"
+        , "Assert.equal"
+        , toString expected
+        , toString actual
+        ]
+            |> String.join "\n\n"
+            |> fail
 
 
 {-| Passes if the arguments are not equal.
 
     Assert.notEqual 100 (90 + 10)
 
-Failure messages line up nicely with assertions written in pipeline style:
+The first argument is the expected value. This makes things nice when writing
+in pipeline style.
 
     -- Fails because (100 /= 100) is False
     (90 + 10)
         |> Assert.notEqual 100
 
-
     {-
 
-    Expected different values, but both were:
+    We expected arg2 /= arg1, but got:
+
+    Assert.notEqual
+
+    100
 
     100
 
@@ -106,8 +104,14 @@ Failure messages line up nicely with assertions written in pipeline style:
 -}
 notEqual : a -> a -> Assertion
 notEqual expected actual =
-    if expected == actual then
-        fail ("Expected different values, but both were:\n\n" ++ toString actual)
+    if actual == expected then
+        [ "We expected arg2 /= arg1, but got:"
+        , "Assert.notEqual"
+        , toString expected
+        , toString actual
+        ]
+            |> String.join "\n\n"
+            |> fail
     else
         pass
 
@@ -116,7 +120,8 @@ notEqual expected actual =
 
     Assert.lessThan -1 (List.length [])
 
-Failure messages line up nicely with assertions written in pipeline style:
+The first argument is the expected value. This makes things nice when writing
+in pipeline style.
 
     -- Fails because (0 < -1) is False
     List.length []
@@ -125,23 +130,36 @@ Failure messages line up nicely with assertions written in pipeline style:
 
     {-
 
-    Expected 0 to be less than -1.
+    We expected arg2 < arg1, but got:
+
+    Assert.lessThan
+
+    -1
+
+    0
 
     -}
 -}
 lessThan : comparable -> comparable -> Assertion
-lessThan greater lesser =
-    if lesser < greater then
+lessThan expected actual =
+    if actual < expected then
         pass
     else
-        fail ("Expected " ++ toString lesser ++ " to be less than " ++ toString greater)
+        [ "We expected arg2 < arg1, but got:"
+        , "Assert.lessThan"
+        , toString expected
+        , toString actual
+        ]
+            |> String.join "\n\n"
+            |> fail
 
 
 {-| Passes if the second argument is less than or equal to the first.
 
     Assert.atMost -3 (List.length [])
 
-Failure messages line up nicely with assertions written in pipeline style:
+The first argument is the expected value. This makes things nice when writing
+in pipeline style.
 
     -- Fails because (0 <= -3) is False
     List.length []
@@ -149,23 +167,36 @@ Failure messages line up nicely with assertions written in pipeline style:
 
     {-
 
-    Expected 0 to be at most -3.
+    We expected arg2 <= arg1, but got:
+
+    Assert.atMost
+
+    -3
+
+    0
 
     -}
 -}
 atMost : comparable -> comparable -> Assertion
-atMost greater lesserOrEqual =
-    if lesserOrEqual <= greater then
+atMost expected actual =
+    if actual <= expected then
         pass
     else
-        fail ("Expected " ++ toString lesserOrEqual ++ " to be at most " ++ toString greater)
+        [ "We expected arg2 <= arg1, but got:"
+        , "Assert.atMost"
+        , toString expected
+        , toString actual
+        ]
+            |> String.join "\n\n"
+            |> fail
 
 
 {-| Passes if the second argument is greater than the first.
 
     Assert.greaterThan 1 List.length []
 
-Failure messages line up nicely with assertions written in pipeline style:
+The first argument is the expected value. This makes things nice when writing
+in pipeline style.
 
     -- Fails because (0 > 1) is False
     List.length []
@@ -173,23 +204,36 @@ Failure messages line up nicely with assertions written in pipeline style:
 
     {-
 
-    Expected 0 to be greater than 1.
+    We expected arg2 > arg1, but got:
+
+    Assert.greaterThan
+
+    1
+
+    0
 
     -}
 -}
 greaterThan : comparable -> comparable -> Assertion
-greaterThan lesser greater =
-    if greater > lesser then
+greaterThan expected actual =
+    if actual > expected then
         pass
     else
-        fail ("Expected the value " ++ toString greater ++ "\nto be greater than " ++ toString lesser)
+        [ "We expected arg2 > arg1, but got:"
+        , "Assert.greaterThan"
+        , toString expected
+        , toString actual
+        ]
+            |> String.join "\n\n"
+            |> fail
 
 
 {-| Passes if the second argument is greater than or equal to the first.
 
     Assert.atLeast 3 (List.length [])
 
-Failure messages line up nicely with assertions written in pipeline style:
+The first argument is the expected value. This makes things nice when writing
+in pipeline style.
 
     -- Fails because (0 >= 3) is False
     List.length []
@@ -197,27 +241,44 @@ Failure messages line up nicely with assertions written in pipeline style:
 
     {-
 
-    Expected 0 to be at least 3.
+    We expected arg2 >= arg1, but got:
+
+    Assert.atLeast
+
+    3
+
+    0
 
     -}
 -}
 atLeast : comparable -> comparable -> Assertion
-atLeast greaterOrEqual lesser =
-    if lesser >= greaterOrEqual then
+atLeast expected actual =
+    if actual >= expected then
         pass
     else
-        fail ("Expected " ++ toString lesser ++ " to be at least " ++ toString greaterOrEqual)
+        [ "We expected arg2 >= arg1, but got:"
+        , "Assert.atLeast"
+        , toString expected
+        , toString actual
+        ]
+            |> String.join "\n\n"
+            |> fail
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
 
-    -- Fails because the list is not empty, but we expect True.
+    Assert.true "We expected the list to be empty." (List.isEmpty [ 42 ])
+
+The first argument is the message, to make things nice when writing in
+pipeline style.
+
+    -- Fails because List.isEmpty returns False, but we expect True.
     List.isEmpty [ 42 ]
-        |> Assert.true "List should have been empty"
+        |> Assert.true "We expected the list to be empty."
 
     {-
 
-    List should have been empty
+    We expected the list to be empty.
 
     -}
 -}
@@ -231,13 +292,18 @@ true message bool =
 
 {-| Passes if the argument is 'False', and otherwise fails with the given message.
 
-    -- Fails because the list is empty, but we expect False.
+    Assert.false "We expected the list to have things in it." (List.isEmpty [])
+
+The first argument is the message, to make things nice when writing in
+pipeline style.
+
+    -- Fails because List.isEmpty returns True, but we expect False.
     List.isEmpty []
-        |> Assert.false "List shouldn't have been empty"
+        |> Assert.false "We expected the list to have things in it."
 
     {-
 
-    List shouldn't have been empty
+    We expected the list to have things in it.
 
     -}
 -}
