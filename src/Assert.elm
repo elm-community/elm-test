@@ -70,8 +70,7 @@ equal expected actual =
     if actual == expected then
         pass
     else
-        [ "We expected arg2 == arg1, but got:"
-        , "Assert.equal"
+        [ "Assert.equal expected arg2 == arg1, but got:"
         , toString expected
         , toString actual
         ]
@@ -105,8 +104,7 @@ in pipeline style.
 notEqual : a -> a -> Assertion
 notEqual expected actual =
     if actual == expected then
-        [ "We expected arg2 /= arg1, but got:"
-        , "Assert.notEqual"
+        [ "Assert.notEqual expected arg2 /= arg1, but got:"
         , toString expected
         , toString actual
         ]
@@ -145,8 +143,7 @@ lessThan expected actual =
     if actual < expected then
         pass
     else
-        [ "We expected arg2 < arg1, but got:"
-        , "Assert.lessThan"
+        [ "Assert.lessThan expected arg2 < arg1, but got:"
         , toString expected
         , toString actual
         ]
@@ -182,8 +179,7 @@ atMost expected actual =
     if actual <= expected then
         pass
     else
-        [ "We expected arg2 <= arg1, but got:"
-        , "Assert.atMost"
+        [ "Assert.atMost expected arg2 <= arg1, but got:"
         , toString expected
         , toString actual
         ]
@@ -219,8 +215,7 @@ greaterThan expected actual =
     if actual > expected then
         pass
     else
-        [ "We expected arg2 > arg1, but got:"
-        , "Assert.greaterThan"
+        [ "Assert.greaterThan expected arg2 > arg1, but got:"
         , toString expected
         , toString actual
         ]
@@ -256,8 +251,7 @@ atLeast expected actual =
     if actual >= expected then
         pass
     else
-        [ "We expected arg2 >= arg1, but got:"
-        , "Assert.atLeast"
+        [ "Assert.atLeast expected arg2 >= arg1, but got:"
         , toString expected
         , toString actual
         ]
