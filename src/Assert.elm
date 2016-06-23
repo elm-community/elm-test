@@ -70,9 +70,9 @@ equal expected actual =
     if actual == expected then
         pass
     else
-        [ "Assert.equal expected arg2 == arg1, but got:"
-        , toString expected
-        , toString actual
+        [ "(Assert.equal expected actual) was hoping for expected == actual, but got:"
+        , "Expected: " ++ toString expected
+        , "Actual:   " ++ toString actual
         ]
             |> String.join "\n\n"
             |> fail
