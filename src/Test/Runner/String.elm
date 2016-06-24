@@ -13,7 +13,7 @@ various different environments. See `Test.Runner.Log` for an example.
 
 import Random.Pcg as Random
 import Test exposing (Test)
-import Assert exposing (Assertion)
+import Expect exposing (Expectation)
 import String
 import Test.Runner exposing (Runner(..))
 
@@ -34,7 +34,7 @@ toOutputHelp : List String -> Runner -> Summary -> Summary
 toOutputHelp labels runner summary =
     case runner of
         Runnable runnable ->
-            List.foldl (fromAssertion labels) summary (Test.Runner.run runnable)
+            List.foldl (fromExpectation labels) summary (Test.Runner.run runnable)
 
         Labeled label subRunner ->
             toOutputHelp (label :: labels) subRunner summary
@@ -43,9 +43,9 @@ toOutputHelp labels runner summary =
             List.foldl (toOutputHelp labels) summary runners
 
 
-fromAssertion : List String -> Assertion -> Summary -> Summary
-fromAssertion labels assertion summary =
-    case Assert.getFailure assertion of
+fromExpectation : List String -> Expectation -> Summary -> Summary
+fromExpectation labels expectation summary =
+    case Expect.getFailure expectation of
         Nothing ->
             { summary | passed = summary.passed + 1 }
 

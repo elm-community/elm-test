@@ -13,20 +13,20 @@ module Test.Runner exposing (Runnable, Runner(..), run, fromTest)
 
 import Test exposing (Test)
 import Test.Test
-import Assert exposing (Assertion)
+import Expect exposing (Expectation)
 import Random.Pcg as Random
 
 
 {-| An unevaluated test. Run it with [`run`](#run) to evaluate it into a
-list of `Assertion`s.
+list of `Expectation`s.
 -}
 type Runnable
-    = Thunk (() -> List Assertion)
+    = Thunk (() -> List Expectation)
 
 
 {-| A structured test runner, incorporating:
 
-* The assertions to run
+* The expectations to run
 * The hierarchy of description strings that describe the results
 -}
 type Runner
@@ -35,9 +35,9 @@ type Runner
     | Batch (List Runner)
 
 
-{-| Evaluate a [`Runnable`](#Runnable) to get a list of `Assertion`s.
+{-| Evaluate a [`Runnable`](#Runnable) to get a list of `Expectation`s.
 -}
-run : Runnable -> List Assertion
+run : Runnable -> List Expectation
 run (Thunk fn) =
     fn ()
 

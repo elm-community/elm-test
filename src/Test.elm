@@ -15,13 +15,13 @@ module Test exposing (Test, FuzzOptions, describe, batch, test, fuzz, fuzz2, fuz
 
 import Random.Pcg as Random
 import Test.Test
-import Assert exposing (Assertion)
+import Expect exposing (Expectation)
 import Random.Pcg as Random exposing (Generator)
 import Fuzz exposing (Fuzzer)
 
 
 {-| A test which has yet to be evaluated. When evaluated, it produces one
-or more [`Assertion`](../Assert#Assertion)s.
+or more [`Expectation`](../Expect#Expectation)s.
 
 See [`test`](#test) and [`fuzz`](#fuzz) for some ways to create a `Test`.
 -}
@@ -45,7 +45,7 @@ batch =
 
     import Test exposing (describe, test, fuzz)
     import Fuzz expoing (int)
-    import Assert
+    import Expect
 
 
     describe "List"
@@ -53,11 +53,11 @@ batch =
             [ test "has no effect on an empty list" <|
                 \() ->
                     List.reverse []
-                        |> Assert.equal []
+                        |> Expect.toEqual []
             , fuzz int "has no effect on a one-item list" <|
                 \num ->
                      List.reverse [ num ]
-                        |> Assert.equal [ num ]
+                        |> Expect.toEqual [ num ]
             ]
         ]
 -}
@@ -67,18 +67,18 @@ describe desc =
 
 
 {-| Return a [`Test`](#Test) that evaluates a single
-[`Assertion`](../Assert#Assertion).
+[`Expectation`](../Expect#Expectation).
 
     import Test exposing (fuzz)
-    import Assert
+    import Expect
 
 
     test "the empty list has 0 length" <|
         \() ->
             List.length []
-                |> Assert.equal 0
+                |> Expect.toEqual 0
 -}
-test : String -> (() -> Assertion) -> Test
+test : String -> (() -> Expectation) -> Test
 test desc thunk =
     Test.Test.Labeled desc (Test.Test.Test (\_ _ -> [ thunk () ]))
 
@@ -91,7 +91,7 @@ The number of times to run each fuzz test. (Default is 100.)
 
     import Test exposing (fuzzWith)
     import Fuzz exposing (list, int)
-    import Assert
+    import Expect
 
 
     fuzzWith { runs = 350 } (list int) "List.length should always be positive" <|
@@ -101,7 +101,7 @@ The number of times to run each fuzz test. (Default is 100.)
         \fuzzList ->
             fuzzList
                 |> List.length
-                |> Assert.atLeast 0
+                |> Expect.atLeast 0
 -}
 type alias FuzzOptions =
     { runs : Int }
@@ -115,7 +115,7 @@ for example like this:
 
     import Test exposing (fuzzWith)
     import Fuzz exposing (tuple, list, int)
-    import Assert
+    import Expect
 
 
     fuzzWith { runs = 4200 }
@@ -123,9 +123,9 @@ for example like this:
         "List.reverse never influences List.member" <|
             \(nums, target) ->
                 List.member target (List.reverse nums)
-                    |> Assert.equal (List.member target nums)
+                    |> Expect.toEqual (List.member target nums)
 -}
-fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Assertion) -> Test
+fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzWith options fuzzer desc getTest =
     fuzzWithHelp options (Test.Test.fuzzTest desc fuzzer getTest)
 
@@ -156,7 +156,7 @@ You may find them elsewhere called [property-based tests](http://blog.jessitron.
 
     import Test exposing (fuzz)
     import Fuzz exposing (list, int)
-    import Assert
+    import Expect
 
 
     fuzz (list int) "List.length should always be positive" <|
@@ -166,12 +166,12 @@ You may find them elsewhere called [property-based tests](http://blog.jessitron.
         \fuzzList ->
             fuzzList
                 |> List.length
-                |> Assert.atLeast 0
+                |> Expect.atLeast 0
 -}
 fuzz :
     Fuzzer a
     -> String
-    -> (a -> Assertion)
+    -> (a -> Expectation)
     -> Test
 fuzz fuzzer desc =
     Test.Test.fuzzTest desc fuzzer
@@ -190,13 +190,13 @@ See [`fuzzWith`](#fuzzWith) for an example of writing this in tuple style.
     fuzz2 (list int) int "List.reverse never influences List.member" <|
         \nums target ->
             List.member target (List.reverse nums)
-                |> Assert.equal (List.member target nums)
+                |> Expect.toEqual (List.member target nums)
 -}
 fuzz2 :
     Fuzzer a
     -> Fuzzer b
     -> String
-    -> (a -> b -> Assertion)
+    -> (a -> b -> Expectation)
     -> Test
 fuzz2 fuzzA fuzzB desc =
     let
@@ -215,7 +215,7 @@ fuzz3 :
     -> Fuzzer b
     -> Fuzzer c
     -> String
-    -> (a -> b -> c -> Assertion)
+    -> (a -> b -> c -> Expectation)
     -> Test
 fuzz3 fuzzA fuzzB fuzzC desc =
     let
@@ -235,7 +235,7 @@ fuzz4 :
     -> Fuzzer c
     -> Fuzzer d
     -> String
-    -> (a -> b -> c -> d -> Assertion)
+    -> (a -> b -> c -> d -> Expectation)
     -> Test
 fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
     let
@@ -256,7 +256,7 @@ fuzz5 :
     -> Fuzzer c
     -> Fuzzer d
     -> Fuzzer e
-    -> (a -> b -> c -> d -> e -> Assertion)
+    -> (a -> b -> c -> d -> e -> Expectation)
     -> Test
 fuzz5 desc fuzzA fuzzB fuzzC fuzzD fuzzE =
     let

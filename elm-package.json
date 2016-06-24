@@ -1,5 +1,5 @@
 {
-    "version": "1.2.0",
+    "version": "2.0.0",
     "summary": "Unit testing support with Console/Html/String outputs.",
     "repository": "https://github.com/project-fuzzball/test.git",
     "license": "BSD-3-Clause",
@@ -11,7 +11,7 @@
         "Test.Runner",
         "Test.Runner.String",
         "Test.Runner.Log",
-        "Assert",
+        "Expect",
         "Fuzz"
     ],
     "dependencies": {

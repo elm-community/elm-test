@@ -1,12 +1,12 @@
-module Test.Assertion exposing (Assertion(..), formatFailure)
+module Test.Expectation exposing (Expectation(..), formatFailure)
 
 
-type Assertion
+type Expectation
     = Pass
     | Fail String
 
 
-formatFailure : (String -> String) -> Assertion -> Assertion
+formatFailure : (String -> String) -> Expectation -> Expectation
 formatFailure format outcome =
     case outcome of
         Fail message ->

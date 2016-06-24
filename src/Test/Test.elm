@@ -1,19 +1,19 @@
 module Test.Test exposing (Test(..), fuzzTest)
 
 import Random.Pcg as Random exposing (Generator)
-import Test.Assertion exposing (Assertion(..))
+import Test.Expectation exposing (Expectation(..))
 import Dict
 import Shrink
 import Fuzz exposing (Fuzzer)
 
 
 type Test
-    = Test (Random.Seed -> Int -> List Assertion)
+    = Test (Random.Seed -> Int -> List Expectation)
     | Labeled String Test
     | Batch (List Test)
 
 
-fuzzTest : String -> Fuzzer a -> (a -> Assertion) -> Test
+fuzzTest : String -> Fuzzer a -> (a -> Expectation) -> Test
 fuzzTest desc fuzzer getOutcome =
     let
         run seed runs =
@@ -60,14 +60,14 @@ fuzzTest desc fuzzer getOutcome =
                     |> Random.step generators
                     |> fst
                     |> dedupe
-                    |> List.map formatAssertion
+                    |> List.map formatExpectation
     in
         Labeled desc (Test run)
 
 
-formatAssertion : ( Maybe String, Assertion ) -> Assertion
-formatAssertion ( input, outcome ) =
-    Test.Assertion.formatFailure (prependInput input) outcome
+formatExpectation : ( Maybe String, Expectation ) -> Expectation
+formatExpectation ( input, outcome ) =
+    Test.Expectation.formatFailure (prependInput input) outcome
 
 
 prependInput : Maybe String -> String -> String
@@ -80,6 +80,6 @@ prependInput input original =
             "► Given " ++ str ++ "\n\n" ++ original
 
 
-isFail : Assertion -> Bool
+isFail : Expectation -> Bool
 isFail =
-    (/=) Test.Assertion.Pass
+    (/=) Test.Expectation.Pass
