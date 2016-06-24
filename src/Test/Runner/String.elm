@@ -86,7 +86,7 @@ outputFailures message labels =
                 |> List.map ((++) "↓ ")
                 |> String.join "\n"
     in
-        outputContext ++ "\n" ++ outputMessage message
+        outputContext ++ "\n" ++ outputMessage message ++ "\n"
 
 
 defaultSeed : Random.Seed

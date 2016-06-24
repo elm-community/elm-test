@@ -39,28 +39,38 @@ testOxfordify =
             [ test "returns an empty string" <|
                 \() ->
                     oxfordify "This sentence is empty" "." []
-                        |> Expect.toEqual ""
+                        |> Expect.equal ""
             ]
         , describe "given a sentence with one item"
             [ test "still contains one item" <|
                 \() ->
                     oxfordify "This sentence contains " "." [ "one item" ]
-                        |> Expect.toEqual "This sentence contains one item."
+                        |> Expect.equal "This sentence contains one item."
             ]
         , describe "given a sentence with multiple items"
             [ test "returns an oxford-style sentence" <|
                 \() ->
                     oxfordify "This sentence contains " "." [ "one item", "two item" ]
-                        |> Expect.toEqual "This sentence contains one item and two item."
+                        |> Expect.equal "This sentence contains one item and two item."
             , test "returns an oxford-style sentence" <|
                 \() ->
                     oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
-                        |> Expect.toEqual "This sentence contains one item, two item, and three item."
+                        |> Expect.equal "This sentence contains one item, two item, and three item."
+            ]
+        , describe "comparisons"
+            [ test "one is greater than two" <|
+                \() ->
+                    1
+                        |> Expect.greaterThan 2
+            , test "three is less than one" <|
+                \() ->
+                    3
+                        |> Expect.lessThan 1
             ]
         , describe "a long failure message"
             [ test "long failure!" <|
                 \() ->
-                    Expect.toEqual "html, body {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\npadding: 0;\nmargin: 0;\n}\n\nbody {\nmin-width: 1280px;\noverflow-x: auto;\n}\n\nbody > div {\nwidth: 100%;\nheight: 100%;\n}\n\n.dreamwriterHidden {\ndisplay: none !important;\n}\n\n#dreamwriterPage {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\nmargin: 0;\npadding: 8px;\nbackground-color: rgb(100, 90, 128);\ncolor: rgb(40, 35, 76);\n}"
+                    Expect.equal "html, body {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\npadding: 0;\nmargin: 0;\n}\n\nbody {\nmin-width: 1280px;\noverflow-x: auto;\n}\n\nbody > div {\nwidth: 100%;\nheight: 100%;\n}\n\n.dreamwriterHidden {\ndisplay: none !important;\n}\n\n#dreamwriterPage {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\nmargin: 0;\npadding: 8px;\nbackground-color: rgb(100, 90, 128);\ncolor: rgb(40, 35, 76);\n}"
                         "html, body {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\npadding: 0;\nmargin: 0;\n}\n\nbody {\nmin-width: 1280px;\noverflow-x: auto;\n}\n\nbody > div {\nwidth: 100%;\nheight: 100%;\n}\n\n.dreamwriterHidden {\ndisplay: none !important;\n}\n\n#Page {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\nmargin: 0;\npadding: 8px;\nbackground-color: rgb(100, 90, 128);\ncolor: rgb(40, 35, 76);\n}"
             ]
         ]

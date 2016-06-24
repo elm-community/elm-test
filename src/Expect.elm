@@ -1,29 +1,29 @@
-module Expect exposing (Expectation, pass, fail, getFailure, toEqual, notToEqual, toBeAtMost, toBeLessThan, toBeGreaterThan, toBeAtLeast, toBeTrue, toBeFalse, onFail, all)
+module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, onFail, all)
 
 {-| Determining whether tests pass or fail.
 
 ## Quick Reference
 
-* [`toEqual`](#toEqual) `(arg2 == arg1)`
-* [`notToEqual`](#notToEqual) `(arg2 /= arg1)`
-* [`toBeLessThan`](#toBeLessThan) `(arg2 < arg1)`
-* [`toBeAtMost`](#toBeAtMost) `(arg2 <= arg1)`
-* [`toBeGreaterThan`](#toBeGreaterThan) `(arg2 > arg1)`
-* [`toBeAtLeast`](#toBeAtLeast) `(arg2 >= arg1)`
-* [`toBeTrue`](#toBeTrue) `(arg == True)`
-* [`toBeFalse`](#toBeFalse) `(arg == False)`
+* [`equal`](#equal) `(arg2 == arg1)`
+* [`notEqual`](#notEqual) `(arg2 /= arg1)`
+* [`lessThan`](#lessThan) `(arg2 < arg1)`
+* [`atMost`](#atMost) `(arg2 <= arg1)`
+* [`greaterThan`](#greaterThan) `(arg2 > arg1)`
+* [`atLeast`](#atLeast) `(arg2 >= arg1)`
+* [`true`](#true) `(arg == True)`
+* [`false`](#false) `(arg == False)`
 
 ## Basic Expectations
 
-@docs Expectation, toEqual, notToEqual, all
+@docs Expectation, equal, notEqual, all
 
 ## Comparisons
 
-@docs toBeLessThan, toBeAtMost, toBeGreaterThan, toBeAtLeast
+@docs lessThan, atMost, greaterThan, atLeast
 
 ## Booleans
 
-@docs toBeTrue, toBeFalse
+@docs true, false
 
 ## Customizing
 
@@ -43,7 +43,7 @@ type alias Expectation =
 
 {-| Passes if the arguments are equal.
 
-    Expect.toEqual 0 (List.length [])
+    Expect.equal 0 (List.length [])
 
     -- Passes because (0 == 0) is True
 
@@ -52,29 +52,27 @@ which argument is which:
 
     -- Fails because (0 == 5) is False
     List.length []
-        |> Expect.toEqual 5
+        |> Expect.equal 5
 
 
     {-
 
-    Expected  0
-
-    toEqual   5
+    0
+    │
+    │ Expect.equal
+    │
+    5
 
     -}
 -}
-toEqual : a -> a -> Expectation
-toEqual expected actual =
-    if expected == actual then
-        pass
-    else
-        reportFailure "toEqual" (toString expected) (toString actual)
-            |> fail
+equal : a -> a -> Expectation
+equal =
+    compareWith "Expect.equal" (==)
 
 
 {-| Passes if the arguments are not equal.
 
-    Expect.notToEqual 11 (90 + 10)
+    Expect.notEqual 11 (90 + 10)
 
     -- Passes because (11 /= 100) is True
 
@@ -83,31 +81,26 @@ both arguments were equal.
 
     -- Fails because (100 /= 100) is False
     (90 + 10)
-        |> Expect.notToEqual 100
+        |> Expect.notEqual 100
 
     {-
 
-    Expected different values, but both were equal to:
-
+    100
+    │
+    │ Expect.notEqual
+    │
     100
 
     -}
 -}
-notToEqual : a -> a -> Expectation
-notToEqual expected actual =
-    if actual == expected then
-        [ "Expected different values, but both were equal to:"
-        , toString actual
-        ]
-            |> String.join "\n\n"
-            |> fail
-    else
-        pass
+notEqual : a -> a -> Expectation
+notEqual =
+    compareWith "Expect.notEqual" (/=)
 
 
 {-| Passes if the second argument is less than the first.
 
-    Expect.toBeLessThan 1 (List.length [])
+    Expect.lessThan 1 (List.length [])
 
     -- Passes because (0 < 1) is True
 
@@ -116,29 +109,27 @@ which argument is which:
 
     -- Fails because (0 < -1) is False
     List.length []
-        |> Expect.toBeLessThan -1
+        |> Expect.lessThan -1
 
 
     {-
 
-    Expected      0
-
-    toBeLessThan  -1
+    0
+    │
+    │ Expect.lessThan
+    │
+    -1
 
     -}
 -}
-toBeLessThan : comparable -> comparable -> Expectation
-toBeLessThan expected actual =
-    if actual < expected then
-        pass
-    else
-        reportFailure "toBeLessThan" (toString expected) (toString actual)
-            |> fail
+lessThan : comparable -> comparable -> Expectation
+lessThan =
+    compareWith "Expect.lessThan" (<)
 
 
 {-| Passes if the second argument is less than or equal to the first.
 
-    Expect.toBeAtMost 1 (List.length [])
+    Expect.atMost 1 (List.length [])
 
     -- Passes because (0 <= 1) is True
 
@@ -147,28 +138,26 @@ which argument is which:
 
     -- Fails because (0 <= -3) is False
     List.length []
-        |> Expect.toBeAtMost -3
+        |> Expect.atMost -3
 
     {-
 
-    Expected    0
-
-    toBeAtMost  -3
+    0
+    │
+    │ Expect.atMost
+    │
+    -3
 
     -}
 -}
-toBeAtMost : comparable -> comparable -> Expectation
-toBeAtMost expected actual =
-    if actual <= expected then
-        pass
-    else
-        reportFailure "toBeAtMost" (toString expected) (toString actual)
-            |> fail
+atMost : comparable -> comparable -> Expectation
+atMost =
+    compareWith "Expect.atMost" (<=)
 
 
 {-| Passes if the second argument is greater than the first.
 
-    Expect.toBeGreaterThan -2 List.length []
+    Expect.greaterThan -2 List.length []
 
     -- Passes because (0 > -2) is True
 
@@ -177,28 +166,26 @@ which argument is which:
 
     -- Fails because (0 > 1) is False
     List.length []
-        |> Expect.toBeGreaterThan 1
+        |> Expect.greaterThan 1
 
     {-
 
-    Expected         0
-
-    toBeGreaterThan  1
+    0
+    │
+    │ Expect.greaterThan
+    │
+    1
 
     -}
 -}
-toBeGreaterThan : comparable -> comparable -> Expectation
-toBeGreaterThan expected actual =
-    if actual > expected then
-        pass
-    else
-        reportFailure "toBeGreaterThan" (toString expected) (toString actual)
-            |> fail
+greaterThan : comparable -> comparable -> Expectation
+greaterThan =
+    compareWith "Expect.greaterThan" (>)
 
 
 {-| Passes if the second argument is greater than or equal to the first.
 
-    Expect.toBeAtLeast -2 (List.length [])
+    Expect.atLeast -2 (List.length [])
 
     -- Passes because (0 >= -2) is True
 
@@ -207,28 +194,26 @@ which argument is which:
 
     -- Fails because (0 >= 3) is False
     List.length []
-        |> Expect.toBeAtLeast 3
+        |> Expect.atLeast 3
 
     {-
 
-    Expected     0
-
-    toBeAtLeast  3
+    0
+    │
+    │ Expect.atLeast
+    │
+    3
 
     -}
 -}
-toBeAtLeast : comparable -> comparable -> Expectation
-toBeAtLeast expected actual =
-    if actual >= expected then
-        pass
-    else
-        reportFailure "toBeAtLeast" (toString expected) (toString actual)
-            |> fail
+atLeast : comparable -> comparable -> Expectation
+atLeast =
+    compareWith "Expect.atLeast" (>=)
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
 
-    Expect.toBeTrue "Expected the list to be empty." (List.isEmpty [])
+    Expect.true "Expected the list to be empty." (List.isEmpty [])
 
     -- Passes because (List.isEmpty []) is True
 
@@ -237,7 +222,7 @@ which argument is which:
 
     -- Fails because List.isEmpty returns False, but we expect True.
     List.isEmpty [ 42 ]
-        |> Expect.toBeTrue "Expected the list to be empty."
+        |> Expect.true "Expected the list to be empty."
 
     {-
 
@@ -245,8 +230,8 @@ which argument is which:
 
     -}
 -}
-toBeTrue : String -> Bool -> Expectation
-toBeTrue message bool =
+true : String -> Bool -> Expectation
+true message bool =
     if bool then
         pass
     else
@@ -255,7 +240,7 @@ toBeTrue message bool =
 
 {-| Passes if the argument is 'False', and otherwise fails with the given message.
 
-    Expect.toBeFalse "Expected the list not to be empty." (List.isEmpty [ 42 ])
+    Expect.false "Expected the list not to be empty." (List.isEmpty [ 42 ])
 
     -- Passes because (List.isEmpty [ 42 ]) is False
 
@@ -264,7 +249,7 @@ which argument is which:
 
     -- Fails because (List.isEmpty []) is True
     List.isEmpty []
-        |> Expect.toBeFalse "Expected the list not to be empty."
+        |> Expect.false "Expected the list not to be empty."
 
     {-
 
@@ -272,8 +257,8 @@ which argument is which:
 
     -}
 -}
-toBeFalse : String -> Bool -> Expectation
-toBeFalse message bool =
+false : String -> Bool -> Expectation
+false message bool =
     if bool then
         fail message
     else
@@ -344,7 +329,7 @@ getFailure expectation =
 {-| If the given expectation fails, replace its failure message with a custom one.
 
     "something"
-        |> Expect.toEqual "something else"
+        |> Expect.equal "something else"
         |> Expect.onFail "thought those two strings would be the same"
 -}
 onFail : String -> Expectation -> Expectation
@@ -362,25 +347,25 @@ they all pass, return a pass. If any fail, return a fail whose message includes
 all the other failure messages.
 
     [ 0, 1, 2, 3, 4, 5 ]
-        |> Expect.all (Expect.toBeLessThan 3)
+        |> Expect.all (Expect.lessThan 3)
 
     {-
 
     Expected      3
 
-    toBeLessThan  3
+    lessThan  3
 
     ---
 
     Expected      4
 
-    toBeLessThan  3
+    lessThan  3
 
     ---
 
     Expected      5
 
-    toBeLessThan  3
+    lessThan  3
 
     -}
 -}
@@ -398,27 +383,13 @@ all getExpectation list =
 
 reportFailure : String -> String -> String -> String
 reportFailure actualCaption expected actual =
-    if String.length expected < compactModeLength && String.length actual < compactModeLength then
-        let
-            -- Leave two spaces for a distinctive margin.
-            padTo =
-                2 + max (String.length expected) (String.length actualCaption)
-
-            pad =
-                String.padRight padTo ' '
-        in
-            [ pad expectedCaption ++ expected
-            , pad actualCaption ++ actual
-            ]
-                |> String.join "\n\n"
-    else
-        [ withUnderline expectedCaption
-        , expected
-        , ""
-        , withUnderline actualCaption
-        , actual
-        ]
-            |> String.join "\n"
+    [ expected
+    , "│"
+    , "│ " ++ actualCaption
+    , "│"
+    , actual
+    ]
+        |> String.join "\n"
 
 
 expectedCaption : String
@@ -434,3 +405,11 @@ withUnderline str =
 compactModeLength : Int
 compactModeLength =
     64
+
+
+compareWith : String -> (a -> a -> Bool) -> a -> a -> Expectation
+compareWith label compare expected actual =
+    if compare actual expected then
+        pass
+    else
+        fail (reportFailure label (toString expected) (toString actual))
