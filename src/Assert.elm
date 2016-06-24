@@ -55,13 +55,11 @@ in pipeline style.
 
     {-
 
-    We expected arg2 == arg1, but got:
+    Failed assertion: Assert.equal expected actual
 
-    Assert.equal
+    expected: 5
 
-    5
-
-    0
+    actual:   0
 
     -}
 -}
@@ -70,9 +68,9 @@ equal expected actual =
     if actual == expected then
         pass
     else
-        [ "(Assert.equal expected actual) was hoping for expected == actual, but got:"
-        , "Expected: " ++ toString expected
-        , "Actual:   " ++ toString actual
+        [ "Failed assertion: Assert.equal expected actual"
+        , "expected: " ++ toString expected
+        , "actual:   " ++ toString actual
         ]
             |> String.join "\n\n"
             |> fail
@@ -91,13 +89,9 @@ in pipeline style.
 
     {-
 
-    We expected arg2 /= arg1, but got:
+    Failed assertion: Assert.notEqual expected different
 
-    Assert.notEqual
-
-    100
-
-    100
+    both arguments were: 100
 
     -}
 -}
@@ -128,13 +122,11 @@ in pipeline style.
 
     {-
 
-    We expected arg2 < arg1, but got:
+    Failed assertion: Assert.lessThan expected lesser
 
-    Assert.lessThan
+    We expected    0
 
-    -1
-
-    0
+    to be lessThan -1
 
     -}
 -}
