@@ -384,9 +384,9 @@ all getExpectation list =
 reportFailure : String -> String -> String -> String
 reportFailure actualCaption expected actual =
     [ expected
-    , "│"
+    , "╷"
     , "│ " ++ actualCaption
-    , "│"
+    , "╵"
     , actual
     ]
         |> List.map ((++) "  ")
