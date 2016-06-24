@@ -389,7 +389,7 @@ reportFailure actualCaption expected actual =
     , "╵"
     , actual
     ]
-        |> List.map ((++) "  ")
+        |> List.map ((++) "    ")
         |> String.join "\n"
 
 
