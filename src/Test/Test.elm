@@ -89,4 +89,4 @@ prependInput input original =
 
 isFail : Expectation -> Bool
 isFail =
-    (/=) Test.Expectation.Pass
+    (/=) Pass
