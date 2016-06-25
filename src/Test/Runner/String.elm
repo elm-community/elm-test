@@ -86,7 +86,7 @@ outputFailures message labels =
                 |> List.map ((++) "↓ ")
                 |> String.join "\n"
     in
-        outputContext ++ "\n" ++ outputMessage message ++ "\n"
+        outputContext ++ "\n" ++ outputMessage (indentLines message) ++ "\n"
 
 
 defaultSeed : Random.Seed
@@ -97,6 +97,14 @@ defaultSeed =
 defaultRuns : Int
 defaultRuns =
     100
+
+
+indentLines : String -> String
+indentLines str =
+    str
+        |> String.split "\n"
+        |> List.map ((++) "    ")
+        |> String.join "\n"
 
 
 {-| Run a test and return a tuple of the output message and the number of
