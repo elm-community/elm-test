@@ -55,12 +55,11 @@ the failures instead of being flooded with irrelevant data.
 
 ## Running Tests
 
-The simplest way to run tests and display the output is the `elementRunner : Test -> Element` function, which is an easy way
-to run your tests and report the results in-browser, as a standard Elm module. A full example could be:
+The simplest way to run tests and display the output is the `runSuiteHtml : Test -> Program Never` function, which is an 
+easy way to run your tests and report the results in-browser, as a standard Elm module. A full example could be:
 ```elm
 -- Example.elm
 import String
-import Graphics.Element exposing (Element)
 
 import ElmTest exposing (..)
 
@@ -74,20 +73,20 @@ tests =
         ]
 
 
-main : Element
+main : Program Never
 main = 
-    elementRunner tests
+    runSuiteHtml tests
 ```
 Compile this with `elm-make Example.elm --output Example.html` and open the resulting file in your browser, and you'll see
 the results.
 
-Another method is the `stringRunner : Test -> String` function. This is almost the same, but it returns a `String` instead of
-an `Element`. The `String` is a summary of the overall test results. Here's the same example as before, but modified for
-`stringRunner`:
+Another method is the `stringRunner : Test -> String` function. This is almost the same, but it returns a `String` instead 
+of rendering an HTML view. The `String` is a summary of the overall test results. Here's the same example as before, but 
+modified for `stringRunner` (note, this uses elm-lang/html):
 ```elm
 -- Example.elm
 import String
-import Graphics.Element exposing (Element, show)
+import Html exposing (div, text)
 
 import ElmTest exposing (..)
 
@@ -100,10 +99,11 @@ tests =
         , test "This test should fail" (assert False)
         ]
 
+type Msg = None
 
-main : Element
-main = 
-    show (stringRunner tests)
+main : Html.Html Msg
+main =
+    div [ ] [ text (stringRunner tests) ]
 ```
 
 You can also run these tests from command line with `runSuite : Test -> Program Never`, see the below section on **Testing from the Command Line** for details.
@@ -138,7 +138,7 @@ $ elm-make Tests.elm --output tests.js
 $ node tests.js
 ```
 
-While the `elementRunner` display is nicest to read, the `runSuite` function is amenable to automated testing. If a test
+While the `runSuiteHtml` display is nicest to read, the `runSuite` function is amenable to automated testing. If a test
 suite passes the script will exit with exit code 0, and if it fails it will exit with 1.
 
 ## Integrating With Travis CI
