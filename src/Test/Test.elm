@@ -2,8 +2,8 @@ module Test.Test exposing (Test(..), fuzzTest)
 
 import Random.Pcg as Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
-import Dict
-import Shrink
+import Dict exposing (Dict)
+import Shrink exposing (Shrinker)
 import Fuzz exposing (Fuzzer)
 
 
@@ -14,77 +14,63 @@ type Test
 
 
 fuzzTest : String -> Fuzzer a -> (a -> Expectation) -> Test
-fuzzTest desc fuzzer getOutcome =
+fuzzTest desc { generator, shrinker } getExpectation =
     let
         run seed runs =
             if runs < 1 then
                 [ Fail ("Fuzz test run count must be at least 1, not " ++ toString runs) ]
             else
                 let
-                    runWithInput val =
-                        ( val, getOutcome val )
+                    getFailures failures currentSeed remainingRuns =
+                        let
+                            ( val, nextSeed ) =
+                                Random.step generator currentSeed
 
-                    generators =
-                        fuzzer.generator
-                            |> Random.list runs
-                            |> Random.map (List.map runWithInput)
+                            newFailures =
+                                case getExpectation val of
+                                    Pass ->
+                                        failures
 
-                    ( pairs, _ ) =
-                        Random.step generators seed
+                                    failure ->
+                                        shrinkAndAdd shrinker getExpectation val failures
+                        in
+                            if remainingRuns == 1 then
+                                newFailures
+                            else
+                                getFailures newFailures nextSeed (remainingRuns - 1)
+
+                    -- Use a Dict so we don't report duplicate inputs.
+                    failures =
+                        getFailures Dict.empty seed runs
                 in
                     -- Make sure if we passed, we don't do any more work.
-                    if List.all (\( _, outcome ) -> outcome == Pass) pairs then
+                    if Dict.isEmpty failures then
                         [ Pass ]
                     else
-                        let
-                            shrink ( val, outcome ) =
-                                if isFail outcome then
-                                    let
-                                        shrunkenVal =
-                                            Shrink.shrink (getOutcome >> isFail) fuzzer.shrinker val
-                                    in
-                                        ( Just (toString shrunkenVal), getOutcome shrunkenVal )
-                                else
-                                    ( Just (toString val), outcome )
-                        in
-                            pairs
-                                |> List.map shrink
-                                |> dedupe
-                                |> List.map formatExpectation
+                        failures
+                            |> Dict.toList
+                            |> List.map formatExpectation
     in
         Labeled desc (Test run)
 
 
-formatExpectation : ( Maybe String, Expectation ) -> Expectation
-formatExpectation ( input, outcome ) =
-    Test.Expectation.formatFailure (prependInput input) outcome
+shrinkAndAdd : Shrinker a -> (a -> Expectation) -> a -> Dict String Expectation -> Dict String Expectation
+shrinkAndAdd shrinker getExpectation val dict =
+    let
+        result =
+            Shrink.shrink (getExpectation >> isFail) shrinker val
+    in
+        Dict.insert (toString result) (getExpectation result) dict
 
 
-dedupe : List ( Maybe String, a ) -> List ( Maybe String, a )
-dedupe pairs =
-    pairs
-        |> List.map (\( mk, v ) -> ( Maybe.withDefault "" mk, v ))
-        |> Dict.fromList
-        |> Dict.toList
-        |> List.map
-            (\( s, v ) ->
-                ( if s == "" then
-                    Nothing
-                  else
-                    Just s
-                , v
-                )
-            )
+formatExpectation : ( String, Expectation ) -> Expectation
+formatExpectation ( input, expectation ) =
+    Test.Expectation.formatFailure (prependInput input) expectation
 
 
-prependInput : Maybe String -> String -> String
+prependInput : String -> String -> String
 prependInput input original =
-    case input of
-        Nothing ->
-            original
-
-        Just str ->
-            "► Given " ++ str ++ "\n\n" ++ original
+    "► Given " ++ input ++ "\n\n" ++ original
 
 
 isFail : Expectation -> Bool
