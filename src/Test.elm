@@ -127,7 +127,7 @@ for example like this:
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzWith options fuzzer desc getTest =
-    fuzzWithHelp options (Test.Test.fuzzTest desc fuzzer getTest)
+    fuzzWithHelp options (fuzz fuzzer desc getTest)
 
 
 fuzzWithHelp : FuzzOptions -> Test -> Test
@@ -173,8 +173,8 @@ fuzz :
     -> String
     -> (a -> Expectation)
     -> Test
-fuzz fuzzer desc =
-    Test.Test.fuzzTest desc fuzzer
+fuzz =
+    Test.Test.fuzzTest
 
 
 {-| Run a [fuzz test](#fuzz) using two random inputs.
@@ -203,7 +203,7 @@ fuzz2 fuzzA fuzzB desc =
         fuzzer =
             Fuzz.tuple ( fuzzA, fuzzB )
     in
-        uncurry >> Test.Test.fuzzTest desc fuzzer
+        uncurry >> fuzz fuzzer desc
 
 
 {-| Run a [fuzz test](#fuzz) using three random inputs.
@@ -222,7 +222,7 @@ fuzz3 fuzzA fuzzB fuzzC desc =
         fuzzer =
             Fuzz.tuple3 ( fuzzA, fuzzB, fuzzC )
     in
-        uncurry3 >> Test.Test.fuzzTest desc fuzzer
+        uncurry3 >> fuzz fuzzer desc
 
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
@@ -242,7 +242,7 @@ fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
         fuzzer =
             Fuzz.tuple4 ( fuzzA, fuzzB, fuzzC, fuzzD )
     in
-        uncurry4 >> Test.Test.fuzzTest desc fuzzer
+        uncurry4 >> fuzz fuzzer desc
 
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
@@ -250,20 +250,20 @@ fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
 This is a convenicence function that lets you skip calling [`Fuzz.tuple5`](../Fuzz#tuple5).
 -}
 fuzz5 :
-    String
-    -> Fuzzer a
+    Fuzzer a
     -> Fuzzer b
     -> Fuzzer c
     -> Fuzzer d
     -> Fuzzer e
+    -> String
     -> (a -> b -> c -> d -> e -> Expectation)
     -> Test
-fuzz5 desc fuzzA fuzzB fuzzC fuzzD fuzzE =
+fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE desc =
     let
         fuzzer =
             Fuzz.tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE )
     in
-        uncurry5 >> Test.Test.fuzzTest desc fuzzer
+        uncurry5 >> fuzz fuzzer desc
 
 
 

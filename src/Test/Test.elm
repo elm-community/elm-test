@@ -13,8 +13,8 @@ type Test
     | Batch (List Test)
 
 
-fuzzTest : String -> Fuzzer a -> (a -> Expectation) -> Test
-fuzzTest desc { generator, shrinker } getExpectation =
+fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
+fuzzTest { generator, shrinker } desc getExpectation =
     let
         run seed runs =
             if runs < 1 then
