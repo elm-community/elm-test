@@ -58,9 +58,9 @@ which argument is which:
     {-
 
     0
-    ╻
-    ┃ Expect.equal
-    ╹
+    ╷
+    │ Expect.equal
+    ╵
     5
 
     -}
@@ -86,9 +86,9 @@ both arguments were equal.
     {-
 
     100
-    ╻
-    ┃ Expect.notEqual
-    ╹
+    ╷
+    │ Expect.notEqual
+    ╵
     100
 
     -}
@@ -115,9 +115,9 @@ which argument is which:
     {-
 
     0
-    ╻
-    ┃ Expect.lessThan
-    ╹
+    ╷
+    │ Expect.lessThan
+    ╵
     -1
 
     -}
@@ -143,9 +143,9 @@ which argument is which:
     {-
 
     0
-    ╻
-    ┃ Expect.atMost
-    ╹
+    ╷
+    │ Expect.atMost
+    ╵
     -3
 
     -}
@@ -171,9 +171,9 @@ which argument is which:
     {-
 
     0
-    ╻
-    ┃ Expect.greaterThan
-    ╹
+    ╷
+    │ Expect.greaterThan
+    ╵
     1
 
     -}
@@ -199,9 +199,9 @@ which argument is which:
     {-
 
     0
-    ╻
-    ┃ Expect.atLeast
-    ╹
+    ╷
+    │ Expect.atLeast
+    ╵
     3
 
     -}
@@ -352,25 +352,25 @@ all the other failure messages.
     {-
 
     3
-    ╻
-    ┃ Expect.lessThan
-    ╹
+    ╷
+    │ Expect.lessThan
+    ╵
     3
 
     ════════════════
 
     4
-    ╻
-    ┃ Expect.lessThan
-    ╹
+    ╷
+    │ Expect.lessThan
+    ╵
     3
 
     ════════════════
 
     5
-    ╻
-    ┃ Expect.lessThan
-    ╹
+    ╷
+    │ Expect.lessThan
+    ╵
     3
 
     -}
@@ -390,9 +390,9 @@ all getExpectation list =
 reportFailure : String -> String -> String -> String
 reportFailure comparison expected actual =
     [ actual
-    , "╻"
-    , "┃ " ++ comparison
-    , "╹"
+    , "╷"
+    , "│ " ++ comparison
+    , "╵"
     , expected
     ]
         |> String.join "\n"
