@@ -58,9 +58,9 @@ which argument is which:
     {-
 
     0
-    │
+    ╷
     │ Expect.equal
-    │
+    ╵
     5
 
     -}
@@ -86,9 +86,9 @@ both arguments were equal.
     {-
 
     100
-    │
+    ╷
     │ Expect.notEqual
-    │
+    ╵
     100
 
     -}
@@ -115,9 +115,9 @@ which argument is which:
     {-
 
     0
-    │
+    ╷
     │ Expect.lessThan
-    │
+    ╵
     -1
 
     -}
@@ -143,9 +143,9 @@ which argument is which:
     {-
 
     0
-    │
+    ╷
     │ Expect.atMost
-    │
+    ╵
     -3
 
     -}
@@ -171,9 +171,9 @@ which argument is which:
     {-
 
     0
-    │
+    ╷
     │ Expect.greaterThan
-    │
+    ╵
     1
 
     -}
@@ -199,9 +199,9 @@ which argument is which:
     {-
 
     0
-    │
+    ╷
     │ Expect.atLeast
-    │
+    ╵
     3
 
     -}
