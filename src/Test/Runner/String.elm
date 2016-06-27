@@ -56,8 +56,7 @@ fromExpectation expectation summary =
 
         Just message ->
             { output =
-                String.join "\n\n"
-                    [ summary.output, indentLines message ]
+                summary.output ++ "\n\n" ++ indentLines message ++ "\n"
             , failed = summary.failed + 1
             , passed = summary.passed
             }
