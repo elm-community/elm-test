@@ -351,21 +351,27 @@ all the other failure messages.
 
     {-
 
-    Expected      3
+    3
+    ╷
+    │ Expect.lessThan
+    ╵
+    3
 
-    lessThan  3
+    ════════════════
 
-    ---
+    4
+    ╷
+    │ Expect.lessThan
+    ╵
+    3
 
-    Expected      4
+    ════════════════
 
-    lessThan  3
-
-    ---
-
-    Expected      5
-
-    lessThan  3
+    5
+    ╷
+    │ Expect.lessThan
+    ╵
+    3
 
     -}
 -}
@@ -377,7 +383,7 @@ all getExpectation list =
 
         failures ->
             failures
-                |> String.join "\n\n---\n\n"
+                |> String.join "\n\n════════════════\n\n"
                 |> fail
 
 
