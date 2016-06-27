@@ -36,7 +36,7 @@ toOutputHelp labels runner summary =
         Runnable runnable ->
             let
                 output =
-                    String.join "\n\n" [ summary.output, outputLabels labels ]
+                    summary.output ++ "\n\n" ++ outputLabels labels
             in
                 Test.Runner.run runnable
                     |> List.foldl fromExpectation { summary | output = output }
@@ -64,16 +64,9 @@ fromExpectation expectation summary =
 
 outputLabels : List String -> String
 outputLabels labels =
-    case List.filter (not << String.isEmpty) labels of
-        [] ->
-            ""
-
-        first :: rest ->
-            rest
-                |> List.map ((++) "↓ ")
-                |> (::) ("✗ " ++ first)
-                |> List.reverse
-                |> String.join "\n"
+    labels
+        |> Test.Runner.formatLabels ((++) "↓ ") ((++) "✗ ")
+        |> String.join "\n"
 
 
 defaultSeed : Random.Seed

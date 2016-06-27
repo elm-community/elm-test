@@ -1,4 +1,4 @@
-module Test.Runner exposing (Runnable, Runner(..), run, fromTest)
+module Test.Runner exposing (Runnable, Runner(..), run, fromTest, formatLabels)
 
 {-| Running tests.
 
@@ -9,12 +9,17 @@ module Test.Runner exposing (Runnable, Runner(..), run, fromTest)
 ## Runnable
 
 @docs Runnable, run
+
+## Formatting
+
+@docs formatLabels
 -}
 
 import Test exposing (Test)
 import Test.Test
 import Expect exposing (Expectation)
 import Random.Pcg as Random
+import String
 
 
 {-| An unevaluated test. Run it with [`run`](#run) to evaluate it into a
@@ -94,3 +99,45 @@ distributeSeeds runs test ( startingSeed, runners ) =
                     List.foldl (distributeSeeds runs) ( startingSeed, [] ) tests
             in
                 ( nextSeed, [ Batch (runners ++ nextRunners) ] )
+
+
+{-| A standard way to format descriptiona and test labels, to keep things
+consistent across test runner implementations.
+
+The HTML, Node, String, and Log runners all use this.
+
+What it does:
+
+* drop any labels that are empty strings
+* format the first label differently from the others
+* reverse the resulting list
+
+    [ "the actual test that failed"
+    , "nested description failure"
+    , "top-level description failure"
+    ]
+        |> formatLabels ((++) "↓ ") ((++) "✗ ")
+
+    {-
+        [ "↓ top-level description failure"
+        , "↓ nested description failure"
+        , "✗ the actual test that failed"
+        ]
+    -}
+
+-}
+formatLabels :
+    (String -> format)
+    -> (String -> format)
+    -> List String
+    -> List format
+formatLabels formatDescription formatTest labels =
+    case List.filter (not << String.isEmpty) labels of
+        [] ->
+            []
+
+        test :: descriptions ->
+            descriptions
+                |> List.map formatDescription
+                |> (::) (formatTest test)
+                |> List.reverse
