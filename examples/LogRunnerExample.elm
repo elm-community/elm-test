@@ -10,9 +10,12 @@ Note that this always uses an initial seed of 42, since it can't do effects.
 
 import Expect
 import Test exposing (..)
+import Fuzz exposing (..)
 import Test.Runner.Log
 import Html.App
 import Html
+import String
+import Char
 
 
 main : Program Never
@@ -22,7 +25,7 @@ main =
         , update = \_ _ -> ()
         , view = \() -> Html.text "Check the console for useful output!"
         }
-        |> Test.Runner.Log.run testOxfordify
+        |> Test.Runner.Log.run (Test.batch [ testOxfordify, testWithoutNums ])
 
 
 {-| stubbed function under test
@@ -30,6 +33,21 @@ main =
 oxfordify : a -> b -> c -> String
 oxfordify _ _ _ =
     "Alice, Bob, and Claire"
+
+
+withoutNums : String -> String
+withoutNums =
+    String.filter (\ch -> not (Char.isDigit ch || ch == '.'))
+
+
+testWithoutNums : Test
+testWithoutNums =
+    describe "withoutNums"
+        [ fuzzWith { runs = 100 } (tuple3 ( string, float, string )) "It removes numbers from strings" <|
+            \( prefix, num, suffix ) ->
+                withoutNums (prefix ++ toString num ++ suffix)
+                    |> Expect.equal (withoutNums (prefix ++ suffix))
+        ]
 
 
 testOxfordify : Test
