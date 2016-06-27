@@ -398,21 +398,6 @@ reportFailure comparison expected actual =
         |> String.join "\n"
 
 
-expectedCaption : String
-expectedCaption =
-    "Expected"
-
-
-withUnderline : String -> String
-withUnderline str =
-    str ++ "\n" ++ String.repeat (String.length str) "-"
-
-
-compactModeLength : Int
-compactModeLength =
-    64
-
-
 compareWith : String -> (a -> a -> Bool) -> a -> a -> Expectation
 compareWith label compare expected actual =
     if compare actual expected then
