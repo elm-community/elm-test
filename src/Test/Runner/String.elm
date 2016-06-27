@@ -62,14 +62,9 @@ fromExpectation expectation summary =
             }
 
 
-withoutEmptyStrings : List String -> List String
-withoutEmptyStrings =
-    List.filter ((/=) "")
-
-
 outputLabels : List String -> String
 outputLabels labels =
-    case withoutEmptyStrings labels of
+    case List.filter (not << String.isEmpty) labels of
         [] ->
             ""
 
