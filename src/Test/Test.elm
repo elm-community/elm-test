@@ -65,12 +65,12 @@ shrinkAndAdd shrinker getExpectation val dict =
 
 formatExpectation : ( String, Expectation ) -> Expectation
 formatExpectation ( input, expectation ) =
-    Test.Expectation.formatFailure (prependInput input) expectation
+    Test.Expectation.formatFailure (prependGiven input) expectation
 
 
-prependInput : String -> String -> String
-prependInput input original =
-    "► Given " ++ input ++ "\n\n" ++ original
+prependGiven : String -> String -> String
+prependGiven input original =
+    "Given " ++ input ++ "\n▔▔▔▔▔\n\n" ++ original
 
 
 isFail : Expectation -> Bool
