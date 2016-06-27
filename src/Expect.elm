@@ -382,12 +382,12 @@ all getExpectation list =
 
 
 reportFailure : String -> String -> String -> String
-reportFailure actualCaption expected actual =
-    [ expected
+reportFailure comparison expected actual =
+    [ actual
     , "╷"
-    , "│ " ++ actualCaption
+    , "│ " ++ comparison
     , "╵"
-    , actual
+    , expected
     ]
         |> String.join "\n"
 
