@@ -34,7 +34,12 @@ toOutputHelp : List String -> Runner -> Summary -> Summary
 toOutputHelp labels runner summary =
     case runner of
         Runnable runnable ->
-            List.foldl (fromExpectation labels) summary (Test.Runner.run runnable)
+            let
+                output =
+                    String.join "\n\n" [ summary.output, outputLabels labels ]
+            in
+                Test.Runner.run runnable
+                    |> List.foldl fromExpectation { summary | output = output }
 
         Labeled label subRunner ->
             toOutputHelp (label :: labels) subRunner summary
@@ -43,14 +48,16 @@ toOutputHelp labels runner summary =
             List.foldl (toOutputHelp labels) summary runners
 
 
-fromExpectation : List String -> Expectation -> Summary -> Summary
-fromExpectation labels expectation summary =
+fromExpectation : Expectation -> Summary -> Summary
+fromExpectation expectation summary =
     case Expect.getFailure expectation of
         Nothing ->
             { summary | passed = summary.passed + 1 }
 
         Just message ->
-            { output = String.join "\n\n" [ summary.output, (withoutEmptyStrings >> outputFailures message) labels ]
+            { output =
+                String.join "\n\n"
+                    [ summary.output, indentLines message ]
             , failed = summary.failed + 1
             , passed = summary.passed
             }
@@ -61,32 +68,18 @@ withoutEmptyStrings =
     List.filter ((/=) "")
 
 
-outputFailures : String -> List String -> String
-outputFailures message labels =
-    let
-        ( maybeLastLabel, otherLabels ) =
-            case labels of
-                [] ->
-                    ( Nothing, [] )
+outputLabels : List String -> String
+outputLabels labels =
+    case withoutEmptyStrings labels of
+        [] ->
+            ""
 
-                first :: rest ->
-                    ( Just first, List.reverse rest )
-
-        outputMessage message =
-            case maybeLastLabel of
-                Just label ->
-                    String.join "\n\n"
-                        [ "✗ " ++ label, message ]
-
-                Nothing ->
-                    message
-
-        outputContext =
-            otherLabels
+        first :: rest ->
+            rest
                 |> List.map ((++) "↓ ")
+                |> (::) ("✗ " ++ first)
+                |> List.reverse
                 |> String.join "\n"
-    in
-        outputContext ++ "\n" ++ outputMessage (indentLines message) ++ "\n"
 
 
 defaultSeed : Random.Seed
