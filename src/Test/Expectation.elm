@@ -1,16 +1,16 @@
-module Test.Expectation exposing (Expectation(..), formatFailure)
+module Test.Expectation exposing (Expectation(..), withGiven)
 
 
 type Expectation
     = Pass
-    | Fail String
+    | Fail String String
 
 
-formatFailure : (String -> String) -> Expectation -> Expectation
-formatFailure format outcome =
+withGiven : String -> Expectation -> Expectation
+withGiven given outcome =
     case outcome of
-        Fail message ->
-            Fail (format message)
+        Fail _ message ->
+            Fail given message
 
         Pass ->
             outcome

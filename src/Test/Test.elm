@@ -5,6 +5,7 @@ import Test.Expectation exposing (Expectation(..))
 import Dict exposing (Dict)
 import Shrink exposing (Shrinker)
 import Fuzz exposing (Fuzzer)
+import Expect
 
 
 type Test
@@ -18,7 +19,7 @@ fuzzTest { generator, shrinker } desc getExpectation =
     let
         run seed runs =
             if runs < 1 then
-                [ Fail ("Fuzz test run count must be at least 1, not " ++ toString runs) ]
+                [ Expect.fail ("Fuzz test run count must be at least 1, not " ++ toString runs) ]
             else
                 let
                     getFailures failures currentSeed remainingRuns =
@@ -27,12 +28,10 @@ fuzzTest { generator, shrinker } desc getExpectation =
                                 Random.step generator currentSeed
 
                             newFailures =
-                                case getExpectation val of
-                                    Pass ->
-                                        failures
-
-                                    failure ->
-                                        shrinkAndAdd shrinker getExpectation val failures
+                                if getExpectation val == Pass then
+                                    failures
+                                else
+                                    shrinkAndAdd shrinker getExpectation val failures
                         in
                             if remainingRuns == 1 then
                                 newFailures
@@ -40,6 +39,7 @@ fuzzTest { generator, shrinker } desc getExpectation =
                                 getFailures newFailures nextSeed (remainingRuns - 1)
 
                     -- Use a Dict so we don't report duplicate inputs.
+                    failures : Dict String Expectation
                     failures =
                         getFailures Dict.empty seed runs
                 in
@@ -64,13 +64,8 @@ shrinkAndAdd shrinker getExpectation val dict =
 
 
 formatExpectation : ( String, Expectation ) -> Expectation
-formatExpectation ( input, expectation ) =
-    Test.Expectation.formatFailure (prependGiven input) expectation
-
-
-prependGiven : String -> String -> String
-prependGiven input original =
-    "Given " ++ input ++ "\n▔▔▔▔▔\n\n" ++ original
+formatExpectation ( given, expectation ) =
+    Test.Expectation.withGiven given expectation
 
 
 isFail : Expectation -> Bool

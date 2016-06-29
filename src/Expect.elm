@@ -304,7 +304,7 @@ pass =
 -}
 fail : String -> Expectation
 fail =
-    Test.Expectation.Fail
+    Test.Expectation.Fail ""
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass),
@@ -316,14 +316,14 @@ and `Just` the error message if it is a [`fail`](#fail).
     getFailure (Expect.pass)
     -- Nothing
 -}
-getFailure : Expectation -> Maybe String
+getFailure : Expectation -> Maybe { given : String, message : String }
 getFailure expectation =
     case expectation of
         Test.Expectation.Pass ->
             Nothing
 
-        Test.Expectation.Fail desc ->
-            Just desc
+        Test.Expectation.Fail given message ->
+            Just { given = given, message = message }
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
@@ -338,8 +338,8 @@ onFail str expectation =
         Test.Expectation.Pass ->
             expectation
 
-        Test.Expectation.Fail _ ->
-            fail str
+        Test.Expectation.Fail given _ ->
+            Test.Expectation.Fail given str
 
 
 reportFailure : String -> String -> String -> String

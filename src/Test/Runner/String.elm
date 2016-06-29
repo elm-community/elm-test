@@ -54,12 +54,21 @@ fromExpectation expectation summary =
         Nothing ->
             { summary | passed = summary.passed + 1 }
 
-        Just message ->
-            { output =
-                summary.output ++ "\n\n" ++ indentLines message ++ "\n"
-            , failed = summary.failed + 1
-            , passed = summary.passed
-            }
+        Just { given, message } ->
+            let
+                prefix =
+                    if String.isEmpty given then
+                        ""
+                    else
+                        "Given " ++ given ++ "\n▔▔▔▔▔\n\n"
+
+                newOutput =
+                    "\n\n" ++ indentLines (prefix ++ message) ++ "\n"
+            in
+                { output = summary.output ++ newOutput
+                , failed = summary.failed + 1
+                , passed = summary.passed
+                }
 
 
 outputLabels : List String -> String
