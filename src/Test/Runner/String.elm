@@ -60,10 +60,10 @@ fromExpectation expectation summary =
                     if String.isEmpty given then
                         ""
                     else
-                        "Given " ++ given ++ "\n▔▔▔▔▔\n\n"
+                        "Given " ++ given ++ "\n\n"
 
                 newOutput =
-                    "\n\n" ++ indentLines (prefix ++ message) ++ "\n"
+                    "\n\n" ++ (prefix ++ indentLines message) ++ "\n"
             in
                 { output = summary.output ++ newOutput
                 , failed = summary.failed + 1
