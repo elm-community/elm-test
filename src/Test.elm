@@ -1,4 +1,4 @@
-module Test exposing (Test, FuzzOptions, describe, batch, test, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, test, concat, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
 {-| Writing tests.
 
@@ -6,7 +6,7 @@ module Test exposing (Test, FuzzOptions, describe, batch, test, fuzz, fuzz2, fuz
 
 ## Grouping Tests
 
-@docs describe, batch
+@docs describe, concat
 
 ## Fuzz Testing
 
@@ -29,19 +29,16 @@ type alias Test =
     Test.Test.Test
 
 
-{-| Run all the given tests. (Execution order is not guaranteed.)
+{-| Run the given tests in order.
 
-    import Test exposing (batch)
-
-
-    batch [ testDecoder, testSorting ]
+    concat [ testDecoder, testSorting ]
 -}
-batch : List Test -> Test
-batch =
+concat : List Test -> Test
+concat =
     Test.Test.Batch
 
 
-{-| Apply a description to a [`batch`](#batch) of tests.
+{-| Apply a description to a list of tests.
 
     import Test exposing (describe, test, fuzz)
     import Fuzz expoing (int)
