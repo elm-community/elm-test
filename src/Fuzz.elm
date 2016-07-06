@@ -337,8 +337,8 @@ between -1 and -100, and a 3/4 chance of generating one between 1 and 100,
 you could do this:
 
     Fuzz.freuqency
-        [ (1, Fuzz.intRange (-100, -1))
-        , (3, Fuzz.intRange (1, 100))
+        [ ( 1, Fuzz.intRange -100 -1 )
+        , ( 3, Fuzz.intRange 1 100 )
         ]
 
 This returns a `Result` because it can fail in a few ways:
