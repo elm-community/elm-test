@@ -1,12 +1,12 @@
-module Test exposing (Test, FuzzOptions, describe, test, concat, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
 {-| Writing tests.
 
 @docs Test, test
 
-## Grouping Tests
+## Organizing Tests
 
-@docs describe, concat
+@docs describe, concat, filter
 
 ## Fuzz Testing
 
@@ -36,6 +36,15 @@ type alias Test =
 concat : List Test -> Test
 concat =
     Test.Test.Batch
+
+
+{-| Remove any test unless it has a description that satisfies the given
+predicate function.
+-}
+filter : (String -> Bool) -> Test -> Test
+filter =
+    -- TODO add a code example to this.
+    Test.Test.filter
 
 
 {-| Apply a description to a list of tests.

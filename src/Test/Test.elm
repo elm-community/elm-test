@@ -1,4 +1,4 @@
-module Test.Test exposing (Test(..), fuzzTest)
+module Test.Test exposing (Test(..), fuzzTest, filter)
 
 import Random.Pcg as Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
@@ -12,6 +12,32 @@ type Test
     = Test (Random.Seed -> Int -> List Expectation)
     | Labeled String Test
     | Batch (List Test)
+
+
+filter : (String -> Bool) -> Test -> Test
+filter =
+    filterHelp False
+
+
+filterHelp : Bool -> (String -> Bool) -> Test -> Test
+filterHelp hasBeenTested isKeepable test =
+    case test of
+        Test _ ->
+            if hasBeenTested then
+                test
+            else
+                Batch []
+
+        Labeled desc test ->
+            if isKeepable desc then
+                filterHelp True isKeepable test
+            else
+                Batch []
+
+        Batch tests ->
+            tests
+                |> List.map (filterHelp hasBeenTested isKeepable)
+                |> Batch
 
 
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
