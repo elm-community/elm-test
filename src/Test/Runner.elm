@@ -81,7 +81,7 @@ distributeSeeds runs test ( startingSeed, runners ) =
                 ( seed, nextSeed ) =
                     Random.step Random.independentSeed startingSeed
             in
-                ( nextSeed, [ runners, Runnable (Thunk (\() -> run seed runs)) ] )
+                ( nextSeed, runners ++ [ Runnable (Thunk (\() -> run seed runs)) ] )
 
         Test.Test.Labeled label subTest ->
             let
