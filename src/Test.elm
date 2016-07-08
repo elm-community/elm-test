@@ -38,8 +38,8 @@ concat =
     Internal.Batch
 
 
-{-| Remove any test unless it has a description that satisfies the given
-predicate function.
+{-| Remove any test unless its description satisfies the given predicate
+function. Nested descriptions added with [`describe`](#describe) are not considered.
 -}
 filter : (String -> Bool) -> Test -> Test
 filter =
