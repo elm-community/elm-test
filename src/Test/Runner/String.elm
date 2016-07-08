@@ -11,7 +11,7 @@ various different environments. See `Test.Runner.Log` for an example.
 @docs Summary, run, runWithOptions
 -}
 
-import Random.Pcg as Random
+import Random
 import Test exposing (Test)
 import Expect exposing (Expectation)
 import String

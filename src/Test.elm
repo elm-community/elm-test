@@ -13,10 +13,10 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, f
 @docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, FuzzOptions
 -}
 
-import Random.Pcg as Random
-import Test.Test
+import Random
+import Test.Internal as Internal
 import Expect exposing (Expectation)
-import Random.Pcg as Random exposing (Generator)
+import Random exposing (Generator)
 import Fuzz exposing (Fuzzer)
 
 
@@ -26,7 +26,7 @@ or more [`Expectation`](../Expect#Expectation)s.
 See [`test`](#test) and [`fuzz`](#fuzz) for some ways to create a `Test`.
 -}
 type alias Test =
-    Test.Test.Test
+    Internal.Test
 
 
 {-| Run the given tests in order.
@@ -35,7 +35,7 @@ type alias Test =
 -}
 concat : List Test -> Test
 concat =
-    Test.Test.Batch
+    Internal.Batch
 
 
 {-| Remove any test unless it has a description that satisfies the given
@@ -44,7 +44,7 @@ predicate function.
 filter : (String -> Bool) -> Test -> Test
 filter =
     -- TODO add a code example to this.
-    Test.Test.filter
+    Internal.filter
 
 
 {-| Apply a description to a list of tests.
@@ -69,7 +69,7 @@ filter =
 -}
 describe : String -> List Test -> Test
 describe desc =
-    Test.Test.Batch >> Test.Test.Labeled desc
+    Internal.Batch >> Internal.Labeled desc
 
 
 {-| Return a [`Test`](#Test) that evaluates a single
@@ -86,7 +86,7 @@ describe desc =
 -}
 test : String -> (() -> Expectation) -> Test
 test desc thunk =
-    Test.Test.Labeled desc (Test.Test.Test (\_ _ -> [ thunk () ]))
+    Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts.
@@ -139,16 +139,16 @@ fuzzWith options fuzzer desc getTest =
 fuzzWithHelp : FuzzOptions -> Test -> Test
 fuzzWithHelp options test =
     case test of
-        Test.Test.Test run ->
-            Test.Test.Test (\seed _ -> run seed options.runs)
+        Internal.Test run ->
+            Internal.Test (\seed _ -> run seed options.runs)
 
-        Test.Test.Labeled label subTest ->
-            Test.Test.Labeled label (fuzzWithHelp options subTest)
+        Internal.Labeled label subTest ->
+            Internal.Labeled label (fuzzWithHelp options subTest)
 
-        Test.Test.Batch tests ->
+        Internal.Batch tests ->
             tests
                 |> List.map (fuzzWithHelp options)
-                |> Test.Test.Batch
+                |> Internal.Batch
 
 
 {-| Run the given test several times, using a randomly-generated input from a
@@ -180,7 +180,7 @@ fuzz :
     -> (a -> Expectation)
     -> Test
 fuzz =
-    Test.Test.fuzzTest
+    Internal.fuzzTest
 
 
 {-| Run a [fuzz test](#fuzz) using two random inputs.

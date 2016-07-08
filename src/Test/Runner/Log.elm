@@ -17,7 +17,7 @@ if the tests all passed, and 1 if any failed.
 @docs run, runWithOptions
 -}
 
-import Random.Pcg as Random
+import Random
 import Test exposing (Test)
 import Test.Runner.String exposing (Summary)
 import String

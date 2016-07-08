@@ -3,7 +3,7 @@ module Util exposing (..)
 {-| This is where I'm sticking Random helper functions I don't want to add to Pcg.
 -}
 
-import Random.Pcg exposing (..)
+import Random exposing (..)
 import Array exposing (Array)
 import String
 
@@ -27,3 +27,11 @@ rangeLengthString minLength maxLength charGenerator =
     in
         (int minLength maxLength)
             `andThen` (\len -> string len charGenerator)
+
+
+{-| An embarrassingly poor stand-in for https://github.com/mgold/elm-random-pcg/blob/2.1.1/src/Random/Pcg.elm#L342-L389
+-}
+independentSeed : Generator Seed
+independentSeed =
+    Random.int Random.minInt Random.maxInt
+        |> Random.map Random.initialSeed

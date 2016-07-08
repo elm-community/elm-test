@@ -16,9 +16,10 @@ module Test.Runner exposing (Runnable, Runner(..), run, fromTest, formatLabels)
 -}
 
 import Test exposing (Test)
-import Test.Test
+import Test.Internal as Internal
+import Util exposing (independentSeed)
 import Expect exposing (Expectation)
-import Random.Pcg as Random
+import Random
 import String
 
 
@@ -57,16 +58,16 @@ to generate the initial seed.
 fromTest : Int -> Random.Seed -> Test -> Runner
 fromTest runs seed test =
     case test of
-        Test.Test.Test run ->
+        Internal.Test run ->
             Thunk (\() -> run seed runs)
                 |> Runnable
 
-        Test.Test.Labeled label subTest ->
+        Internal.Labeled label subTest ->
             subTest
                 |> fromTest runs seed
                 |> Labeled label
 
-        Test.Test.Batch subTests ->
+        Internal.Batch subTests ->
             subTests
                 |> List.foldl (distributeSeeds runs) ( seed, [] )
                 |> snd
@@ -76,14 +77,14 @@ fromTest runs seed test =
 distributeSeeds : Int -> Test -> ( Random.Seed, List Runner ) -> ( Random.Seed, List Runner )
 distributeSeeds runs test ( startingSeed, runners ) =
     case test of
-        Test.Test.Test run ->
+        Internal.Test run ->
             let
                 ( seed, nextSeed ) =
-                    Random.step Random.independentSeed startingSeed
+                    Random.step independentSeed startingSeed
             in
                 ( nextSeed, runners ++ [ Runnable (Thunk (\() -> run seed runs)) ] )
 
-        Test.Test.Labeled label subTest ->
+        Internal.Labeled label subTest ->
             let
                 ( nextSeed, nextRunners ) =
                     distributeSeeds runs subTest ( startingSeed, [] )
@@ -93,7 +94,7 @@ distributeSeeds runs test ( startingSeed, runners ) =
             in
                 ( nextSeed, runners ++ finalRunners )
 
-        Test.Test.Batch tests ->
+        Internal.Batch tests ->
             let
                 ( nextSeed, nextRunners ) =
                     List.foldl (distributeSeeds runs) ( startingSeed, [] ) tests

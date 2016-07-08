@@ -1,10 +1,11 @@
-module Test.Test exposing (Test(..), fuzzTest, filter)
+module Test.Internal exposing (Test(..), fuzzTest, filter)
 
-import Random.Pcg as Random exposing (Generator)
+import Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
 import Dict exposing (Dict)
 import Shrink exposing (Shrinker)
 import Fuzz exposing (Fuzzer)
+import Fuzz.Internal as Internal
 import Expect
 
 
@@ -41,7 +42,7 @@ filterHelp hasBeenTested isKeepable test =
 
 
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest { generator, shrinker } desc getExpectation =
+fuzzTest (Internal.Fuzzer { generator, shrinker }) desc getExpectation =
     let
         run seed runs =
             if runs < 1 then
