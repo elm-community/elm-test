@@ -21,23 +21,20 @@ filter =
 
 
 filterHelp : Bool -> (String -> Bool) -> Test -> Test
-filterHelp hasBeenTested isKeepable test =
+filterHelp hasPassed isKeepable test =
     case test of
         Test _ ->
-            if hasBeenTested then
+            if hasPassed then
                 test
             else
                 Batch []
 
         Labeled desc test ->
-            if isKeepable desc then
-                filterHelp True isKeepable test
-            else
-                Batch []
+            filterHelp (hasPassed || isKeepable desc) isKeepable test
 
         Batch tests ->
             tests
-                |> List.map (filterHelp hasBeenTested isKeepable)
+                |> List.map (filterHelp hasPassed isKeepable)
                 |> Batch
 
 
