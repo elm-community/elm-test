@@ -29,7 +29,7 @@ filterHelp hasPassed isKeepable test =
             else
                 Batch []
 
-        Labeled desc test ->
+        Labeled desc _ ->
             filterHelp (hasPassed || isKeepable desc) isKeepable test
 
         Batch tests ->
