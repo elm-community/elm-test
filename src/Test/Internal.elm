@@ -16,25 +16,25 @@ type Test
 
 
 filter : (String -> Bool) -> Test -> Test
-filter =
-    filterHelp False
+filter isKeepable test =
+    filterHelp False isKeepable test test
 
 
-filterHelp : Bool -> (String -> Bool) -> Test -> Test
-filterHelp hasPassed isKeepable test =
+filterHelp : Bool -> (String -> Bool) -> Test -> Test -> Test
+filterHelp hasPassed isKeepable output test =
     case test of
         Test _ ->
             if hasPassed then
-                test
+                output
             else
                 Batch []
 
-        Labeled desc _ ->
-            filterHelp (hasPassed || isKeepable desc) isKeepable test
+        Labeled desc labeledTest ->
+            filterHelp (hasPassed || isKeepable desc) isKeepable test labeledTest
 
         Batch tests ->
             tests
-                |> List.map (filterHelp hasPassed isKeepable)
+                |> List.map (\child -> filterHelp hasPassed isKeepable child child)
                 |> Batch
 
 
