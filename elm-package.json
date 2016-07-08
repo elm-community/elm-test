@@ -1,5 +1,5 @@
 {
-    "version": "4.0.0",
+    "version": "5.0.0",
     "summary": "Unit testing support with Console/Html/String outputs.",
     "repository": "https://github.com/project-fuzzball/test.git",
     "license": "BSD-3-Clause",
