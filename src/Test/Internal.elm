@@ -6,7 +6,6 @@ import Dict exposing (Dict)
 import Shrink exposing (Shrinker)
 import Fuzz exposing (Fuzzer)
 import Fuzz.Internal as Internal
-import Expect
 
 
 type Test
@@ -44,38 +43,35 @@ fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzTest (Internal.Fuzzer { generator, shrinker }) desc getExpectation =
     let
         run seed runs =
-            if runs < 1 then
-                [ Expect.fail ("Fuzz test run count must be at least 1, not " ++ toString runs) ]
-            else
-                let
-                    getFailures failures currentSeed remainingRuns =
-                        let
-                            ( val, nextSeed ) =
-                                Random.step generator currentSeed
+            let
+                getFailures failures currentSeed remainingRuns =
+                    let
+                        ( val, nextSeed ) =
+                            Random.step generator seed
 
-                            newFailures =
-                                if getExpectation val == Pass then
-                                    failures
-                                else
-                                    shrinkAndAdd shrinker getExpectation val failures
-                        in
-                            if remainingRuns == 1 then
-                                newFailures
+                        newFailures =
+                            if getExpectation val == Pass then
+                                failures
                             else
-                                getFailures newFailures nextSeed (remainingRuns - 1)
+                                shrinkAndAdd shrinker getExpectation val failures
+                    in
+                        if remainingRuns == 1 then
+                            newFailures
+                        else
+                            getFailures newFailures currentSeed (remainingRuns - 1)
 
-                    -- Use a Dict so we don't report duplicate inputs.
-                    failures : Dict String Expectation
-                    failures =
-                        getFailures Dict.empty seed runs
-                in
-                    -- Make sure if we passed, we don't do any more work.
-                    if Dict.isEmpty failures then
-                        [ Pass ]
-                    else
-                        failures
-                            |> Dict.toList
-                            |> List.map formatExpectation
+                -- Use a Dict so we don't report duplicate inputs.
+                failures : Dict String Expectation
+                failures =
+                    getFailures Dict.empty seed runs
+            in
+                -- Make sure if we passed, we don't do any more work.
+                if Dict.isEmpty failures then
+                    [ Pass ]
+                else
+                    failures
+                        |> Dict.toList
+                        |> List.map formatExpectation
     in
         Labeled desc (Test run)
 

@@ -133,7 +133,12 @@ for example like this:
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzWith options fuzzer desc getTest =
-    fuzzWithHelp options (fuzz fuzzer desc getTest)
+    if options.runs < 1 then
+        test desc <|
+            \() ->
+                Expect.fail ("Fuzz test run count must be at least 1, not " ++ toString options.runs)
+    else
+        fuzzWithHelp options (fuzz fuzzer desc getTest)
 
 
 fuzzWithHelp : FuzzOptions -> Test -> Test

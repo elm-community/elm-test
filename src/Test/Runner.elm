@@ -57,21 +57,25 @@ to generate the initial seed.
 -}
 fromTest : Int -> Random.Seed -> Test -> Runner
 fromTest runs seed test =
-    case test of
-        Internal.Test run ->
-            Thunk (\() -> run seed runs)
-                |> Runnable
+    if runs < 1 then
+        Thunk (\() -> [ Expect.fail ("Test runner run count must be at least 1, not " ++ toString runs) ])
+            |> Runnable
+    else
+        case test of
+            Internal.Test run ->
+                Thunk (\() -> run seed runs)
+                    |> Runnable
 
-        Internal.Labeled label subTest ->
-            subTest
-                |> fromTest runs seed
-                |> Labeled label
+            Internal.Labeled label subTest ->
+                subTest
+                    |> fromTest runs seed
+                    |> Labeled label
 
-        Internal.Batch subTests ->
-            subTests
-                |> List.foldl (distributeSeeds runs) ( seed, [] )
-                |> snd
-                |> Batch
+            Internal.Batch subTests ->
+                subTests
+                    |> List.foldl (distributeSeeds runs) ( seed, [] )
+                    |> snd
+                    |> Batch
 
 
 distributeSeeds : Int -> Test -> ( Random.Seed, List Runner ) -> ( Random.Seed, List Runner )
