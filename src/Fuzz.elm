@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, unit, bool, order, array, char, filter, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, maybe, intRange, list, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, unit, bool, order, array, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, maybe, intRange, list, frequency, frequencyOrCrash)
 
 {-| This is a library of `Fuzzer`s you can use to supply values to your fuzz tests.
 You can typically pick out which ones you need according to their types.
@@ -11,7 +11,7 @@ filtered and mapped over.
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
-@docs Fuzzer, filter, map, frequency, frequencyOrCrash
+@docs Fuzzer, map, frequency, frequencyOrCrash
 
 ## Tuple Fuzzers
 Instead of using a tuple, consider using `fuzzN`.
@@ -301,16 +301,6 @@ tuple5 : ( Fuzzer a, Fuzzer b, Fuzzer c, Fuzzer d, Fuzzer e ) -> Fuzzer ( a, b, 
 tuple5 ( Internal.Fuzzer fuzzA, Internal.Fuzzer fuzzB, Internal.Fuzzer fuzzC, Internal.Fuzzer fuzzD, Internal.Fuzzer fuzzE ) =
     custom (Random.map5 (,,,,) fuzzA.generator fuzzB.generator fuzzC.generator fuzzD.generator fuzzE.generator)
         (Shrink.tuple5 ( fuzzA.shrinker, fuzzB.shrinker, fuzzC.shrinker, fuzzD.shrinker, fuzzE.shrinker ))
-
-
-{-| Filter the values from a fuzzer. The resulting Fuzzer will only generate
-random test values or shrunken values that satisfy the predicate. The predicate
-must be satisfiable.
--}
-filter : (a -> Bool) -> Fuzzer a -> Fuzzer a
-filter predicate (Internal.Fuzzer { generator, shrinker }) =
-    custom (Random.filter predicate generator)
-        (Shrink.keepIf predicate shrinker)
 
 
 {-| Map a function over a fuzzer. This works exactly like `convert`,
