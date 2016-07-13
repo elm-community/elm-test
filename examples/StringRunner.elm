@@ -1,4 +1,4 @@
-module Test.Runner.String exposing (Summary, run, runWithOptions)
+module StringRunner exposing (Summary, run, runWithOptions)
 
 {-| # String Runner
 

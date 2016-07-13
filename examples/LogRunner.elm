@@ -1,4 +1,4 @@
-module Test.Runner.Log exposing (run, runWithOptions)
+module LogRunner exposing (run, runWithOptions)
 
 {-| # Log Runner
 
@@ -19,7 +19,7 @@ if the tests all passed, and 1 if any failed.
 
 import Random
 import Test exposing (Test)
-import Test.Runner.String exposing (Summary)
+import StringRunner exposing (Summary)
 import String
 
 
@@ -27,7 +27,7 @@ import String
 -}
 run : Test -> a -> a
 run test =
-    Test.Runner.String.run test
+    StringRunner.run test
         |> logOutput
 
 
@@ -35,7 +35,7 @@ run test =
 -}
 runWithOptions : Int -> Random.Seed -> Test -> a -> a
 runWithOptions runs seed test =
-    Test.Runner.String.runWithOptions runs seed test
+    StringRunner.runWithOptions runs seed test
         |> logOutput
 
 

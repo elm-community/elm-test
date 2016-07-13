@@ -9,8 +9,6 @@
     "exposed-modules": [
         "Test",
         "Test.Runner",
-        "Test.Runner.String",
-        "Test.Runner.Log",
         "Expect",
         "Fuzz"
     ],

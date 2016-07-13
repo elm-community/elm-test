@@ -11,7 +11,7 @@ Note that this always uses an initial seed of 42, since it can't do effects.
 import Expect
 import Test exposing (..)
 import Fuzz exposing (..)
-import Test.Runner.Log
+import LogRunner
 import Html.App
 import Html
 import String
@@ -25,7 +25,7 @@ main =
         , update = \_ _ -> ()
         , view = \() -> Html.text "Check the console for useful output!"
         }
-        |> Test.Runner.Log.run (Test.batch [ testOxfordify, testWithoutNums ])
+        |> LogRunner.run (Test.concat [ testOxfordify, testWithoutNums ])
 
 
 {-| stubbed function under test
