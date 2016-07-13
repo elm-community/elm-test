@@ -29,7 +29,7 @@ type alias Test =
     Internal.Test
 
 
-{-| Run the given tests in order.
+{-| Run each of the given tests.
 
     concat [ testDecoder, testSorting ]
 -}
