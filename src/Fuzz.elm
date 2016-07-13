@@ -303,9 +303,7 @@ tuple5 ( Internal.Fuzzer fuzzA, Internal.Fuzzer fuzzB, Internal.Fuzzer fuzzC, In
         (Shrink.tuple5 ( fuzzA.shrinker, fuzzB.shrinker, fuzzC.shrinker, fuzzD.shrinker, fuzzE.shrinker ))
 
 
-{-| Map a function over a fuzzer. This works exactly like `convert`,
-except it does not require an inverse function, and consequently does no
-shrinking.
+{-| Map a function over a fuzzer.
 -}
 map : (a -> b) -> Fuzzer a -> Fuzzer b
 map f (Internal.Fuzzer { generator }) =
