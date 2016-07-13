@@ -33,9 +33,15 @@ import Fuzz.Internal as Internal
 
 {-| A Fuzzer is a
 [Random](http://package.elm-lang.org/packages/elm-lang/core/latest/Random)
-`Generator` paired with a shrinking strategy, or `Shrinker`. Shrinkers are defined
-in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/latest/).
-You will need to be familiar with both libraries to write custom fuzzers for your own types.
+`Generator` paired with a shrinking strategy.
+-}
+type alias Fuzzer a =
+    Internal.Fuzzer a
+
+
+{-| Build a custom `Fuzzer` by providing a `Generator` and `Shrinker`. Shrinkers
+are defined in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/latest/).
+
 Here is an example for a record:
 
     type alias Position =
@@ -74,14 +80,6 @@ Here is an example for a union type:
                         Shrink.int i |> Shrink.map Age
         in
             Fuzz.custom generator shrinker
--}
-type alias Fuzzer a =
-    Internal.Fuzzer a
-
-
-{-| Build a custom `Fuzzer` by providing a `Generator` and `Shrinker`.
-
-See the [`Fuzzer`](#Fuzzer) documentation for example usage.
 -}
 custom : Generator a -> Shrinker a -> Fuzzer a
 custom generator shrinker =
