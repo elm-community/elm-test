@@ -281,13 +281,6 @@ fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE desc =
 -- INTERNAL HELPERS --
 
 
-defaults : { runs : Int, seed : Random.Seed }
-defaults =
-    { runs = 100
-    , seed = Random.initialSeed 42
-    }
-
-
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
 uncurry3 fn ( a, b, c ) =
     fn a b c
