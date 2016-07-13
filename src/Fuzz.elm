@@ -144,7 +144,7 @@ intRange min max =
         (Shrink.keepIf (\i -> i >= min && i <= max) Shrink.int)
 
 
-{-| A fuzzer for float values. It will never fuzzuce `NaN`, `Infinity`, or `-Infinity`.
+{-| A fuzzer for float values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
 -}
 float : Fuzzer Float
 float =
