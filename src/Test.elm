@@ -13,10 +13,8 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, f
 @docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, FuzzOptions
 -}
 
-import Random
 import Test.Internal as Internal
 import Expect exposing (Expectation)
-import Random exposing (Generator)
 import Fuzz exposing (Fuzzer)
 
 
