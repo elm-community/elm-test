@@ -44,12 +44,12 @@ summarize { output, passed, failed } =
     let
         headline =
             if failed > 0 then
-                "TEST RUN FAILED"
+                output ++ "\n\nTEST RUN FAILED"
             else
                 "TEST RUN PASSED"
     in
         String.join "\n"
-            [ output ++ "\n\n"
+            [ output
             , headline ++ "\n"
             , "Passed: " ++ toString passed
             , "Failed: " ++ toString failed

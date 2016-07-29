@@ -34,12 +34,8 @@ toOutputHelp : List String -> Runner -> Summary -> Summary
 toOutputHelp labels runner summary =
     case runner of
         Runnable runnable ->
-            let
-                output =
-                    summary.output ++ "\n\n" ++ outputLabels labels
-            in
-                Test.Runner.run runnable
-                    |> List.foldl fromExpectation { summary | output = output }
+            Test.Runner.run runnable
+                |> List.foldl fromExpectation summary
 
         Labeled label subRunner ->
             toOutputHelp (label :: labels) subRunner summary
