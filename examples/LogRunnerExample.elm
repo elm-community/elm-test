@@ -25,14 +25,7 @@ main =
         , update = \_ _ -> ()
         , view = \() -> Html.text "Check the console for useful output!"
         }
-        |> LogRunner.run (Test.concat [ testOxfordify, testWithoutNums ])
-
-
-{-| stubbed function under test
--}
-oxfordify : a -> b -> c -> String
-oxfordify _ _ _ =
-    "Alice, Bob, and Claire"
+        |> LogRunner.run (Test.concat [ readmeExample, testWithoutNums ])
 
 
 withoutNums : String -> String
@@ -50,45 +43,27 @@ testWithoutNums =
         ]
 
 
-testOxfordify : Test
-testOxfordify =
-    describe "oxfordify"
-        [ describe "given an empty sentence"
-            [ test "returns an empty string" <|
+readmeExample : Test
+readmeExample =
+    describe "The String module"
+        [ describe "String.reverse"
+            [ test "has no effect on a palindrome" <|
                 \() ->
-                    oxfordify "This sentence is empty" "." []
-                        |> Expect.equal ""
-            ]
-        , describe "given a sentence with one item"
-            [ test "still contains one item" <|
+                    let
+                        palindrome =
+                            "hannah"
+                    in
+                        Expect.equal palindrome (String.reverse palindrome)
+            , test "reverses a known string" <|
                 \() ->
-                    oxfordify "This sentence contains " "." [ "one item" ]
-                        |> Expect.equal "This sentence contains one item."
-            ]
-        , describe "given a sentence with multiple items"
-            [ test "returns an oxford-style sentence" <|
-                \() ->
-                    oxfordify "This sentence contains " "." [ "one item", "two item" ]
-                        |> Expect.equal "This sentence contains one item and two item."
-            , test "returns an oxford-style sentence" <|
-                \() ->
-                    oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
-                        |> Expect.equal "This sentence contains one item, two item, and three item."
-            ]
-        , describe "comparisons"
-            [ test "one is greater than two" <|
-                \() ->
-                    1
-                        |> Expect.greaterThan 2
-            , test "three is less than one" <|
-                \() ->
-                    3
-                        |> Expect.lessThan 1
-            ]
-        , describe "a long failure message"
-            [ test "long failure!" <|
-                \() ->
-                    Expect.equal "html, body {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\npadding: 0;\nmargin: 0;\n}\n\nbody {\nmin-width: 1280px;\noverflow-x: auto;\n}\n\nbody > div {\nwidth: 100%;\nheight: 100%;\n}\n\n.dreamwriterHidden {\ndisplay: none !important;\n}\n\n#dreamwriterPage {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\nmargin: 0;\npadding: 8px;\nbackground-color: rgb(100, 90, 128);\ncolor: rgb(40, 35, 76);\n}"
-                        "html, body {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\npadding: 0;\nmargin: 0;\n}\n\nbody {\nmin-width: 1280px;\noverflow-x: auto;\n}\n\nbody > div {\nwidth: 100%;\nheight: 100%;\n}\n\n.dreamwriterHidden {\ndisplay: none !important;\n}\n\n#Page {\nwidth: 100%;\nheight: 100%;\nbox-sizing: border-box;\nmargin: 0;\npadding: 8px;\nbackground-color: rgb(100, 90, 128);\ncolor: rgb(40, 35, 76);\n}"
+                    "ABCDEFG"
+                        |> String.reverse
+                        |> Expect.equal "GFEDCBA"
+            , fuzz string "restores the original string if you run it again" <|
+                \randomlyGeneratedString ->
+                    randomlyGeneratedString
+                        |> String.reverse
+                        |> String.reverse
+                        |> Expect.equal randomlyGeneratedString
             ]
         ]
