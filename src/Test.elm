@@ -38,10 +38,22 @@ concat =
 
 {-| Remove any test unless its description satisfies the given predicate
 function. Nested descriptions added with [`describe`](#describe) are not considered.
+
+    describe "String.reverse"
+        [ test "has no effect on a palindrome" testGoesHere
+        , test "reverses a known string" anotherTest
+        , fuzz string "restores the original string if you run it again" oneMore
+        ]
+            |> Test.filter (String.contains "original")
+
+    -- only runs the final test
+
+You can use this to focus on a specific test or two, silencing the failures of
+tests you don't want to work on yet, and then remove the call to `Test.filter`
+after you're done working on the tests.
 -}
 filter : (String -> Bool) -> Test -> Test
 filter =
-    -- TODO add a code example to this.
     Internal.filter
 
 
