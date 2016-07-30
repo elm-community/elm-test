@@ -50,18 +50,17 @@ type alias Expectation =
 Failures resemble code written in pipeline style, so you can tell
 which argument is which:
 
-    -- Fails because (0 == 5) is False
-    List.length []
-        |> Expect.equal 5
-
+    -- Fails because the expected value didn't split the space in "Betty Botter"
+    String.split " " "Betty Botter bought some butter"
+        |> Expect.equal [ "Betty Botter", "bought", "some", "butter" ]
 
     {-
 
-    0
+    [ "Betty", "Botter", "bought", "some", "butter" ]
     ╷
     │ Expect.equal
     ╵
-    5
+    [ "Betty Botter", "bought", "some", "butter" ]
 
     -}
 -}
