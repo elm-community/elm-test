@@ -2,7 +2,9 @@ elm-test [![Build Status](https://travis-ci.org/elm-community/elm-test.png?branc
 
 Write tests in Elm!
 
-## Sample Code
+## Getting Started
+
+Let's start with some example code:
 
 ```elm
 test : Test
@@ -35,9 +37,18 @@ test =
         ]
 ```
 
+This code includes a few common things:
+
+* [`describe`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Test#test) to add a description string to a list of tests
+* [`test`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Test#test) to write a unit test
+* [`Expect`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Expect) to determine if a test should pass or fail
+* [`fuzz`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Test#fuzz) to run a test several times with randomly-generated inputs.
+
+Check out [a more complete example](https://github.com/elm-community/elm-test/tree/master/examples) or [a large real-world test suite](https://github.com/rtfeldman/elm-css/tree/master/test) for more.
+
 ## Running tests locally
 
-There are several ways to run tests locally:
+There are several ways you can run tests locally:
 
 * [from your terminal](https://github.com/rtfeldman/node-test-runner) via `npm install -g elm-test`
 * [from your browser](https://github.com/elm-community/elm-test-runner)
