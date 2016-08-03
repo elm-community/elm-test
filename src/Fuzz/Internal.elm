@@ -1,7 +1,7 @@
 module Fuzz.Internal exposing (Fuzzer(Fuzzer))
 
 import Shrink exposing (Shrinker)
-import Random exposing (Generator)
+import Random.Pcg exposing (Generator)
 
 
 type Fuzzer a

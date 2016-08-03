@@ -26,8 +26,7 @@ import Array exposing (Array)
 import Char
 import Util exposing (..)
 import Shrink exposing (Shrinker)
-import Random exposing (Generator)
-import Random.Extra as Random
+import Random.Pcg as Random exposing (Generator)
 import Fuzz.Internal as Internal
 
 
