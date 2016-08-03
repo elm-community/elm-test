@@ -17,9 +17,8 @@ module Test.Runner exposing (Runnable, Runner(..), run, fromTest, formatLabels)
 
 import Test exposing (Test)
 import Test.Internal as Internal
-import Util exposing (independentSeed)
 import Expect exposing (Expectation)
-import Random
+import Random.Pcg as Random
 import String
 
 
@@ -84,7 +83,7 @@ distributeSeeds runs test ( startingSeed, runners ) =
         Internal.Test run ->
             let
                 ( seed, nextSeed ) =
-                    Random.step independentSeed startingSeed
+                    Random.step Random.independentSeed startingSeed
             in
                 ( nextSeed, runners ++ [ Runnable (Thunk (\() -> run seed runs)) ] )
 
