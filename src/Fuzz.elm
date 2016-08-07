@@ -1,11 +1,15 @@
 module Fuzz exposing (Fuzzer, custom, unit, bool, order, array, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, maybe, intRange, list, frequency, frequencyOrCrash)
 
-{-| This is a library of `Fuzzer`s you can use to supply values to your fuzz tests.
-You can typically pick out which ones you need according to their types.
+{-| This is a library of *fuzzers* you can use to supply values to your fuzz
+tests. You can typically pick out which ones you need according to their types.
 
-A `Fuzzer a` knows how to create values of type `a`. It can create them
-randomly, and it can shrink them to more minimal values. Fuzzers can be
-filtered and mapped over.
+A `Fuzzer a` knows how to create values of type `a` in two different ways. It
+can create them randomly, so that your test's expectations are run against many
+values. Fuzzers will often generate edge cases likely to find bugs. If the
+fuzzer can make your test fail, it also knows how to "shrink" that failing input
+into more minimal examples, some of which might also cause the tests to fail. In
+this way, fuzzers can usually find the smallest or simplest input that
+reproduces a bug.
 
 ## Common Fuzzers
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
@@ -30,18 +34,23 @@ import Random.Pcg as Random exposing (Generator)
 import Fuzz.Internal as Internal
 
 
-{-| A Fuzzer is a
-[Random](http://package.elm-lang.org/packages/elm-lang/core/latest/Random)
-`Generator` paired with a shrinking strategy.
+{-| The representation of fuzzers is opaque. Conceptually, a `Fuzzer a`
+consists of a way to randomly generate values of type `a`, and a way to shrink
+those values.
 -}
 type alias Fuzzer a =
     Internal.Fuzzer a
 
 
-{-| Build a custom `Fuzzer` by providing a `Generator` and `Shrinker`. Shrinkers
-are defined in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/latest/).
+{-| Build a custom `Fuzzer a` by providing a `Generator a` and a `Shrinker a`.
+Generators are defined by [`mgold/elm-random-pcg`](http://package.elm-lang.org/packages/mgold/elm-random-pcg/latest),
+which is not core's Random module but has a compatible interface. Shrinkers are
+defined in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/latest/).
 
 Here is an example for a record:
+
+    import Random.Pcg as Random
+    import Shrink
 
     type alias Position =
         { x : Int, y : Int }
@@ -50,10 +59,10 @@ Here is an example for a record:
     position : Fuzzer Position
     position =
         Fuzz.custom
-            (Random.map2 Position (Random.int 0 1919) (Random.int 0 1079))
+            (Random.map2 Position (Random.int -100 100) (Random.int -100 100))
             (\{ x, y } -> Shrink.map Position (Shrink.int x) `Shrink.andMap` (Shrink.int y))
 
-Here is an example for a union type:
+Here is an example for a custom union type:
 
     type Question
         = Name String
@@ -168,7 +177,7 @@ floatRange min max =
 
 
 {-| A fuzzer for percentage values. Generates random floats between `0.0` and
-`1.0`.
+`1.0`. It will test zero and one about 10% of the time each.
 -}
 percentage : Fuzzer Float
 percentage =
@@ -300,7 +309,8 @@ tuple5 ( Internal.Fuzzer fuzzA, Internal.Fuzzer fuzzB, Internal.Fuzzer fuzzC, In
         (Shrink.tuple5 ( fuzzA.shrinker, fuzzB.shrinker, fuzzC.shrinker, fuzzD.shrinker, fuzzE.shrinker ))
 
 
-{-| Map a function over a fuzzer.
+{-| Map a function over a fuzzer. Due to technical limitations, the resulting
+fuzzer performs no shrinking.
 -}
 map : (a -> b) -> Fuzzer a -> Fuzzer b
 map f (Internal.Fuzzer { generator }) =
@@ -308,8 +318,9 @@ map f (Internal.Fuzzer { generator }) =
         Shrink.noShrink
 
 
-{-| Create a new `Fuzzer` by providing a list of probabilistic weights to use
-with other fuzzers.
+{-| Create a new fuzzer by providing a list of fuzzers to pick from. Each fuzzer
+is associated with a `Float` weight; larger numbers mean the fuzzer in more
+likely to get picked from.
 
 For example, to create a `Fuzzer` that has a 1/4 chance of generating an int
 between -1 and -100, and a 3/4 chance of generating one between 1 and 100,
@@ -320,14 +331,13 @@ you could do this:
         , ( 3, Fuzz.intRange 1 100 )
         ]
 
-This returns a `Result` because it can fail in a few ways:
+This function returns a `Result` because it can fail in a few ways:
 
 * If you provide an empy list of frequencies
 * If any of the weights are less than 0
 * If the weights sum to 0
 
-Any of these will lead to a result of `Err`, with a `String` explaining what
-went wrong.
+Any of these will lead to an `Err`, with a `String` explaining what went wrong.
 -}
 frequency : List ( Float, Fuzzer a ) -> Result String (Fuzzer a)
 frequency list =

@@ -1,6 +1,7 @@
 module Test.Runner exposing (Runnable, Runner(..), run, fromTest, formatLabels)
 
-{-| Running tests.
+{-| A collection of functions used by authors of test runners. To run your
+own tests, you should use these runners; see the `README` for more information.
 
 ## Runner
 
@@ -18,7 +19,7 @@ module Test.Runner exposing (Runnable, Runner(..), run, fromTest, formatLabels)
 import Test exposing (Test)
 import Test.Internal as Internal
 import Expect exposing (Expectation)
-import Random.Pcg as Random
+import Random.Pcg
 import String
 
 
@@ -47,14 +48,15 @@ run (Thunk fn) =
     fn ()
 
 
-{-| Convert a `Test` into a `Runner`. It requires a default run count as well
-as an initial `Random.Seed` in order to run any fuzz tests that the `Test` may
-have.
+{-| Convert a `Test` into a `Runner`.
 
-It's customary to use `100` as the initial run count and the current system time
-to generate the initial seed.
+In order to run any fuzz tests that the `Test` may have, it requires a default run count as well
+as an initial `Random.Pcg.Seed`. `100` is a good run count. To obtain a good random seed, pass a
+random 32-bit integer to `Random.Pcg.initialSeed`. You can obtain such an integer by running
+`Math.floor(Math.random()*0xFFFFFFFF)` in Node. It's typically fine to hard-code this value into
+your Elm code; it's easy and makes your tests reproducible.
 -}
-fromTest : Int -> Random.Seed -> Test -> Runner
+fromTest : Int -> Random.Pcg.Seed -> Test -> Runner
 fromTest runs seed test =
     if runs < 1 then
         Thunk (\() -> [ Expect.fail ("Test runner run count must be at least 1, not " ++ toString runs) ])
@@ -77,13 +79,13 @@ fromTest runs seed test =
                     |> Batch
 
 
-distributeSeeds : Int -> Test -> ( Random.Seed, List Runner ) -> ( Random.Seed, List Runner )
+distributeSeeds : Int -> Test -> ( Random.Pcg.Seed, List Runner ) -> ( Random.Pcg.Seed, List Runner )
 distributeSeeds runs test ( startingSeed, runners ) =
     case test of
         Internal.Test run ->
             let
                 ( seed, nextSeed ) =
-                    Random.step Random.independentSeed startingSeed
+                    Random.Pcg.step Random.Pcg.independentSeed startingSeed
             in
                 ( nextSeed, runners ++ [ Runnable (Thunk (\() -> run seed runs)) ] )
 
