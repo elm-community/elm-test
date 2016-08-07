@@ -1,7 +1,0 @@
-language: haskell
-install:
-  - npm install -g elm
-  - elm-package install -y
-before_script: 
-  - elm-make --yes --output test.js tests/Tests.elm
-script: node test.js

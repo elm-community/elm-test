@@ -1,6 +1,6 @@
 module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, onFail)
 
-{-| Determining whether tests pass or fail.
+{-| A library to create `Expectation`s, which describe a claim to be tested.
 
 ## Quick Reference
 
@@ -71,15 +71,13 @@ equal =
 
 {-| Passes if the arguments are not equal.
 
-    Expect.notEqual 11 (90 + 10)
-
     -- Passes because (11 /= 100) is True
+    90 + 10
+        |> Expect.notEqual 11
 
-Failures only show one value, because the reason for the failure was that
-both arguments were equal.
 
     -- Fails because (100 /= 100) is False
-    (90 + 10)
+    90 + 10
         |> Expect.notEqual 100
 
     {-

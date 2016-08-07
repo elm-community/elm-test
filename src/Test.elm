@@ -1,6 +1,6 @@
 module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
-{-| Writing tests.
+{-| A module containing functions for creating and managing tests.
 
 @docs Test, test
 
@@ -99,7 +99,8 @@ test desc thunk =
     Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
 
 
-{-| Options [`fuzzWith`](#fuzzWith) accepts.
+{-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
+API is designed so that it can accept more in the future.
 
 ### `runs`
 
@@ -166,9 +167,10 @@ fuzzWithHelp options test =
                 |> Internal.Batch
 
 
-{-| Run the given test several times, using a randomly-generated input from a
-`Fuzzer` each time. By default, runs the test 100 times with different inputs,
-but you can configure the run count using [`withRuns`](#withRuns).
+{-| Take a function that produces a test, and calls it several (usually 100) times, using a randomly-generated input
+from a [`Fuzzer`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Fuzz) each time. This allows you to
+test that a property that should always be true is indeed true under a wide variety of conditions. The function also
+takes a string describing the test.
 
 These are called "[fuzz tests](https://en.wikipedia.org/wiki/Fuzz_testing)" because of the randomness.
 You may find them elsewhere called [property-based tests](http://blog.jessitron.com/2013/04/property-based-testing-what-is-it.html),
@@ -182,8 +184,7 @@ You may find them elsewhere called [property-based tests](http://blog.jessitron.
 
     fuzz (list int) "List.length should always be positive" <|
         -- This anonymous function will be run 100 times, each time with a
-        -- randomly-generated fuzzList value. (You can configure the run count
-        -- using Fuzz.fuzzWith, or by giving your test runner a different default.)
+        -- randomly-generated fuzzList value.
         \fuzzList ->
             fuzzList
                 |> List.length

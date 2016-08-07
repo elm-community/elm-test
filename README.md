@@ -1,14 +1,14 @@
-elm-test [![Build Status](https://travis-ci.org/elm-community/elm-test.png?branch=master)](https://travis-ci.org/elm-community/elm-test)
+# elm-test
 
-Write tests in Elm!
+Write unit and fuzz tests for your Elm code, in Elm.
 
-## Getting Started
+## Quick Start
 
-Let's start with some example code:
+Here are three example tests:
 
 ```elm
-test : Test
-test =
+suite : Test
+suite =
     describe "The String module"
         [ describe "String.reverse" -- Nest as many descriptions as you like.
             [ test "has no effect on a palindrome" <|
@@ -42,11 +42,11 @@ This code includes a few common things:
 * [`describe`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Test#test) to add a description string to a list of tests
 * [`test`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Test#test) to write a unit test
 * [`Expect`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Expect) to determine if a test should pass or fail
-* [`fuzz`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Test#fuzz) to run a test several times with randomly-generated inputs.
+* [`fuzz`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Test#fuzz) to run a function that produces a test several times with randomly-generated inputs
 
 Check out [a more complete example](https://github.com/elm-community/elm-test/tree/master/examples) or [a large real-world test suite](https://github.com/rtfeldman/elm-css/tree/master/test) for more.
 
-## Running tests locally
+### Running tests locally
 
 There are several ways you can run tests locally:
 
@@ -54,7 +54,7 @@ There are several ways you can run tests locally:
 * [from your browser](https://github.com/elm-community/elm-test-runner)
 * [using a custom runner](https://github.com/elm-community/elm-test/blob/master/example/LogRunnerExample.elm) of your own design
 
-## Running tests on CI
+### Running tests on CI
 
 Here are some examples of running tests on CI servers:
 
