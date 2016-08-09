@@ -54,6 +54,20 @@ There are several ways you can run tests locally:
 * [from your browser](https://github.com/elm-community/elm-test-runner)
 * [using a custom runner](https://github.com/elm-community/elm-test/blob/master/example/LogRunnerExample.elm) of your own design
 
+Here's how set up and run your tests using the CLI test runner.
+
+1. Run `npm install -g elm-test` if you haven't already.
+2. `cd` into the directory that has your `elm-package.json`
+3. Run `elm-test init`. It will create a `tests` directory inside this one,
+with some files in it.
+4. Copy all the dependencies from `elm-package.json` into `tests/elm-package.json`. These dependencies need to stay in sync, so make sure whenever you change your dependencies in your current `elm-package.json`, you make the same change to `tests/elm-package.json`.
+5. `cd` into `tests`
+6. Run `elm-test TestRunner.elm`
+
+Edit `Tests.elm` to introduce new tests.
+
+Happy testing!
+
 ### Running tests on CI
 
 Here are some examples of running tests on CI servers:
