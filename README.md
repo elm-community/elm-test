@@ -51,7 +51,7 @@ Check out [a more complete example](https://github.com/elm-community/elm-test/tr
 There are several ways you can run tests locally:
 
 * [from your terminal](https://github.com/rtfeldman/node-test-runner) via `npm install -g elm-test`
-* [from your browser](https://github.com/elm-community/elm-test-runner)
+* [from your browser](https://github.com/rtfeldman/html-test-runner)
 * [using a custom runner](https://github.com/elm-community/elm-test/blob/master/example/LogRunnerExample.elm) of your own design
 
 Here's how set up and run your tests using the CLI test runner.
