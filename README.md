@@ -76,3 +76,11 @@ Here are some examples of running tests on CI servers:
 
 * [`travis.yml`](https://github.com/rtfeldman/elm-css/blob/6ba8404f53269bc110c2e08ab24c9caf850da515/.travis.yml)
 * [`appveyor.yml`](https://github.com/rtfeldman/elm-css/blob/6ba8404f53269bc110c2e08ab24c9caf850da515/appveyor.yml)
+
+## Upgrading from the old elm-test
+
+[`legacy-elm-test`](http://package.elm-lang.org/packages/rtfeldman/legacy-elm-test/latest) provides a
+drop-in replacement for the `ElmTest 1.0` API, except implemented in terms of
+the current `elm-test`. It also includes support for `elm-check` tests.
+
+This lets you use the latest test runners right now, and upgrade incrementally.
