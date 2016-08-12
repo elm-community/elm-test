@@ -326,7 +326,7 @@ For example, to create a `Fuzzer` that has a 1/4 chance of generating an int
 between -1 and -100, and a 3/4 chance of generating one between 1 and 100,
 you could do this:
 
-    Fuzz.freuqency
+    Fuzz.frequency
         [ ( 1, Fuzz.intRange -100 -1 )
         , ( 3, Fuzz.intRange 1 100 )
         ]
