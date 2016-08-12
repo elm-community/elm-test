@@ -267,7 +267,7 @@ fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
         uncurry4 >> fuzz fuzzer desc
 
 
-{-| Run a [fuzz test](#fuzz) using four random inputs.
+{-| Run a [fuzz test](#fuzz) using five random inputs.
 
 This is a convenicence function that lets you skip calling [`Fuzz.tuple5`](../Fuzz#tuple5).
 -}
