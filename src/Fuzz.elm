@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, unit, bool, order, array, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, maybe, intRange, list, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, andMap, andThen, maybe, intRange, list, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -15,7 +15,7 @@ reproduces a bug.
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
-@docs Fuzzer, map, frequency, frequencyOrCrash
+@docs Fuzzer, constant, map, map2, andMap, andThen, frequency, frequencyOrCrash
 
 ## Tuple Fuzzers
 Instead of using a tuple, consider using `fuzzN`.
@@ -29,7 +29,9 @@ Instead of using a tuple, consider using `fuzzN`.
 import Array exposing (Array)
 import Char
 import Util exposing (..)
+import Lazy.List exposing (LazyList)
 import Shrink exposing (Shrinker)
+import RoseTree exposing (RoseTree(..))
 import Random.Pcg as Random exposing (Generator)
 import Fuzz.Internal as Internal
 
@@ -43,7 +45,7 @@ type alias Fuzzer a =
 
 
 {-| Build a custom `Fuzzer a` by providing a `Generator a` and a `Shrinker a`.
-Generators are defined by [`mgold/elm-random-pcg`](http://package.elm-lang.org/packages/mgold/elm-random-pcg/latest),
+Generators are defined in [`mgold/elm-random-pcg`](http://package.elm-lang.org/packages/mgold/elm-random-pcg/latest),
 which is not core's Random module but has a compatible interface. Shrinkers are
 defined in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/latest/).
 
@@ -54,7 +56,6 @@ Here is an example for a record:
 
     type alias Position =
         { x : Int, y : Int }
-
 
     position : Fuzzer Position
     position =
@@ -67,7 +68,6 @@ Here is an example for a custom union type:
     type Question
         = Name String
         | Age Int
-
 
     question =
         let
@@ -83,7 +83,6 @@ Here is an example for a custom union type:
                 case question of
                     Name n ->
                         Shrink.string n |> Shrink.map Name
-
                     Age i ->
                         Shrink.int i |> Shrink.map Age
         in
@@ -91,7 +90,11 @@ Here is an example for a custom union type:
 -}
 custom : Generator a -> Shrinker a -> Fuzzer a
 custom generator shrinker =
-    Internal.Fuzzer { generator = generator, shrinker = shrinker }
+    let
+        shrinkTree a =
+            Rose a (Lazy.List.map shrinkTree (shrinker a))
+    in
+        Internal.Fuzzer (Random.map shrinkTree generator)
 
 
 {-| A fuzzer for the unit value. Unit is a type with only one value, commonly
@@ -106,7 +109,7 @@ unit =
 -}
 bool : Fuzzer Bool
 bool =
-    custom (Random.bool) Shrink.bool
+    custom Random.bool Shrink.bool
 
 
 {-| A fuzzer for order values.
@@ -229,110 +232,206 @@ string =
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
 -}
 maybe : Fuzzer a -> Fuzzer (Maybe a)
-maybe (Internal.Fuzzer { generator, shrinker }) =
-    let
-        genBool =
-            Random.map not <| Random.oneIn 4
-    in
-        custom (Random.maybe genBool generator) (Shrink.maybe shrinker)
+maybe (Internal.Fuzzer genTree) =
+    Internal.Fuzzer <|
+        Random.map2
+            (\useNothing tree ->
+                if useNothing then
+                    RoseTree.singleton Nothing
+                else
+                    RoseTree.map Just tree
+            )
+            (Random.oneIn 4)
+            genTree
 
 
 {-| Given fuzzers for an error type and a success type, create a fuzzer for
 a result.
 -}
 result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
-result (Internal.Fuzzer errFuzz) (Internal.Fuzzer valFuzz) =
-    custom
-        (Random.bool
-            `Random.andThen`
-                (\b ->
-                    if b then
-                        Random.map Err errFuzz.generator
-                    else
-                        Random.map Ok valFuzz.generator
-                )
-        )
-        (Shrink.result errFuzz.shrinker valFuzz.shrinker)
+result (Internal.Fuzzer genError) (Internal.Fuzzer genValue) =
+    Internal.Fuzzer <|
+        Random.map3
+            (\useError errorTree valueTree ->
+                if useError then
+                    RoseTree.map Err errorTree
+                else
+                    RoseTree.map Ok valueTree
+            )
+            (Random.oneIn 4)
+            genError
+            genValue
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a list of that type.
 Generates random lists of varying length, favoring shorter lists.
 -}
 list : Fuzzer a -> Fuzzer (List a)
-list (Internal.Fuzzer { generator, shrinker }) =
-    custom
-        (Random.frequency
-            [ ( 1, Random.constant [] )
-            , ( 1, Random.map (\x -> [ x ]) generator )
-            , ( 3, rangeLengthList 2 10 generator )
-            , ( 2, rangeLengthList 10 100 generator )
-            , ( 0.5, rangeLengthList 100 400 generator )
-            ]
-        )
-        (Shrink.list shrinker)
+list (Internal.Fuzzer genTree) =
+    let
+        genList ( weight, genInt ) =
+            ( weight, genInt `Random.andThen` \i -> Random.list i (Random.map RoseTree.root genTree) )
+    in
+        custom
+            (Random.frequency
+                (List.map genList
+                    [ ( 1, Random.constant 0 )
+                    , ( 1, Random.constant 1 )
+                    , ( 3, Random.int 2 10 )
+                    , ( 2, Random.int 10 100 )
+                    , ( 0.5, Random.int 100 400 )
+                    ]
+                )
+            )
+            -- TODO: shrink
+            (Shrink.noShrink)
 
 
 {-| Given a fuzzer of a type, create a fuzzer of an array of that type.
 Generates random arrays of varying length, favoring shorter arrays.
 -}
 array : Fuzzer a -> Fuzzer (Array a)
-array (Internal.Fuzzer { generator, shrinker }) =
-    custom
-        (Random.frequency
-            [ ( 1, Random.constant Array.empty )
-            , ( 1, Random.map (Array.repeat 1) generator )
-            , ( 3, rangeLengthArray 2 10 generator )
-            , ( 2, rangeLengthArray 10 100 generator )
-            , ( 0.5, rangeLengthArray 100 400 generator )
-            ]
-        )
-        (Shrink.array shrinker)
+array (Internal.Fuzzer genTree) =
+    -- TODO: almost identical to list; DRY up?
+    let
+        genArray ( weight, genInt ) =
+            ( weight, genInt `Random.andThen` \i -> (Random.map Array.fromList (Random.list i (Random.map RoseTree.root genTree))) )
+    in
+        custom
+            (Random.frequency
+                (List.map genArray
+                    [ ( 1, Random.constant 0 )
+                    , ( 1, Random.constant 1 )
+                    , ( 3, Random.int 2 10 )
+                    , ( 2, Random.int 10 100 )
+                    , ( 0.5, Random.int 100 400 )
+                    ]
+                )
+            )
+            -- TODO: shrink
+            (Shrink.noShrink)
 
 
 {-| Turn a tuple of fuzzers into a fuzzer of tuples.
 -}
 tuple : ( Fuzzer a, Fuzzer b ) -> Fuzzer ( a, b )
-tuple ( Internal.Fuzzer fuzzA, Internal.Fuzzer fuzzB ) =
-    custom (Random.map2 (,) fuzzA.generator fuzzB.generator)
-        (Shrink.tuple ( fuzzA.shrinker, fuzzB.shrinker ))
+tuple ( Internal.Fuzzer genA, Internal.Fuzzer genB ) =
+    Internal.Fuzzer (Random.map2 (RoseTree.map2 (,)) genA genB)
 
 
 {-| Turn a 3-tuple of fuzzers into a fuzzer of 3-tuples.
 -}
 tuple3 : ( Fuzzer a, Fuzzer b, Fuzzer c ) -> Fuzzer ( a, b, c )
-tuple3 ( Internal.Fuzzer fuzzA, Internal.Fuzzer fuzzB, Internal.Fuzzer fuzzC ) =
-    custom (Random.map3 (,,) fuzzA.generator fuzzB.generator fuzzC.generator)
-        (Shrink.tuple3 ( fuzzA.shrinker, fuzzB.shrinker, fuzzC.shrinker ))
+tuple3 ( Internal.Fuzzer genA, Internal.Fuzzer genB, Internal.Fuzzer genC ) =
+    Internal.Fuzzer (Random.map3 (RoseTree.map3 (,,)) genA genB genC)
 
 
 {-| Turn a 4-tuple of fuzzers into a fuzzer of 4-tuples.
 -}
 tuple4 : ( Fuzzer a, Fuzzer b, Fuzzer c, Fuzzer d ) -> Fuzzer ( a, b, c, d )
-tuple4 ( Internal.Fuzzer fuzzA, Internal.Fuzzer fuzzB, Internal.Fuzzer fuzzC, Internal.Fuzzer fuzzD ) =
-    custom (Random.map4 (,,,) fuzzA.generator fuzzB.generator fuzzC.generator fuzzD.generator)
-        (Shrink.tuple4 ( fuzzA.shrinker, fuzzB.shrinker, fuzzC.shrinker, fuzzD.shrinker ))
+tuple4 ( Internal.Fuzzer genA, Internal.Fuzzer genB, Internal.Fuzzer genC, Internal.Fuzzer genD ) =
+    Internal.Fuzzer (Random.map4 (RoseTree.map4 (,,,)) genA genB genC genD)
 
 
 {-| Turn a 5-tuple of fuzzers into a fuzzer of 5-tuples.
 -}
 tuple5 : ( Fuzzer a, Fuzzer b, Fuzzer c, Fuzzer d, Fuzzer e ) -> Fuzzer ( a, b, c, d, e )
-tuple5 ( Internal.Fuzzer fuzzA, Internal.Fuzzer fuzzB, Internal.Fuzzer fuzzC, Internal.Fuzzer fuzzD, Internal.Fuzzer fuzzE ) =
-    custom (Random.map5 (,,,,) fuzzA.generator fuzzB.generator fuzzC.generator fuzzD.generator fuzzE.generator)
-        (Shrink.tuple5 ( fuzzA.shrinker, fuzzB.shrinker, fuzzC.shrinker, fuzzD.shrinker, fuzzE.shrinker ))
+tuple5 ( Internal.Fuzzer genA, Internal.Fuzzer genB, Internal.Fuzzer genC, Internal.Fuzzer genD, Internal.Fuzzer genE ) =
+    Internal.Fuzzer (Random.map5 (RoseTree.map5 (,,,,)) genA genB genC genD genE)
 
 
-{-| Map a function over a fuzzer. Due to technical limitations, the resulting
-fuzzer performs no shrinking.
+{-| Create a fuzzer that only and always returns the value provided, and performs no shrinking. This is hardly random,
+and so this function is best used as a helper when creating more complicated fuzzers.
+-}
+constant : a -> Fuzzer a
+constant x =
+    Internal.Fuzzer (Random.constant (RoseTree.singleton x))
+
+
+{-| Map a function over a fuzzer. This applies to both the generated and the shruken values.
 -}
 map : (a -> b) -> Fuzzer a -> Fuzzer b
-map f (Internal.Fuzzer { generator }) =
-    custom (Random.map f generator)
-        Shrink.noShrink
+map f (Internal.Fuzzer genTree) =
+    Internal.Fuzzer (Random.map (RoseTree.map f) genTree)
 
 
-{-| Create a new fuzzer by providing a list of fuzzers to pick from. Each fuzzer
-is associated with a `Float` weight; larger numbers mean the fuzzer in more
-likely to get picked from.
+{-| Map over two fuzzers.
+-}
+map2 : (a -> b -> c) -> Fuzzer a -> Fuzzer b -> Fuzzer c
+map2 f (Internal.Fuzzer genTreeA) (Internal.Fuzzer genTreeB) =
+    Internal.Fuzzer
+        (Random.map2
+            (\(Rose a moreAs) (Rose b moreBs) ->
+                Rose (f a b) <| Lazy.List.map2 (RoseTree.map2 f) moreAs moreBs
+            )
+            genTreeA
+            genTreeB
+        )
+
+
+{-| Map over many fuzzers.
+-}
+andMap : Fuzzer (a -> b) -> Fuzzer a -> Fuzzer b
+andMap =
+    map2 (<|)
+
+
+{-| Create a fuzzer based on the result of another fuzzer.
+-}
+andThen : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
+andThen f (Internal.Fuzzer genTree) =
+    Internal.Fuzzer
+        (Random.andThen
+            genTree
+            (\(Rose root branches) ->
+                let
+                    unpack : Fuzzer x -> Generator (RoseTree x)
+                    unpack (Internal.Fuzzer genTree) =
+                        genTree
+
+                    -- genOtherChildren : Generator (LazyList (RoseTree b))
+                    genOtherChildren =
+                        branches
+                            |> Lazy.List.map (\rt -> RoseTree.map (f >> unpack) rt |> unwindRoseTree)
+                            |> unwindLazyList
+                            |> Random.map (Lazy.List.map RoseTree.flatten)
+                in
+                    Random.map2
+                        (\(Rose trueRoot root'sChildren) otherChildren ->
+                            Rose trueRoot (Lazy.List.append root'sChildren otherChildren)
+                        )
+                        (unpack (f root))
+                        genOtherChildren
+            )
+        )
+
+
+unwindRoseTree : RoseTree (Generator a) -> Generator (RoseTree a)
+unwindRoseTree (Rose genRoot lazyListOfRoseTreesOfGenerators) =
+    case Lazy.List.headAndTail lazyListOfRoseTreesOfGenerators of
+        Nothing ->
+            Random.map RoseTree.singleton genRoot
+
+        Just ( Rose gen children, moreList ) ->
+            Random.map4 (\a b c d -> Rose a (Lazy.List.cons (Rose b c) d))
+                genRoot
+                gen
+                (Lazy.List.map unwindRoseTree children |> unwindLazyList)
+                (Lazy.List.map unwindRoseTree moreList |> unwindLazyList)
+
+
+unwindLazyList : LazyList (Generator a) -> Generator (LazyList a)
+unwindLazyList lazyListOfGenerators =
+    case Lazy.List.headAndTail lazyListOfGenerators of
+        Nothing ->
+            Random.constant Lazy.List.empty
+
+        Just ( head, tail ) ->
+            Random.map2 (Lazy.List.cons) head (unwindLazyList tail)
+
+
+{-| Create a new `Fuzzer` by providing a list of probabilistic weights to use
+with other fuzzers.
 
 For example, to create a `Fuzzer` that has a 1/4 chance of generating an int
 between -1 and -100, and a 3/4 chance of generating one between 1 and 100,
@@ -343,33 +442,29 @@ you could do this:
         , ( 3, Fuzz.intRange 1 100 )
         ]
 
-This function returns a `Result` because it can fail in a few ways:
+This returns a `Result` because it can fail in a few ways:
 
 * If you provide an empy list of frequencies
 * If any of the weights are less than 0
 * If the weights sum to 0
 
-Any of these will lead to an `Err`, with a `String` explaining what went wrong.
+Any of these will lead to a result of `Err`, with a `String` explaining what
+went wrong.
 -}
 frequency : List ( Float, Fuzzer a ) -> Result String (Fuzzer a)
 frequency list =
-    case List.head list of
-        Nothing ->
-            Err "You must provide at least one frequency pair."
-
-        Just ( _, Internal.Fuzzer { shrinker } ) ->
-            if List.any (\( weight, _ ) -> weight < 0) list then
-                Err "No frequency weights can be less than 0."
-            else if List.sum (List.map fst list) <= 0 then
-                Err "Frequency weights must sum to more than 0."
-            else
-                let
-                    generator =
-                        list
-                            |> List.map toGeneratorFrequency
-                            |> Random.frequency
-                in
-                    Ok (custom generator shrinker)
+    if List.isEmpty list then
+        Err "You must provide at least one frequency pair."
+    else if List.any (\( weight, _ ) -> weight < 0) list then
+        Err "No frequency weights can be less than 0."
+    else if List.sum (List.map fst list) <= 0 then
+        Err "Frequency weights must sum to more than 0."
+    else
+        list
+            |> List.map (\( weight, Internal.Fuzzer gen ) -> ( weight, gen ))
+            |> Random.frequency
+            |> Internal.Fuzzer
+            |> Ok
 
 
 {-| Calls `frequency` and handles `Err` results by crashing with the given
@@ -391,8 +486,3 @@ okOrCrash result =
 
         Err str ->
             Debug.crash str
-
-
-toGeneratorFrequency : ( Float, Fuzzer a ) -> ( Float, Generator a )
-toGeneratorFrequency ( weight, Internal.Fuzzer { generator } ) =
-    ( weight, generator )
