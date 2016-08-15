@@ -42,24 +42,24 @@ filterHelp lastCheckPassed isKeepable test =
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzTest (Internal.Fuzzer { generator, shrinker }) desc getExpectation =
     let
+        getFailures failures currentSeed remainingRuns =
+            let
+                ( val, nextSeed ) =
+                    Random.step generator currentSeed
+
+                newFailures =
+                    if getExpectation val == Pass then
+                        failures
+                    else
+                        shrinkAndAdd shrinker getExpectation val failures
+            in
+                if remainingRuns == 1 then
+                    newFailures
+                else
+                    getFailures newFailures nextSeed (remainingRuns - 1)
+
         run seed runs =
             let
-                getFailures failures currentSeed remainingRuns =
-                    let
-                        ( val, nextSeed ) =
-                            Random.step generator seed
-
-                        newFailures =
-                            if getExpectation val == Pass then
-                                failures
-                            else
-                                shrinkAndAdd shrinker getExpectation val failures
-                    in
-                        if remainingRuns == 1 then
-                            newFailures
-                        else
-                            getFailures newFailures currentSeed (remainingRuns - 1)
-
                 -- Use a Dict so we don't report duplicate inputs.
                 failures : Dict String Expectation
                 failures =
