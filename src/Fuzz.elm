@@ -146,7 +146,13 @@ inclusive. Shrunken values will also be within the range.
 -}
 intRange : Int -> Int -> Fuzzer Int
 intRange min max =
-    custom (Random.int min max)
+    custom
+        (Random.frequency
+            [ ( 8, Random.int min max )
+            , ( 1, Random.constant min )
+            , ( 1, Random.constant max )
+            ]
+        )
         (Shrink.keepIf (\i -> i >= min && i <= max) Shrink.int)
 
 
@@ -172,7 +178,13 @@ value, inclusive. Shrunken values will also be within the range.
 -}
 floatRange : Float -> Float -> Fuzzer Float
 floatRange min max =
-    custom (Random.float min max)
+    custom
+        (Random.frequency
+            [ ( 8, Random.float min max )
+            , ( 1, Random.constant min )
+            , ( 1, Random.constant max )
+            ]
+        )
         (Shrink.keepIf (\i -> i >= min && i <= max) Shrink.float)
 
 
