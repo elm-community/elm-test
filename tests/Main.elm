@@ -1,8 +1,8 @@
-module LogRunnerExample exposing (..)
+module Main exposing (..)
 
-{-| HOW TO RUN THIS EXAMPLE
+{-| HOW TO RUN THESE TESTS
 
-$ elm-make LogRunnerExample.elm --output=elm.js
+$ elm-make Main.elm --output=elm.js
 $ node elm.js
 
 Note that this always uses an initial seed of 902101337, since it can't do effects.
@@ -11,7 +11,7 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 import Expect
 import Test exposing (..)
 import Fuzz exposing (..)
-import LogRunner
+import Runner.Log
 import Html.App
 import Html
 import String
@@ -25,7 +25,7 @@ main =
         , update = \_ _ -> ()
         , view = \() -> Html.text "Check the console for useful output!"
         }
-        |> LogRunner.run (Test.concat [ readmeExample, testWithoutNums ])
+        |> Runner.Log.run (Test.concat [ readmeExample, testWithoutNums ])
 
 
 withoutNums : String -> String
