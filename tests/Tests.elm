@@ -9,7 +9,17 @@ import Expect
 all : Test
 all =
     Test.concat
-        [ readmeExample ]
+        [ readmeExample, bug39 ]
+
+
+{-| Regression test for https://github.com/elm-community/elm-test/issues/39
+-}
+bug39 : Test
+bug39 =
+    fuzz (intRange 1 32) "small slice end" <|
+        \positiveInt ->
+            positiveInt
+                |> Expect.greaterThan 0
 
 
 readmeExample : Test
