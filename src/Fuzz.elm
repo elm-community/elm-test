@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, andMap, andThen, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -15,7 +15,7 @@ reproduces a bug.
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
-@docs Fuzzer, constant, map, map2, andMap, andThen, frequency, frequencyOrCrash
+@docs Fuzzer, constant, map, map2, andMap, andThen, filter, frequency, frequencyOrCrash
 
 ## Tuple Fuzzers
 Instead of using a tuple, consider using `fuzzN`.
@@ -427,7 +427,47 @@ unwindLazyList lazyListOfGenerators =
             Random.constant Lazy.List.empty
 
         Just ( head, tail ) ->
-            Random.map2 (Lazy.List.cons) head (unwindLazyList tail)
+            Random.map2 Lazy.List.cons head (unwindLazyList tail)
+
+
+{-| Filter values from a fuzzer that do not satisfy the provided predicate.
+Shrunken values will also satisfy the predicate, however a restrictive predicate
+will make shrinking less effective.
+
+**Warning:** The predicate must return `True` fairly often for values generated
+by the input fuzzer. If the predicate rarely or never returns `True`, using the
+resulting fuzzer will crash your program.
+
+    badCrashingFuzzer =
+        filter (\_ -> False) anotherFuzzer
+-}
+filter : (a -> Bool) -> Fuzzer a -> Fuzzer a
+filter predicate (Internal.Fuzzer gen) =
+    {- -- Filtering with Fuzzers as Generators of Rosetrees --
+       Generate a rosetree. Regenerate until the root element isn't filtered out.
+       For each subtree:
+           If the subtree root is invalid, drop the entire subtree.
+           Otherwise, recurse on each child subtree.
+    -}
+    let
+        --maybeMapShrunken : RoseTree a -> Maybe (RoseTree a)
+        maybeMapShrunken (Rose shrunken more) =
+            if predicate shrunken then
+                Just <| Rose shrunken <| Lazy.List.filterMap maybeMapShrunken more
+            else
+                Nothing
+
+        --regenerateIfRejected : RoseTree a -> Random.Generator (RoseTree a)
+        regenerateIfRejected (Rose a list) =
+            if predicate a then
+                list
+                    |> Lazy.List.filterMap maybeMapShrunken
+                    |> Rose a
+                    |> Random.constant
+            else
+                gen `Random.andThen` regenerateIfRejected
+    in
+        Internal.Fuzzer <| gen `Random.andThen` regenerateIfRejected
 
 
 {-| Create a new `Fuzzer` by providing a list of probabilistic weights to use
