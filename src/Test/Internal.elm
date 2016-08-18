@@ -42,25 +42,47 @@ filterHelp lastCheckPassed isKeepable test =
 
 
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest (Internal.Fuzzer genTree) desc getExpectation =
-    -- Fuzz test algorithm with RoseTrees:
-    -- Generate the rosetree from the fuzzer's random generator and the test's seed
-    -- Run the test on the root element
-    -- If it fails, find the new failure by looking at the children for any shrunken values:
-    -- -- If a shrunken value causes a failure, recurse on its children
-    -- -- If no shrunken value replicates the failure, use the root
+fuzzTest (Internal.Fuzzer f) desc getExpectation =
+    -- Fuzz test algorithm with opt-in RoseTrees:
+    -- Generate a single value by passing the fuzzer True (indicates skip shrinking)
+    -- Run the test on that value
+    -- If it fails:
+    -- -- Generate the rosetree by passing the fuzzer False *and the same random seed*
+    -- -- Find the new failure by looking at the children for any shrunken values:
+    -- -- -- If a shrunken value causes a failure, recurse on its children
+    -- -- -- If no shrunken value replicates the failure, use the root
     -- Whether it passes or fails, do this n times
     let
         getFailures failures currentSeed remainingRuns =
             let
-                ( rosetree, nextSeed ) =
-                    Random.step genTree currentSeed
+                genVal =
+                    case f True of
+                        Internal.Gen gv ->
+                            gv
+
+                        err ->
+                            Debug.crash "This shouldn't happen: fuzzTest 1" err
+
+                ( value, nextSeed ) =
+                    Random.step genVal currentSeed
 
                 newFailures =
-                    if getExpectation (RoseTree.root rosetree) == Pass then
+                    if getExpectation value == Pass then
                         failures
                     else
-                        shrinkAndAdd rosetree getExpectation failures
+                        let
+                            genTree =
+                                case f False of
+                                    Internal.Shrink gt ->
+                                        gt
+
+                                    err ->
+                                        Debug.crash "This shouldn't happen: fuzzTest 2" err
+
+                            ( rosetree, nextSeedAgain ) =
+                                Random.step genTree currentSeed
+                        in
+                            shrinkAndAdd rosetree getExpectation failures
             in
                 if remainingRuns == 1 then
                     newFailures

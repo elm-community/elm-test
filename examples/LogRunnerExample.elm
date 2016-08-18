@@ -36,10 +36,10 @@ withoutNums =
 testWithoutNums : Test
 testWithoutNums =
     describe "withoutNums"
-        [ fuzzWith { runs = 100 } (tuple3 ( string, float, string )) "adding numbers to strings has no effect" <|
-            \( prefix, num, suffix ) ->
-                withoutNums (prefix ++ toString num ++ suffix)
-                    |> Expect.equal (withoutNums (prefix ++ suffix))
+        [ fuzzWith { runs = 100 } (tuple ( string, int )) "adding numbers as a prefix to strings has no effect" <|
+            \( prefix, num ) ->
+                withoutNums (prefix ++ toString num)
+                    |> Expect.equal (withoutNums prefix)
         ]
 
 

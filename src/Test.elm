@@ -1,4 +1,4 @@
-module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, fuzz2, fuzzWith)
 
 {-| A module containing functions for creating and managing tests.
 
@@ -10,7 +10,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, f
 
 ## Fuzz Testing
 
-@docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, FuzzOptions
+@docs fuzz, fuzz2, fuzzWith, FuzzOptions
 -}
 
 import Test.Internal as Internal
@@ -226,82 +226,3 @@ fuzz2 fuzzA fuzzB desc =
             Fuzz.tuple ( fuzzA, fuzzB )
     in
         uncurry >> fuzz fuzzer desc
-
-
-{-| Run a [fuzz test](#fuzz) using three random inputs.
-
-This is a convenicence function that lets you skip calling [`Fuzz.tuple3`](../Fuzz#tuple3).
--}
-fuzz3 :
-    Fuzzer a
-    -> Fuzzer b
-    -> Fuzzer c
-    -> String
-    -> (a -> b -> c -> Expectation)
-    -> Test
-fuzz3 fuzzA fuzzB fuzzC desc =
-    let
-        fuzzer =
-            Fuzz.tuple3 ( fuzzA, fuzzB, fuzzC )
-    in
-        uncurry3 >> fuzz fuzzer desc
-
-
-{-| Run a [fuzz test](#fuzz) using four random inputs.
-
-This is a convenicence function that lets you skip calling [`Fuzz.tuple4`](../Fuzz#tuple4).
--}
-fuzz4 :
-    Fuzzer a
-    -> Fuzzer b
-    -> Fuzzer c
-    -> Fuzzer d
-    -> String
-    -> (a -> b -> c -> d -> Expectation)
-    -> Test
-fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
-    let
-        fuzzer =
-            Fuzz.tuple4 ( fuzzA, fuzzB, fuzzC, fuzzD )
-    in
-        uncurry4 >> fuzz fuzzer desc
-
-
-{-| Run a [fuzz test](#fuzz) using five random inputs.
-
-This is a convenicence function that lets you skip calling [`Fuzz.tuple5`](../Fuzz#tuple5).
--}
-fuzz5 :
-    Fuzzer a
-    -> Fuzzer b
-    -> Fuzzer c
-    -> Fuzzer d
-    -> Fuzzer e
-    -> String
-    -> (a -> b -> c -> d -> e -> Expectation)
-    -> Test
-fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE desc =
-    let
-        fuzzer =
-            Fuzz.tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE )
-    in
-        uncurry5 >> fuzz fuzzer desc
-
-
-
--- INTERNAL HELPERS --
-
-
-uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
-uncurry3 fn ( a, b, c ) =
-    fn a b c
-
-
-uncurry4 : (a -> b -> c -> d -> e) -> ( a, b, c, d ) -> e
-uncurry4 fn ( a, b, c, d ) =
-    fn a b c d
-
-
-uncurry5 : (a -> b -> c -> d -> e -> f) -> ( a, b, c, d, e ) -> f
-uncurry5 fn ( a, b, c, d, e ) =
-    fn a b c d e
