@@ -1,4 +1,4 @@
-module LogRunner exposing (run, runWithOptions)
+module Runner.Log exposing (run, runWithOptions)
 
 {-| # Log Runner
 
@@ -19,7 +19,7 @@ if the tests all passed, and 1 if any failed.
 
 import Random.Pcg as Random
 import Test exposing (Test)
-import StringRunner exposing (Summary)
+import Runner.String exposing (Summary)
 import String
 
 
@@ -27,7 +27,7 @@ import String
 -}
 run : Test -> a -> a
 run test =
-    StringRunner.run test
+    Runner.String.run test
         |> logOutput
 
 
@@ -35,7 +35,7 @@ run test =
 -}
 runWithOptions : Int -> Random.Seed -> Test -> a -> a
 runWithOptions runs seed test =
-    StringRunner.runWithOptions runs seed test
+    Runner.String.runWithOptions runs seed test
         |> logOutput
 
 

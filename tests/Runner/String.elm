@@ -1,12 +1,11 @@
-module StringRunner exposing (Summary, run, runWithOptions)
+module Runner.String exposing (Summary, run, runWithOptions)
 
 {-| # String Runner
 
 Run a test and present its results as a nicely-formatted String, along with
 a count of how many tests passed and failed.
 
-This is a quick way to get decent test outputs which can then be presented in
-various different environments. See `Test.Runner.Log` for an example.
+Note that this always uses an initial seed of 902101337, since it can't do effects.
 
 @docs Summary, run, runWithOptions
 -}
@@ -76,7 +75,7 @@ outputLabels labels =
 
 defaultSeed : Random.Seed
 defaultSeed =
-    Random.initialSeed 4295183
+    Random.initialSeed 902101337
 
 
 defaultRuns : Int

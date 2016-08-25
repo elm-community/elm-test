@@ -1,6 +1,6 @@
 {
-    "version": "1.0.0",
-    "summary": "Unit testing support with Console/Html/String outputs.",
+    "version": "2.0.1",
+    "summary": "tests for elm-test, so you can elm-test while you elm-test",
     "repository": "https://github.com/elm-community/elm-test.git",
     "license": "BSD-3-Clause",
     "source-directories": [
@@ -10,9 +10,9 @@
     "exposed-modules": [],
     "dependencies": {
         "elm-community/elm-lazy-list": "1.2.0 <= v < 2.0.0",
-        "elm-community/shrink": "1.0.1 <= v < 2.0.0",
+        "elm-community/shrink": "1.1.0 <= v < 2.0.0",
         "elm-lang/core": "4.0.0 <= v < 5.0.0",
-        "elm-lang/html": "1.0.0 <= v < 2.0.0",
+        "elm-lang/html": "1.1.0 <= v < 2.0.0",
         "mgold/elm-random-pcg": "3.0.0 <= v < 4.0.0"
     },
     "elm-version": "0.17.0 <= v < 0.18.0"
