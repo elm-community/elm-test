@@ -333,8 +333,11 @@ list (Internal.Fuzzer f) =
                         Gen <| genLength `Random.andThen` \i -> Random.list i genVal
 
                     Shrink genTree ->
-                        -- TODO Shrinking
-                        Gen <| genLength `Random.andThen` \i -> Random.list i (Random.map RoseTree.root genTree)
+                        -- TODO: shrinking, not just a singleton tree
+                        genLength
+                            |> (flip Random.andThen) (\i -> (Random.list i (Random.map RoseTree.root genTree)))
+                            |> Random.map RoseTree.singleton
+                            |> Shrink
             )
 
 
@@ -357,6 +360,11 @@ tuple ( Internal.Fuzzer fA, Internal.Fuzzer fB ) =
                     Gen <| Random.map2 (,) genA genB
 
                 ( Shrink genTreeA, Shrink genTreeB ) ->
+                    {- TODO: Better shrinking of pairs and larger tuples.
+                       Currently we "zip" trees together when we could be doing something closer to a product.
+                       See the Shrink library tuple functions for inspiration, though we can't use them directly.
+                       fuzz2 and map2 are implemented using this function so improvements will have a big impact!
+                    -}
                     Shrink <| Random.map2 (RoseTree.map2 (,)) genTreeA genTreeB
 
                 err ->
@@ -450,19 +458,8 @@ map transform (Internal.Fuzzer f) =
 {-| Map over two fuzzers.
 -}
 map2 : (a -> b -> c) -> Fuzzer a -> Fuzzer b -> Fuzzer c
-map2 transform (Internal.Fuzzer fA) (Internal.Fuzzer fB) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case ( fA noShrink, fB noShrink ) of
-                ( Gen genA, Gen genB ) ->
-                    Gen <| Random.map2 transform genA genB
-
-                ( Shrink genTreeA, Shrink genTreeB ) ->
-                    Shrink <| Random.map2 (RoseTree.map2 transform) genTreeA genTreeB
-
-                err ->
-                    Debug.crash "This shouldn't happen: Fuzz.map" err
-        )
+map2 transform fuzzA fuzzB =
+    map (\( a, b ) -> transform a b) (tuple ( fuzzA, fuzzB ))
 
 
 {-| Map over many fuzzers.
