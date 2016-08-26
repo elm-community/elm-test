@@ -2,6 +2,7 @@ module Tests exposing (all)
 
 import Test exposing (..)
 import Fuzz exposing (..)
+import Set
 import String
 import Expect
 
@@ -38,6 +39,10 @@ readmeExample =
                     "ABCDEFG"
                         |> String.reverse
                         |> Expect.equal "GFEDCBA"
+            , test "equal sets" <|
+                \() ->
+                    (Set.fromList [ 1, 2, 3 ])
+                        |> Expect.equalSets (Set.fromList [ 1, 2, 3 ])
             , fuzz string "restores the original string if you run it again" <|
                 \randomlyGeneratedString ->
                     randomlyGeneratedString

@@ -1,4 +1,4 @@
-module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, onFail)
+module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalSets, onFail)
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
 
@@ -25,12 +25,17 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 
 @docs true, false
 
+## Collections
+
+@docs equalSets
+
 ## Customizing
 
 @docs pass, fail, onFail, getFailure
 -}
 
 import Test.Expectation
+import Set exposing (Set)
 import String
 
 
@@ -260,6 +265,53 @@ false message bool =
         fail message
     else
         pass
+
+
+{-| Passes if the arguments are equal sets.
+
+    -- Passes
+    (Set.fromList [1, 2])
+        |> Expect.equalSets (Set.fromList [1, 2])
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which, and reports which keys were missing from
+the actual set and which were extra:
+
+    -- Fails
+    (Set.fromList [ 1, 2, 4, 6 ])
+        |> Expect.equalSets (Set.fromList [ 1, 2, 5 ])
+
+    {-
+
+    Set.fromList [1,2,4,6]
+    ╷
+    │ Expect.equalSets
+    ╵
+    Set.fromList [1,2,5]
+    Was missing keys: 5
+    Had extra keys: 4, 6
+
+    -}
+-}
+equalSets : Set comparable -> Set comparable -> Expectation
+equalSets expected actual =
+    if Set.toList expected == Set.toList actual then
+        pass
+    else
+        let
+            missingKeys =
+                Set.diff expected actual |> Set.toList |> List.map toString |> String.join ", "
+
+            extraKeys =
+                Set.diff actual expected |> Set.toList |> List.map toString |> String.join ", "
+
+            baseFailureMessage =
+                (reportFailure "Expect.equalSets" (toString expected) (toString actual))
+
+            failureMessage =
+                [ baseFailureMessage, "Was missing keys: " ++ missingKeys, "Had extra keys: " ++ extraKeys ] |> String.join "\n"
+        in
+            fail failureMessage
 
 
 {-| Always passes.
