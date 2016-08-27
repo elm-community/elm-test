@@ -1,4 +1,4 @@
-module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalSets, onFail)
+module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalDicts, equalSets, onFail)
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
 
@@ -27,7 +27,7 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 
 ## Collections
 
-@docs equalSets
+@docs equalDicts, equalSets
 
 ## Customizing
 
@@ -35,6 +35,7 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 -}
 
 import Test.Expectation
+import Dict exposing (Dict)
 import Set exposing (Set)
 import String
 
@@ -265,6 +266,94 @@ false message bool =
         fail message
     else
         pass
+
+
+{-| Passes if the arguments are equal dicts.
+
+    -- Passes
+    (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
+        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which, and reports which keys were missing from or added to the actual dict and which had different values:
+
+    -- Fails
+    (Dict.fromList [ ( 1, "one" ), ( 2, "too" ), ( 5, "five" ) ])
+        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ), ( 3, "three" ), ( 4, "four" ) ])
+
+    {-
+
+    Dict.fromList [(1,"one"),(2,"too"),(5,"five")]
+    ╷
+    │ Expect.equalDicts
+    ╵
+    Dict.fromList [(1,"one"),(2,"two"),(3,"three"),(4,"four")]
+    Was missing keys: 3, 4
+    Had extra keys: 5
+    Diffs:
+      For key: 2
+        Expected: "two"
+        Actual: "too"
+
+    -}
+-}
+equalDicts : Dict comparable a -> Dict comparable a -> Expectation
+equalDicts expected actual =
+    if Dict.toList expected == Dict.toList actual then
+        pass
+    else
+        let
+            differ =
+                \k v ( missingKeys, diffs ) ->
+                    if not <| Dict.member k actual then
+                        ( k :: missingKeys, diffs )
+                    else
+                        let
+                            actualVal =
+                                Dict.get k actual
+                        in
+                            if actualVal == Just v then
+                                ( missingKeys, diffs )
+                            else
+                                ( missingKeys, ( k, v, actualVal ) :: diffs )
+
+            ( missingKeys, diffs ) =
+                Dict.foldr differ ( [], [] ) expected
+
+            missingKeysMessage =
+                missingKeys |> List.map toString |> String.join ", "
+
+            diffsMessage =
+                diffs
+                    |> List.map
+                        (\( key, expectedVal, actualVal ) ->
+                            [ "  For key: " ++ toString key
+                            , "    Expected: " ++ toString expectedVal
+                            , "    Actual: " ++ (actualVal |> Maybe.map toString |> Maybe.withDefault "")
+                            ]
+                        )
+                    |> List.concat
+                    |> String.join "\n"
+
+            extraKeys =
+                Set.diff (Set.fromList <| Dict.keys actual) (Set.fromList <| Dict.keys expected)
+                    |> Set.toList
+                    |> List.map toString
+                    |> String.join ", "
+
+            baseFailureMessage =
+                (reportFailure "Expect.equalDicts" (toString expected) (toString actual))
+
+            failureMessage =
+                [ baseFailureMessage
+                , "Was missing keys: " ++ missingKeysMessage
+                , "Had extra keys: " ++ extraKeys
+                , "Diffs:"
+                , diffsMessage
+                ]
+                    |> String.join "\n"
+        in
+            fail failureMessage
 
 
 {-| Passes if the arguments are equal sets.

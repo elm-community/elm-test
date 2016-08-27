@@ -2,6 +2,7 @@ module Tests exposing (all)
 
 import Test exposing (..)
 import Fuzz exposing (..)
+import Dict
 import Set
 import String
 import Expect
@@ -39,6 +40,10 @@ readmeExample =
                     "ABCDEFG"
                         |> String.reverse
                         |> Expect.equal "GFEDCBA"
+            , test "equal dicts" <|
+                \() ->
+                    (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
+                        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
             , test "equal sets" <|
                 \() ->
                     (Set.fromList [ 1, 2, 3 ])
