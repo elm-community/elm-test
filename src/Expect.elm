@@ -356,7 +356,7 @@ reportFailure comparison expected actual =
         |> String.join "\n"
 
 
-compareWith : String -> (a -> a -> Bool) -> a -> a -> Expectation
+compareWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
 compareWith label compare expected actual =
     if compare actual expected then
         pass
