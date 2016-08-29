@@ -349,6 +349,15 @@ array fuzzer =
     map Array.fromList (list fuzzer)
 
 
+{-| This private constant defines an upper bound for how many times a tuple shrinker will attempt to pair up variously
+shrunken inputs. The actual value is arbitrary, but without a ceiling, list products can easily overflow the stack.
+(Thanks laziness!)
+-}
+shrinkAttempts : Int
+shrinkAttempts =
+    40
+
+
 {-| Turn a tuple of fuzzers into a fuzzer of tuples.
 -}
 tuple : ( Fuzzer a, Fuzzer b ) -> Fuzzer ( a, b )
@@ -360,16 +369,33 @@ tuple ( Internal.Fuzzer fA, Internal.Fuzzer fB ) =
                     Gen <| Random.map2 (,) genA genB
 
                 ( Shrink genTreeA, Shrink genTreeB ) ->
-                    {- TODO: Better shrinking of pairs and larger tuples.
-                       Currently we "zip" trees together when we could be doing something closer to a product.
-                       See the Shrink library tuple functions for inspiration, though we can't use them directly.
-                       fuzz2 and map2 are implemented using this function so improvements will have a big impact!
-                    -}
-                    Shrink <| Random.map2 (RoseTree.map2 (,)) genTreeA genTreeB
+                    Shrink <| Random.map2 tupleShrinkHelp genTreeA genTreeB
 
                 err ->
                     Debug.crash "This shouldn't happen: Fuzz.tuple" err
         )
+
+
+tupleShrinkHelp : RoseTree a -> RoseTree b -> RoseTree ( a, b )
+tupleShrinkHelp (Rose root1 children1) (Rose root2 children2) =
+    let
+        root =
+            ( root1, root2 )
+
+        r1c2 =
+            Lazy.List.map (RoseTree.map (\b -> ( root1, b ))) children2
+
+        r2c1 =
+            Lazy.List.map (RoseTree.map (\a -> ( a, root2 ))) children1
+
+        c1c2 =
+            Lazy.List.product2 children1 children2 |> Lazy.List.map (\( t1, t2 ) -> tupleShrinkHelp t1 t2)
+    in
+        r2c1
+            |> Lazy.List.append r1c2
+            |> Lazy.List.append c1c2
+            |> Lazy.List.take shrinkAttempts
+            |> Rose root
 
 
 {-| Turn a 3-tuple of fuzzers into a fuzzer of 3-tuples.
@@ -383,6 +409,11 @@ tuple3 ( Internal.Fuzzer fA, Internal.Fuzzer fB, Internal.Fuzzer fC ) =
                     Gen <| Random.map3 (,,) genA genB genC
 
                 ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC ) ->
+                    {- TODO: Better shrinking of larger tuples.
+                       Currently we "zip" trees together when we could be doing something closer to a product.
+                       See the Shrink library tuple functions for inspiration, though we can't use them directly.
+                       fuzz2 and map2 are implemented using this function so improvements will have a big impact!
+                    -}
                     Shrink <| Random.map3 (RoseTree.map3 (,,)) genTreeA genTreeB genTreeC
 
                 err ->
