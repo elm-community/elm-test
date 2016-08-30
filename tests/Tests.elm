@@ -13,7 +13,7 @@ import Random.Pcg as Random
 all : Test
 all =
     Test.concat
-        [ readmeExample, bug39, fuzzerImpossible ]
+        [ readmeExample, bug39, fuzzerTests {- , shrinkingTests -} ]
 
 
 {-| Regression test for https://github.com/elm-community/elm-test/issues/39
@@ -60,8 +60,8 @@ testStringLengthIsPreserved strings =
         |> Expect.equal (String.length (List.foldl (++) "" strings))
 
 
-fuzzerImpossible : Test
-fuzzerImpossible =
+fuzzerTests : Test
+fuzzerTests =
     describe "Fuzzer methods that use Debug.crash don't call it"
         [ describe "FuzzN (uses tupleN) testing string length properties"
             [ fuzz2 string string "fuzz2" <|
@@ -117,4 +117,36 @@ fuzzerImpossible =
                     in
                         Expect.equal valNoShrink valWithShrink
             ]
+        ]
+
+
+shrinkingTests : Test
+shrinkingTests =
+    describe "tests that fail to test shrinking"
+        [ fuzz2 int int "Every pair of ints has a zero" <|
+            \i j ->
+                (i == 0)
+                    || (j == 0)
+                    |> Expect.true "This should fail with (1,1)"
+        , fuzz3 int int int "Every triple of ints has a zero" <|
+            \i j k ->
+                (i == 0)
+                    || (j == 0)
+                    || (k == 0)
+                    |> Expect.true "This should fail with (1,1,1)"
+        , fuzz4 int int int int "Every 4-tuple of ints has a zero" <|
+            \i j k l ->
+                (i == 0)
+                    || (j == 0)
+                    || (k == 0)
+                    || (l == 0)
+                    |> Expect.true "This should fail with (1,1,1,1)"
+        , fuzz5 int int int int int "Every 5-tuple of ints has a zero" <|
+            \i j k l m ->
+                (i == 0)
+                    || (j == 0)
+                    || (k == 0)
+                    || (l == 0)
+                    || (m == 0)
+                    |> Expect.true "This should fail with (1,1,1,1,1)"
         ]

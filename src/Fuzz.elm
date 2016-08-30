@@ -349,15 +349,6 @@ array fuzzer =
     map Array.fromList (list fuzzer)
 
 
-{-| This private constant defines an upper bound for how many times a tuple shrinker will attempt to pair up variously
-shrunken inputs. The actual value is arbitrary, but without a ceiling, list products can easily overflow the stack.
-(Thanks laziness!)
--}
-shrinkAttempts : Int
-shrinkAttempts =
-    40
-
-
 {-| Turn a tuple of fuzzers into a fuzzer of tuples.
 -}
 tuple : ( Fuzzer a, Fuzzer b ) -> Fuzzer ( a, b )
@@ -377,24 +368,19 @@ tuple ( Internal.Fuzzer fA, Internal.Fuzzer fB ) =
 
 
 tupleShrinkHelp : RoseTree a -> RoseTree b -> RoseTree ( a, b )
-tupleShrinkHelp (Rose root1 children1) (Rose root2 children2) =
+tupleShrinkHelp ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) =
     let
         root =
             ( root1, root2 )
 
-        r1c2 =
-            Lazy.List.map (RoseTree.map (\b -> ( root1, b ))) children2
+        shrink1 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp subtree rose2) children1
 
-        r2c1 =
-            Lazy.List.map (RoseTree.map (\a -> ( a, root2 ))) children1
-
-        c1c2 =
-            Lazy.List.product2 children1 children2 |> Lazy.List.map (\( t1, t2 ) -> tupleShrinkHelp t1 t2)
+        shrink2 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp rose1 subtree) children2
     in
-        r2c1
-            |> Lazy.List.append r1c2
-            |> Lazy.List.append c1c2
-            |> Lazy.List.take shrinkAttempts
+        shrink2
+            |> Lazy.List.append shrink1
             |> Rose root
 
 
@@ -409,16 +395,32 @@ tuple3 ( Internal.Fuzzer fA, Internal.Fuzzer fB, Internal.Fuzzer fC ) =
                     Gen <| Random.map3 (,,) genA genB genC
 
                 ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC ) ->
-                    {- TODO: Better shrinking of larger tuples.
-                       Currently we "zip" trees together when we could be doing something closer to a product.
-                       See the Shrink library tuple functions for inspiration, though we can't use them directly.
-                       fuzz2 and map2 are implemented using this function so improvements will have a big impact!
-                    -}
-                    Shrink <| Random.map3 (RoseTree.map3 (,,)) genTreeA genTreeB genTreeC
+                    Shrink <| Random.map3 tupleShrinkHelp3 genTreeA genTreeB genTreeC
 
                 err ->
                     Debug.crash "This shouldn't happen: Fuzz.tuple3" err
         )
+
+
+tupleShrinkHelp3 : RoseTree a -> RoseTree b -> RoseTree c -> RoseTree ( a, b, c )
+tupleShrinkHelp3 ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) ((Rose root3 children3) as rose3) =
+    let
+        root =
+            ( root1, root2, root3 )
+
+        shrink1 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp3 subtree rose2 rose3) children1
+
+        shrink2 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp3 rose1 subtree rose3) children2
+
+        shrink3 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp3 rose1 rose2 subtree) children3
+    in
+        shrink3
+            |> Lazy.List.append shrink2
+            |> Lazy.List.append shrink1
+            |> Rose root
 
 
 {-| Turn a 4-tuple of fuzzers into a fuzzer of 4-tuples.
@@ -432,11 +434,36 @@ tuple4 ( Internal.Fuzzer fA, Internal.Fuzzer fB, Internal.Fuzzer fC, Internal.Fu
                     Gen <| Random.map4 (,,,) genA genB genC genD
 
                 ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC, Shrink genTreeD ) ->
-                    Shrink <| Random.map4 (RoseTree.map4 (,,,)) genTreeA genTreeB genTreeC genTreeD
+                    Shrink <| Random.map4 tupleShrinkHelp4 genTreeA genTreeB genTreeC genTreeD
 
                 err ->
                     Debug.crash "This shouldn't happen: Fuzz.tuple4" err
         )
+
+
+tupleShrinkHelp4 : RoseTree a -> RoseTree b -> RoseTree c -> RoseTree d -> RoseTree ( a, b, c, d )
+tupleShrinkHelp4 rose1 rose2 rose3 rose4 =
+    let
+        root =
+            ( RoseTree.root rose1, RoseTree.root rose2, RoseTree.root rose3, RoseTree.root rose4 )
+
+        shrink1 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp4 subtree rose2 rose3 rose4) (RoseTree.children rose1)
+
+        shrink2 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp4 rose1 subtree rose3 rose4) (RoseTree.children rose2)
+
+        shrink3 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp4 rose1 rose2 subtree rose4) (RoseTree.children rose3)
+
+        shrink4 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp4 rose1 rose2 rose3 subtree) (RoseTree.children rose4)
+    in
+        shrink4
+            |> Lazy.List.append shrink3
+            |> Lazy.List.append shrink2
+            |> Lazy.List.append shrink1
+            |> Rose root
 
 
 {-| Turn a 5-tuple of fuzzers into a fuzzer of 5-tuples.
@@ -450,11 +477,40 @@ tuple5 ( Internal.Fuzzer fA, Internal.Fuzzer fB, Internal.Fuzzer fC, Internal.Fu
                     Gen <| Random.map5 (,,,,) genA genB genC genD genE
 
                 ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC, Shrink genTreeD, Shrink genTreeE ) ->
-                    Shrink <| Random.map5 (RoseTree.map5 (,,,,)) genTreeA genTreeB genTreeC genTreeD genTreeE
+                    Shrink <| Random.map5 tupleShrinkHelp5 genTreeA genTreeB genTreeC genTreeD genTreeE
 
                 err ->
                     Debug.crash "This shouldn't happen: Fuzz.tuple5" err
         )
+
+
+tupleShrinkHelp5 : RoseTree a -> RoseTree b -> RoseTree c -> RoseTree d -> RoseTree e -> RoseTree ( a, b, c, d, e )
+tupleShrinkHelp5 rose1 rose2 rose3 rose4 rose5 =
+    let
+        root =
+            ( RoseTree.root rose1, RoseTree.root rose2, RoseTree.root rose3, RoseTree.root rose4, RoseTree.root rose5 )
+
+        shrink1 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp5 subtree rose2 rose3 rose4 rose5) (RoseTree.children rose1)
+
+        shrink2 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 subtree rose3 rose4 rose5) (RoseTree.children rose2)
+
+        shrink3 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 rose2 subtree rose4 rose5) (RoseTree.children rose3)
+
+        shrink4 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 rose2 rose3 subtree rose5) (RoseTree.children rose4)
+
+        shrink5 =
+            Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 rose2 rose3 rose4 subtree) (RoseTree.children rose5)
+    in
+        shrink5
+            |> Lazy.List.append shrink4
+            |> Lazy.List.append shrink3
+            |> Lazy.List.append shrink2
+            |> Lazy.List.append shrink1
+            |> Rose root
 
 
 {-| Create a fuzzer that only and always returns the value provided, and performs no shrinking. This is hardly random,

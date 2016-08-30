@@ -2,8 +2,7 @@ module Main exposing (..)
 
 {-| HOW TO RUN THESE TESTS
 
-$ elm-make Main.elm --output=elm.js
-$ node elm.js
+$ npm test
 
 Note that this always uses an initial seed of 902101337, since it can't do effects.
 -}
