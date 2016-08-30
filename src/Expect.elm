@@ -378,25 +378,21 @@ equalDicts expected actual =
         pass
     else
         let
-            differ =
-                \k v ( missingKeys, diffs ) ->
-                    if not <| Dict.member k actual then
-                        ( k :: missingKeys, diffs )
-                    else
-                        let
-                            actualVal =
-                                Dict.get k actual
-                        in
-                            if actualVal == Just v then
-                                ( missingKeys, diffs )
-                            else
-                                ( missingKeys, ( k, v, actualVal ) :: diffs )
+            differ k v ( missingKeys, diffs ) =
+                if not <| Dict.member k actual then
+                    ( Set.insert k missingKeys, diffs )
+                else
+                    let
+                        actualVal =
+                            Dict.get k actual
+                    in
+                        if actualVal == Just v then
+                            ( missingKeys, diffs )
+                        else
+                            ( missingKeys, ( k, v, actualVal ) :: diffs )
 
             ( missingKeys, diffs ) =
-                Dict.foldr differ ( [], [] ) expected
-
-            missingKeysMessage =
-                missingKeys |> List.map toString |> String.join ", "
+                Dict.foldr differ ( Set.empty, [] ) expected
 
             diffsMessage =
                 diffs
@@ -412,16 +408,14 @@ equalDicts expected actual =
 
             extraKeys =
                 Set.diff (Set.fromList <| Dict.keys actual) (Set.fromList <| Dict.keys expected)
-                    |> Set.toList
-                    |> List.map toString
-                    |> String.join ", "
+                    |> formatSet
 
             baseFailureMessage =
                 (reportFailure "Expect.equalDicts" (toString expected) (toString actual))
 
             failureMessage =
                 [ baseFailureMessage
-                , "Was missing keys: " ++ missingKeysMessage
+                , "Was missing keys: " ++ formatSet missingKeys
                 , "Had extra keys: " ++ extraKeys
                 , "Diffs:"
                 , diffsMessage
@@ -464,18 +458,30 @@ equalSets expected actual =
     else
         let
             missingKeys =
-                Set.diff expected actual |> Set.toList |> List.map toString |> String.join ", "
+                Set.diff expected actual |> formatSet
 
             extraKeys =
-                Set.diff actual expected |> Set.toList |> List.map toString |> String.join ", "
+                Set.diff actual expected |> formatSet
 
             baseFailureMessage =
                 (reportFailure "Expect.equalSets" (toString expected) (toString actual))
 
             failureMessage =
-                [ baseFailureMessage, "Was missing keys: " ++ missingKeys, "Had extra keys: " ++ extraKeys ] |> String.join "\n"
+                [ baseFailureMessage
+                , "Was missing keys: " ++ missingKeys
+                , "Had extra keys: " ++ extraKeys
+                ]
+                    |> String.join "\n"
         in
             fail failureMessage
+
+
+formatSet : Set comparable -> String
+formatSet set =
+    set
+        |> Set.toList
+        |> List.map toString
+        |> String.join ", "
 
 
 {-| Always passes.
