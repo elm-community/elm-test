@@ -1,4 +1,4 @@
-module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalDicts, equalSets, onFail)
+module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalLists, equalDicts, equalSets, onFail)
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
 
@@ -27,7 +27,7 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 
 ## Collections
 
-@docs equalDicts, equalSets
+@docs equalLists, equalDicts, equalSets
 
 ## Customizing
 
@@ -266,6 +266,81 @@ false message bool =
         fail message
     else
         pass
+
+
+{-| Passes if the arguments are equal lists.
+
+    -- Passes
+    [1, 2, 3]
+        |> Expect.equalLists [1, 2, 3]
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which, and reports which index the lists first
+differed at:
+
+    -- Fails
+    [ 1, 2, 4, 6 ]
+        |> Expect.equalLists [ 1, 2, 5 ]
+
+    {-
+
+    [1,2,4,6]
+    ╷
+    │ Expect.equalLists: differed at index 2. Expected `4`, got `5`.
+    ╵
+    [1,2,5]
+
+    -}
+-}
+equalLists : List a -> List a -> Expectation
+equalLists expected actual =
+    if expected == actual then
+        pass
+    else
+        let
+            result =
+                List.map2 (,) actual expected
+                    |> List.indexedMap (,)
+                    |> List.filterMap
+                        (\( index, ( e, a ) ) ->
+                            if e == a then
+                                Nothing
+                            else
+                                Just ( index, e, a )
+                        )
+                    |> List.head
+                    |> Maybe.map
+                        (\( index, e, a ) ->
+                            fail <|
+                                reportFailure
+                                    ("Expect.equalLists: differed at index "
+                                        ++ toString index
+                                        ++ ". Expected `"
+                                        ++ toString e
+                                        ++ "`, got `"
+                                        ++ toString a
+                                        ++ "`."
+                                    )
+                                    (toString expected)
+                                    (toString actual)
+                        )
+        in
+            case result of
+                Just failure ->
+                    failure
+
+                Nothing ->
+                    case compare (List.length actual) (List.length expected) of
+                        GT ->
+                            reportFailure "Expect.equalLists: was longer than expected" (toString expected) (toString actual)
+                                |> fail
+
+                        LT ->
+                            reportFailure "Expect.equalLists: was shorter than expected" (toString expected) (toString actual)
+                                |> fail
+
+                        _ ->
+                            pass
 
 
 {-| Passes if the arguments are equal dicts.

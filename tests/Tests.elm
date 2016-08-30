@@ -40,6 +40,10 @@ readmeExample =
                     "ABCDEFG"
                         |> String.reverse
                         |> Expect.equal "GFEDCBA"
+            , test "equal lists" <|
+                \() ->
+                    [ 1, 2, 3 ]
+                        |> Expect.equalLists [ 1, 2, 3 ]
             , test "equal dicts" <|
                 \() ->
                     (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
