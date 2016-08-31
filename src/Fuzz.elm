@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -15,7 +15,7 @@ reproduces a bug.
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
-@docs Fuzzer, constant, map, map2, andMap, andThen, filter, frequency, frequencyOrCrash
+@docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, filter, frequency, frequencyOrCrash
 
 ## Tuple Fuzzers
 Instead of using a tuple, consider using `fuzzN`.
@@ -549,7 +549,28 @@ map2 transform fuzzA fuzzB =
     map (\( a, b ) -> transform a b) (tuple ( fuzzA, fuzzB ))
 
 
-{-| Map over many fuzzers.
+{-| Map over three fuzzers.
+-}
+map3 : (a -> b -> c -> d) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d
+map3 transform fuzzA fuzzB fuzzC =
+    map (\( a, b, c ) -> transform a b c) (tuple3 ( fuzzA, fuzzB, fuzzC ))
+
+
+{-| Map over four fuzzers.
+-}
+map4 : (a -> b -> c -> d -> e) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d -> Fuzzer e
+map4 transform fuzzA fuzzB fuzzC fuzzD =
+    map (\( a, b, c, d ) -> transform a b c d) (tuple4 ( fuzzA, fuzzB, fuzzC, fuzzD ))
+
+
+{-| Map over five fuzzers.
+-}
+map5 : (a -> b -> c -> d -> e -> f) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d -> Fuzzer e -> Fuzzer f
+map5 transform fuzzA fuzzB fuzzC fuzzD fuzzE =
+    map (\( a, b, c, d, e ) -> transform a b c d e) (tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE ))
+
+
+{-| Map over many fuzzers. This can act as mapN for N > 5.
 -}
 andMap : Fuzzer (a -> b) -> Fuzzer a -> Fuzzer b
 andMap =
