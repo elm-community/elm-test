@@ -244,7 +244,7 @@ string =
 {-| A fuzzer for string values. Generates random printable ascii strings whose
 length can be specified.
 -}
-longString:Int -> Fuzzer String
+longString : Int -> Fuzzer String
 longString maxLen=
     custom (rangeLengthString 0 maxLen charGenerator)
         Shrink.string
