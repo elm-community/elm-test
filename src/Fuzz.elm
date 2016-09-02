@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, longString, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -240,6 +240,14 @@ string =
     custom (rangeLengthString 0 10 charGenerator)
         Shrink.string
 
+
+{-| A fuzzer for string values. Generates random printable ascii strings whose
+length can be specified.
+-}
+longString:Int -> Fuzzer String
+longString maxLen=
+    custom (rangeLengthString 0 maxLen charGenerator)
+        Shrink.string
 
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
 -}
