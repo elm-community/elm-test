@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, longString, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, longString, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, nonEmptyList, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -12,7 +12,7 @@ this way, fuzzers can usually find the smallest or simplest input that
 reproduces a bug.
 
 ## Common Fuzzers
-@docs bool, int, intRange, float, floatRange, percentage, string, longString, maybe, result, list, array
+@docs bool, int, intRange, float, floatRange, percentage, string, longString, maybe, result, list,nonEmptyList, array
 
 ## Working with Fuzzers
 @docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, filter, frequency, frequencyOrCrash
@@ -323,7 +323,7 @@ result (Internal.Fuzzer fError) (Internal.Fuzzer fValue) =
 Generates random lists of varying length, favoring shorter lists.
 -}
 list : Fuzzer a -> Fuzzer (List a)
-list (Internal.Fuzzer f) =
+list f =
     let
         genLength =
             Random.frequency
@@ -334,6 +334,38 @@ list (Internal.Fuzzer f) =
                 , ( 0.5, Random.int 100 400 )
                 ]
     in
+        listInner genLength f
+
+
+{-| Given a fuzzer of a type, create a fuzzer of a list of that type.
+Generates random lists of varying length, favoring shorter lists. But empty lists will not be generated
+-}
+nonEmptylist : Fuzzer a -> Fuzzer (List a)
+nonEmptylist f =
+    let
+        genLength =
+            Random.frequency
+                [
+                 ( 1, Random.constant 1 )
+                , ( 3, Random.int 2 10 )
+                , ( 2, Random.int 10 100 )
+                , ( 0.5, Random.int 100 400 )
+                ]
+    in
+
+        listInner genLength f
+
+
+{-| Given a fuzzer of a type, create a fuzzer of a list of that type.
+Generates random lists of a set length
+-}
+vector : Int -> Fuzzer a -> Fuzzer (List a)
+vector len f =
+    listInner (Random.constant len) f
+
+
+listInner : Generator Int -> Internal.Fuzzer a -> Internal.Fuzzer (List a)
+listInner genLength (Internal.Fuzzer f) =
         Internal.Fuzzer
             (\noShrink ->
                 case f noShrink of
