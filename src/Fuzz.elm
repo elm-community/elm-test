@@ -12,7 +12,7 @@ this way, fuzzers can usually find the smallest or simplest input that
 reproduces a bug.
 
 ## Common Fuzzers
-@docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
+@docs bool, int, intRange, float, floatRange, percentage, string, longString, maybe, result, list, array
 
 ## Working with Fuzzers
 @docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, filter, frequency, frequencyOrCrash
