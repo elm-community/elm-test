@@ -340,8 +340,8 @@ list f =
 {-| Given a fuzzer of a type, create a fuzzer of a list of that type.
 Generates random lists of varying length, favoring shorter lists. But empty lists will not be generated
 -}
-nonEmptylist : Fuzzer a -> Fuzzer (List a)
-nonEmptylist f =
+nonEmptyList : Fuzzer a -> Fuzzer (List a)
+nonEmptyList f =
     let
         genLength =
             Random.frequency
@@ -352,7 +352,6 @@ nonEmptylist f =
                 , ( 0.5, Random.int 100 400 )
                 ]
     in
-
         listInner genLength f
 
 
@@ -363,6 +362,10 @@ vector : Int -> Fuzzer a -> Fuzzer (List a)
 vector len f =
     listInner (Random.constant len) f
 
+
+{-
+  inner code for all the list types
+-}
 
 listInner : Generator Int -> Internal.Fuzzer a -> Internal.Fuzzer (List a)
 listInner genLength (Internal.Fuzzer f) =
