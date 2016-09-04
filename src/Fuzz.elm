@@ -241,27 +241,27 @@ string =
         Shrink.string
 
 
-{-| A fuzzer for string values. Generates random printable ascii strings whose
+{-| A fuzzer for string values. Generates random printable strings whose
 length can be specified.
 
-example use `stringOfLength 20 200` will generate longer ascii
-strings, Use this when the content of the string matters for example
-in the case of encoding etc where a longer string is more likely to
+For example, use `stringOfLength 20 200` will generate longer strings.
+Use this when the content of the string matters. For example
+in the case of encoding, where a longer string is more likely to
 show a strange corner case.
 
-This will crash if the min lenght is greater than the max length or if either is less than 0
-
-
+This will Err if the min length is greater than the max length
+or if either is less than 0.
 -}
-stringOfLength : Int -> Int -> Fuzzer String
+stringOfLength : Int -> Int -> Result String (Fuzzer String)
 stringOfLength minLen maxLen =
     if minLen > maxLen then
-        Debug.crash "The Miniumum length of the string must be less than or equal to the max length"
+        Err "The Miniumum length of the string must be less than or equal to the max length"
     else if minLen < 0 || maxLen <= 0 then
-        Debug.crash "Length must not be negative"
+        Err "Length must not be negative"
     else
-        custom (rangeLengthString minLen maxLen charGenerator)
-            Shrink.string
+        Shrink.string
+            |> custom (rangeLengthString minLen maxLen charGenerator)
+            |> Ok
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
