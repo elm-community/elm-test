@@ -88,6 +88,8 @@ Here is an example for a custom union type:
                         Shrink.int i |> Shrink.map Age
         in
             Fuzz.custom generator shrinker
+
+It is not possible to extract the generator and shrinker from an existing fuzzer.
 -}
 custom : Generator a -> Shrinker a -> Fuzzer a
 custom generator shrinker =
@@ -344,15 +346,96 @@ list (Internal.Fuzzer f) =
             (\noShrink ->
                 case f noShrink of
                     Gen genVal ->
-                        Gen <| genLength `Random.andThen` \i -> Random.list i genVal
+                        genLength
+                            |> (flip Random.andThen) (\i -> (Random.list i genVal))
+                            |> Gen
 
                     Shrink genTree ->
-                        -- TODO: shrinking, not just a singleton tree
                         genLength
-                            |> (flip Random.andThen) (\i -> (Random.list i (Random.map RoseTree.root genTree)))
-                            |> Random.map RoseTree.singleton
+                            |> (flip Random.andThen) (\i -> (Random.list i genTree))
+                            |> Random.map listShrinkHelp
                             |> Shrink
             )
+
+
+listShrinkHelp : List (RoseTree a) -> RoseTree (List a)
+listShrinkHelp listOfTrees =
+    let
+        n =
+            List.length listOfTrees
+
+        root =
+            List.map RoseTree.root listOfTrees
+
+        shrunkenFirstElement =
+            case listOfTrees of
+                [] ->
+                    Lazy.List.empty
+
+                (Rose x shrunkenXs) :: more ->
+                    let
+                        recursed =
+                            listShrinkHelp more
+                    in
+                        shrunkenXs
+                            |> Lazy.List.map (\shrunkenX -> RoseTree.map2 (::) shrunkenX recursed)
+
+        shortened =
+            Lazy.List.iterate (\n -> n // 2) n
+                |> Lazy.List.takeWhile (\x -> x > 0)
+                |> Lazy.List.flatMap (\len -> shorter len listOfTrees)
+                |> Lazy.List.map listShrinkHelp
+
+        shorter windowSize aList =
+            if windowSize >= List.length aList then
+                Lazy.List.empty
+            else
+                case aList of
+                    [] ->
+                        Lazy.List.empty
+
+                    head :: tail ->
+                        Lazy.List.cons (List.take windowSize aList) (shorter windowSize tail)
+    in
+        Rose root (Lazy.List.append shortened shrunkenFirstElement)
+
+
+
+{-
+
+           shortened =
+               Lazy.List.iterate (\n -> n // 2) n
+                   |> Lazy.List.takeWhile (\x -> x > 0)
+                   |> Lazy.List.flatMap shorter listOfTrees
+
+           shorter windowSize aList =
+               if windowSize < List.length aList then
+                   Lazy.List.empty
+               else
+
+                   case aList of
+                   [] -> Lazy.List.empty
+                   Rose x shrunkenXs::rest ->
+
+
+
+
+   (Lazy.List.map (flip (:::) xs) (shrink x) +++ Lazy.List.map ((:::) x) (shrinkOne xs)
+
+                       RoseTree.singleton <| List.drop len root)
+
+           {-
+              shrinkElement list =
+                  case list of
+                      [] ->
+                          Lazy.List.empty
+
+                      (Rose x shrunkenXs) :: more ->
+                          List.map (RoseTree.map (\head -> head :: more)) shrunkenXs
+           -}
+       in
+           Rose root shorter
+-}
 
 
 {-| Given a fuzzer of a type, create a fuzzer of an array of that type.
