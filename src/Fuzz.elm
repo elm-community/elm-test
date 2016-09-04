@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, stringOfLength, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -12,7 +12,7 @@ this way, fuzzers can usually find the smallest or simplest input that
 reproduces a bug.
 
 ## Common Fuzzers
-@docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
+@docs bool, int, intRange, float, floatRange, percentage, string, stringOfLength, maybe, result, list, array
 
 ## Working with Fuzzers
 @docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, filter, frequency, frequencyOrCrash
@@ -241,16 +241,38 @@ string =
         Shrink.string
 
 
+{-| A fuzzer for string values. Generates random printable ascii strings whose
+length can be specified.
+
+example use `stringOfLength 20 200` will generate longer ascii
+strings, Use this when the content of the string matters for example
+in the case of encoding etc where a longer string is more likely to
+show a strange corner case.
+
+This will crash if the min lenght is greater than the max length or if either is less than 0
+
+
+-}
+stringOfLength : Int -> Int -> Fuzzer String
+stringOfLength minLen maxLen =
+    if minLen > maxLen
+    then Debug.crash "The Miniumum length of the string must be less than or equal to the max length"
+    else if minLen < 0 || maxLen <= 0
+    then Debug.crash "Length must not be negative"
+    else custom (rangeLengthString minLen maxLen charGenerator)
+        Shrink.string
+
+
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
 -}
 maybe : Fuzzer a -> Fuzzer (Maybe a)
 maybe (Internal.Fuzzer baseFuzzer) =
-    Internal.Fuzzer <|
-        \noShrink ->
+    Internal.Fuzzer
+        <| \noShrink ->
             case baseFuzzer noShrink of
                 Gen gen ->
-                    Gen <|
-                        Random.map2
+                    Gen
+                        <| Random.map2
                             (\useNothing val ->
                                 if useNothing then
                                     Nothing
@@ -261,8 +283,8 @@ maybe (Internal.Fuzzer baseFuzzer) =
                             gen
 
                 Shrink genTree ->
-                    Shrink <|
-                        Random.map2
+                    Shrink
+                        <| Random.map2
                             (\useNothing tree ->
                                 if useNothing then
                                     RoseTree.singleton Nothing
@@ -278,12 +300,12 @@ a result.
 -}
 result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
 result (Internal.Fuzzer fError) (Internal.Fuzzer fValue) =
-    Internal.Fuzzer <|
-        \noShrink ->
+    Internal.Fuzzer
+        <| \noShrink ->
             case ( fError noShrink, fValue noShrink ) of
                 ( Gen genErr, Gen genVal ) ->
-                    Gen <|
-                        Random.map3
+                    Gen
+                        <| Random.map3
                             (\useError err val ->
                                 if useError then
                                     Err err
@@ -295,8 +317,8 @@ result (Internal.Fuzzer fError) (Internal.Fuzzer fValue) =
                             genVal
 
                 ( Shrink genTreeErr, Shrink genTreeVal ) ->
-                    Shrink <|
-                        Random.map3
+                    Shrink
+                        <| Random.map3
                             (\useError errorTree valueTree ->
                                 if useError then
                                     RoseTree.map Err errorTree
@@ -594,8 +616,7 @@ andThen transform (Internal.Fuzzer f) =
 
 andThenRoseTrees : (a -> Fuzzer b) -> Generator (RoseTree a) -> Generator (RoseTree b)
 andThenRoseTrees transform genTree =
-    Random.andThen
-        genTree
+    Random.andThen genTree
         (\(Rose root branches) ->
             let
                 -- genOtherChildren : Generator (LazyList (RoseTree b))
@@ -716,19 +737,19 @@ frequency list =
     else if List.sum (List.map fst list) <= 0 then
         Err "Frequency weights must sum to more than 0."
     else
-        Ok <|
-            Internal.Fuzzer <|
-                \noShrink ->
-                    if noShrink then
-                        list
-                            |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenVal fuzzer ))
-                            |> Random.frequency
-                            |> Gen
-                    else
-                        list
-                            |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
-                            |> Random.frequency
-                            |> Shrink
+        Ok
+            <| Internal.Fuzzer
+            <| \noShrink ->
+                if noShrink then
+                    list
+                        |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenVal fuzzer ))
+                        |> Random.frequency
+                        |> Gen
+                else
+                    list
+                        |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
+                        |> Random.frequency
+                        |> Shrink
 
 
 {-| Calls `frequency` and handles `Err` results by crashing with the given
