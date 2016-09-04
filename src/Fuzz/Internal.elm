@@ -1,4 +1,4 @@
-module Fuzz.Internal exposing (Fuzzer(Fuzzer), Fuzz(..), unpackGenVal, unpackGenTree)
+module Fuzz.Internal exposing (Fuzzer(Fuzzer, InvalidFuzzer), Fuzz(Gen, Shrink), unpackGenVal, unpackGenTree)
 
 import RoseTree exposing (RoseTree)
 import Random.Pcg exposing (Generator)
@@ -6,6 +6,7 @@ import Random.Pcg exposing (Generator)
 
 type Fuzzer a
     = Fuzzer (Bool -> Fuzz a)
+    | InvalidFuzzer String
 
 
 type Fuzz a
@@ -13,8 +14,8 @@ type Fuzz a
     | Shrink (Generator (RoseTree a))
 
 
-unpackGenVal : Fuzzer a -> Generator a
-unpackGenVal (Fuzzer g) =
+unpackGenVal : (Bool -> Fuzz a) -> Generator a
+unpackGenVal g =
     case g True of
         Gen genVal ->
             genVal
@@ -23,8 +24,8 @@ unpackGenVal (Fuzzer g) =
             Debug.crash "This shouldn't happen: Fuzz.Internal.unpackGenVal" err
 
 
-unpackGenTree : Fuzzer a -> Generator (RoseTree a)
-unpackGenTree (Fuzzer g) =
+unpackGenTree : (Bool -> Fuzz a) -> Generator (RoseTree a)
+unpackGenTree g =
     case g False of
         Shrink genTree ->
             genTree

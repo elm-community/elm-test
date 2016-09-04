@@ -42,7 +42,17 @@ filterHelp lastCheckPassed isKeepable test =
 
 
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest (Internal.Fuzzer f) desc getExpectation =
+fuzzTest fuzzer desc getExpectation =
+    Labeled desc <|
+        case fuzzer of
+            Internal.Fuzzer f ->
+                fuzzTestHelp f getExpectation
+
+            Internal.InvalidFuzzer reason ->
+                Test (\_ _ -> [ Fail "" reason ])
+
+
+fuzzTestHelp f getExpectation =
     -- Fuzz test algorithm with opt-in RoseTrees:
     -- Generate a single value by passing the fuzzer True (indicates skip shrinking)
     -- Run the test on that value
@@ -106,7 +116,7 @@ fuzzTest (Internal.Fuzzer f) desc getExpectation =
                         |> Dict.toList
                         |> List.map formatExpectation
     in
-        Labeled desc (Test run)
+        Test run
 
 
 shrinkAndAdd : RoseTree a -> (a -> Expectation) -> Expectation -> Dict String Expectation -> Dict String Expectation

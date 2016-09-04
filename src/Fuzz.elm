@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, stringOfLength, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, stringOfLength, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash, invalid)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -33,7 +33,8 @@ import Lazy.List exposing (LazyList)
 import Shrink exposing (Shrinker)
 import RoseTree exposing (RoseTree(..))
 import Random.Pcg as Random exposing (Generator)
-import Fuzz.Internal as Internal exposing (Fuzz(..))
+import Fuzz.Internal as Internal exposing (Fuzz(Gen, Shrink), Fuzzer(Fuzzer, InvalidFuzzer))
+import String
 
 
 {-| The representation of fuzzers is opaque. Conceptually, a `Fuzzer a`
@@ -267,101 +268,119 @@ stringOfLength minLen maxLen =
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
 -}
 maybe : Fuzzer a -> Fuzzer (Maybe a)
-maybe (Internal.Fuzzer baseFuzzer) =
-    Internal.Fuzzer <|
-        \noShrink ->
-            case baseFuzzer noShrink of
-                Gen gen ->
-                    Gen <|
-                        Random.map2
-                            (\useNothing val ->
-                                if useNothing then
-                                    Nothing
-                                else
-                                    Just val
-                            )
-                            (Random.oneIn 4)
-                            gen
+maybe fuzzer =
+    case fuzzer of
+        Internal.InvalidFuzzer error ->
+            Internal.InvalidFuzzer error
 
-                Shrink genTree ->
-                    Shrink <|
-                        Random.map2
-                            (\useNothing tree ->
-                                if useNothing then
-                                    RoseTree.singleton Nothing
-                                else
-                                    RoseTree.map Just tree |> RoseTree.addChild (RoseTree.singleton Nothing)
-                            )
-                            (Random.oneIn 4)
-                            genTree
+        Internal.Fuzzer baseFuzzer ->
+            Internal.Fuzzer <|
+                \noShrink ->
+                    case baseFuzzer noShrink of
+                        Gen gen ->
+                            Gen <|
+                                Random.map2
+                                    (\useNothing val ->
+                                        if useNothing then
+                                            Nothing
+                                        else
+                                            Just val
+                                    )
+                                    (Random.oneIn 4)
+                                    gen
+
+                        Shrink genTree ->
+                            Shrink <|
+                                Random.map2
+                                    (\useNothing tree ->
+                                        if useNothing then
+                                            RoseTree.singleton Nothing
+                                        else
+                                            RoseTree.map Just tree |> RoseTree.addChild (RoseTree.singleton Nothing)
+                                    )
+                                    (Random.oneIn 4)
+                                    genTree
 
 
 {-| Given fuzzers for an error type and a success type, create a fuzzer for
 a result.
 -}
 result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
-result (Internal.Fuzzer fError) (Internal.Fuzzer fValue) =
-    Internal.Fuzzer <|
-        \noShrink ->
-            case ( fError noShrink, fValue noShrink ) of
-                ( Gen genErr, Gen genVal ) ->
-                    Gen <|
-                        Random.map3
-                            (\useError err val ->
-                                if useError then
-                                    Err err
-                                else
-                                    Ok val
-                            )
-                            (Random.oneIn 4)
-                            genErr
-                            genVal
+result errFuzzer okFuzzer =
+    case ( errFuzzer, okFuzzer ) of
+        ( Internal.InvalidFuzzer error, _ ) ->
+            Internal.InvalidFuzzer error
 
-                ( Shrink genTreeErr, Shrink genTreeVal ) ->
-                    Shrink <|
-                        Random.map3
-                            (\useError errorTree valueTree ->
-                                if useError then
-                                    RoseTree.map Err errorTree
-                                else
-                                    RoseTree.map Ok valueTree
-                            )
-                            (Random.oneIn 4)
-                            genTreeErr
-                            genTreeVal
+        ( _, Internal.InvalidFuzzer error ) ->
+            Internal.InvalidFuzzer error
 
-                err ->
-                    Debug.crash "This shouldn't happen: Fuzz.result" err
+        ( Internal.Fuzzer fError, Internal.Fuzzer fValue ) ->
+            Internal.Fuzzer <|
+                \noShrink ->
+                    case ( fError noShrink, fValue noShrink ) of
+                        ( Gen genErr, Gen genVal ) ->
+                            Gen <|
+                                Random.map3
+                                    (\useError err val ->
+                                        if useError then
+                                            Err err
+                                        else
+                                            Ok val
+                                    )
+                                    (Random.oneIn 4)
+                                    genErr
+                                    genVal
+
+                        ( Shrink genTreeErr, Shrink genTreeVal ) ->
+                            Shrink <|
+                                Random.map3
+                                    (\useError errorTree valueTree ->
+                                        if useError then
+                                            RoseTree.map Err errorTree
+                                        else
+                                            RoseTree.map Ok valueTree
+                                    )
+                                    (Random.oneIn 4)
+                                    genTreeErr
+                                    genTreeVal
+
+                        err ->
+                            Debug.crash "This shouldn't happen: Fuzz.result" err
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a list of that type.
 Generates random lists of varying length, favoring shorter lists.
 -}
 list : Fuzzer a -> Fuzzer (List a)
-list (Internal.Fuzzer f) =
-    let
-        genLength =
-            Random.frequency
-                [ ( 1, Random.constant 0 )
-                , ( 1, Random.constant 1 )
-                , ( 3, Random.int 2 10 )
-                , ( 2, Random.int 10 100 )
-                , ( 0.5, Random.int 100 400 )
-                ]
-    in
-        Internal.Fuzzer
-            (\noShrink ->
-                case f noShrink of
-                    Gen genVal ->
-                        Gen <| genLength `Random.andThen` \i -> Random.list i genVal
+list fuzzer =
+    case fuzzer of
+        Internal.InvalidFuzzer error ->
+            Internal.InvalidFuzzer error
 
-                    Shrink genTree ->
-                        -- TODO: shrinking, not just a singleton tree
-                        genLength
-                            |> (flip Random.andThen) (\i -> (Random.list i (Random.map RoseTree.root genTree)))
-                            |> Random.map RoseTree.singleton
-                            |> Shrink
-            )
+        Internal.Fuzzer f ->
+            let
+                genLength =
+                    Random.frequency
+                        [ ( 1, Random.constant 0 )
+                        , ( 1, Random.constant 1 )
+                        , ( 3, Random.int 2 10 )
+                        , ( 2, Random.int 10 100 )
+                        , ( 0.5, Random.int 100 400 )
+                        ]
+            in
+                Internal.Fuzzer
+                    (\noShrink ->
+                        case f noShrink of
+                            Gen genVal ->
+                                Gen <| genLength `Random.andThen` \i -> Random.list i genVal
+
+                            Shrink genTree ->
+                                -- TODO: shrinking, not just a singleton tree
+                                genLength
+                                    |> (flip Random.andThen) (\i -> (Random.list i (Random.map RoseTree.root genTree)))
+                                    |> Random.map RoseTree.singleton
+                                    |> Shrink
+                    )
 
 
 {-| Given a fuzzer of a type, create a fuzzer of an array of that type.
@@ -553,16 +572,21 @@ constant x =
 {-| Map a function over a fuzzer. This applies to both the generated and the shruken values.
 -}
 map : (a -> b) -> Fuzzer a -> Fuzzer b
-map transform (Internal.Fuzzer f) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case f noShrink of
-                Gen genVal ->
-                    Gen <| Random.map transform genVal
+map transform fuzzer =
+    case fuzzer of
+        Internal.InvalidFuzzer error ->
+            Internal.InvalidFuzzer error
 
-                Shrink genTree ->
-                    Shrink <| Random.map (RoseTree.map transform) genTree
-        )
+        Internal.Fuzzer f ->
+            Internal.Fuzzer
+                (\noShrink ->
+                    case f noShrink of
+                        Gen genVal ->
+                            Gen <| Random.map transform genVal
+
+                        Shrink genTree ->
+                            Shrink <| Random.map (RoseTree.map transform) genTree
+                )
 
 
 {-| Map over two fuzzers.
@@ -603,16 +627,21 @@ andMap =
 {-| Create a fuzzer based on the result of another fuzzer.
 -}
 andThen : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
-andThen transform (Internal.Fuzzer f) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case f noShrink of
-                Gen genVal ->
-                    Gen <| Random.andThen genVal (transform >> Internal.unpackGenVal)
+andThen transform fuzzer =
+    case fuzzer of
+        Internal.InvalidFuzzer error ->
+            Internal.InvalidFuzzer error
 
-                Shrink genTree ->
-                    Shrink <| andThenRoseTrees transform genTree
-        )
+        Internal.Fuzzer f ->
+            Internal.Fuzzer
+                (\noShrink ->
+                    case f noShrink of
+                        Gen genVal ->
+                            Gen <| Random.andThen genVal (transform >> Internal.unpackGenVal)
+
+                        Shrink genTree ->
+                            Shrink <| andThenRoseTrees transform genTree
+                )
 
 
 andThenRoseTrees : (a -> Fuzzer b) -> Generator (RoseTree a) -> Generator (RoseTree b)
@@ -620,10 +649,18 @@ andThenRoseTrees transform genTree =
     Random.andThen genTree
         (\(Rose root branches) ->
             let
+                transformOrCrash fuzzer =
+                    case transform fuzzer of
+                        Internal.InvalidFuzzer error ->
+                            Debug.crash ("While following andThen during shrinking, encountered an InvalidFuzzer(\"" ++ error ++ "\"). This should never happen! InvalidFuzzers should be ruled out before following an andThen during shrinking.")
+
+                        Internal.Fuzzer f ->
+                            f
+
                 -- genOtherChildren : Generator (LazyList (RoseTree b))
                 genOtherChildren =
                     branches
-                        |> Lazy.List.map (\rt -> RoseTree.map (transform >> Internal.unpackGenTree) rt |> unwindRoseTree)
+                        |> Lazy.List.map (\rt -> RoseTree.map (transformOrCrash >> Internal.unpackGenTree) rt |> unwindRoseTree)
                         |> unwindLazyList
                         |> Random.map (Lazy.List.map RoseTree.flatten)
             in
@@ -631,7 +668,7 @@ andThenRoseTrees transform genTree =
                     (\(Rose trueRoot root'sChildren) otherChildren ->
                         Rose trueRoot (Lazy.List.append root'sChildren otherChildren)
                     )
-                    (Internal.unpackGenTree (transform root))
+                    (Internal.unpackGenTree (transformOrCrash root))
                     genOtherChildren
         )
 
@@ -672,40 +709,45 @@ resulting fuzzer will crash your program.
         filter (\_ -> False) anotherFuzzer
 -}
 filter : (a -> Bool) -> Fuzzer a -> Fuzzer a
-filter predicate (Internal.Fuzzer f) =
-    {- -- Filtering with Fuzzers as Generators of Rosetrees --
-       Generate a rosetree. Regenerate until the root element isn't filtered out.
-       For each subtree:
-           If the subtree root is invalid, drop the entire subtree.
-           Otherwise, recurse on each child subtree.
-    -}
-    let
-        --maybeMapShrunken : RoseTree a -> Maybe (RoseTree a)
-        maybeMapShrunken (Rose shrunken more) =
-            if predicate shrunken then
-                Just <| Rose shrunken <| Lazy.List.filterMap maybeMapShrunken more
-            else
-                Nothing
+filter predicate fuzzer =
+    case fuzzer of
+        Internal.InvalidFuzzer _ ->
+            fuzzer
 
-        --regenerateIfRejected : RoseTree a -> Random.Generator (RoseTree a)
-        regenerateIfRejected genTree (Rose a list) =
-            if predicate a then
-                list
-                    |> Lazy.List.filterMap maybeMapShrunken
-                    |> Rose a
-                    |> Random.constant
-            else
-                genTree `Random.andThen` (regenerateIfRejected genTree)
-    in
-        Internal.Fuzzer
-            (\noShrink ->
-                case f noShrink of
-                    Gen genVal ->
-                        Gen <| Random.filter predicate genVal
+        Internal.Fuzzer f ->
+            {- -- Filtering with Fuzzers as Generators of Rosetrees --
+               Generate a rosetree. Regenerate until the root element isn't filtered out.
+               For each subtree:
+                   If the subtree root is invalid, drop the entire subtree.
+                   Otherwise, recurse on each child subtree.
+            -}
+            let
+                --maybeMapShrunken : RoseTree a -> Maybe (RoseTree a)
+                maybeMapShrunken (Rose shrunken more) =
+                    if predicate shrunken then
+                        Just <| Rose shrunken <| Lazy.List.filterMap maybeMapShrunken more
+                    else
+                        Nothing
 
-                    Shrink genTree ->
-                        Shrink <| genTree `Random.andThen` (regenerateIfRejected genTree)
-            )
+                --regenerateIfRejected : RoseTree a -> Random.Generator (RoseTree a)
+                regenerateIfRejected genTree (Rose a list) =
+                    if predicate a then
+                        list
+                            |> Lazy.List.filterMap maybeMapShrunken
+                            |> Rose a
+                            |> Random.constant
+                    else
+                        genTree `Random.andThen` (regenerateIfRejected genTree)
+            in
+                Internal.Fuzzer
+                    (\noShrink ->
+                        case f noShrink of
+                            Gen genVal ->
+                                Gen <| Random.filter predicate genVal
+
+                            Shrink genTree ->
+                                Shrink <| genTree `Random.andThen` (regenerateIfRejected genTree)
+                    )
 
 
 {-| Create a new `Fuzzer` by providing a list of probabilistic weights to use
@@ -720,55 +762,68 @@ you could do this:
         , ( 3, Fuzz.intRange 1 100 )
         ]
 
-This returns a `Result` because it can fail in a few ways:
+This can fail in a few ways:
 
 * If you provide an empy list of frequencies
 * If any of the weights are less than 0
 * If the weights sum to 0
 
-Any of these will lead to a result of `Err`, with a `String` explaining what
-went wrong.
--}
-frequency : List ( Float, Fuzzer a ) -> Result String (Fuzzer a)
-frequency list =
-    if List.isEmpty list then
-        Err "You must provide at least one frequency pair."
-    else if List.any (\( weight, _ ) -> weight < 0) list then
-        Err "No frequency weights can be less than 0."
-    else if List.sum (List.map fst list) <= 0 then
-        Err "Frequency weights must sum to more than 0."
-    else
-        Ok <|
-            Internal.Fuzzer <|
-                \noShrink ->
-                    if noShrink then
-                        list
-                            |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenVal fuzzer ))
-                            |> Random.frequency
-                            |> Gen
-                    else
-                        list
-                            |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
-                            |> Random.frequency
-                            |> Shrink
-
-
-{-| Calls `frequency` and handles `Err` results by crashing with the given
-error message.
-
-This is useful in tests, where a crash will simply cause the test run to fail.
-There is no danger to a production system there.
+Any of these will lead to an invalid `Fuzzer` which will fail if any
+test uses it.
 -}
 frequencyOrCrash : List ( Float, Fuzzer a ) -> Fuzzer a
-frequencyOrCrash =
-    frequency >> okOrCrash
+frequencyOrCrash list =
+    if List.isEmpty list then
+        invalid "You must provide at least one frequency pair."
+    else if List.any (\( weight, _ ) -> weight < 0) list then
+        invalid "No frequency weights can be less than 0."
+    else if List.sum (List.map fst list) <= 0 then
+        invalid "Frequency weights must sum to more than 0."
+    else
+        case List.foldl toErrorsAndWeightedFuzzes ( [], [] ) list of
+            ( [], weightedFuzzes ) ->
+                Internal.Fuzzer <|
+                    \noShrink ->
+                        if noShrink then
+                            weightedFuzzes
+                                |> List.map (\( weight, fuzz ) -> ( weight, Internal.unpackGenVal fuzz ))
+                                |> Random.frequency
+                                |> Gen
+                        else
+                            weightedFuzzes
+                                |> List.map (\( weight, fuzz ) -> ( weight, Internal.unpackGenTree fuzz ))
+                                |> Random.frequency
+                                |> Shrink
+
+            ( errors, _ ) ->
+                invalid (String.join " " errors)
 
 
-okOrCrash : Result String a -> a
-okOrCrash result =
-    case result of
-        Ok a ->
-            a
+{-| This function is obsolete, but has not been changed yet
+to avoid a MAJOR breaking release.
 
-        Err str ->
-            Debug.crash str
+This now does the same thing as `frequencyOrCrash`
+(which no longer actually crashes), except it wraps the result
+in an `Ok` to avoid making a breaking API change.
+
+In the next MAJOR release of `elm-test`, this function's type
+will change to the current type of `frequencyOrCrash`, and
+`freuqencyOrCrash` will be removed.
+-}
+frequency : List ( Float, Fuzzer a ) -> Result String (Fuzzer a)
+frequency =
+    Ok << frequencyOrCrash
+
+
+invalid : String -> Fuzzer a
+invalid error =
+    Internal.InvalidFuzzer ("Invalid Fuzzer: " ++ error)
+
+
+toErrorsAndWeightedFuzzes ( weight, fuzzer ) ( errors, weightedFuzzes ) =
+    case fuzzer of
+        Internal.Fuzzer fuzz ->
+            ( errors, ( weight, fuzz ) :: weightedFuzzes )
+
+        Internal.InvalidFuzzer str ->
+            ( errors ++ [ str ], weightedFuzzes )
