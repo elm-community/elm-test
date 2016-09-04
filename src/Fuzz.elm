@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, stringOfLength, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, stringLengthRange, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -12,7 +12,7 @@ this way, fuzzers can usually find the smallest or simplest input that
 reproduces a bug.
 
 ## Common Fuzzers
-@docs bool, int, intRange, float, floatRange, percentage, string, stringOfLength, maybe, result, list, array
+@docs bool, int, intRange, float, floatRange, percentage, string, stringLengthRange, maybe, result, list, array
 
 ## Working with Fuzzers
 @docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, filter, frequency, frequencyOrCrash
@@ -28,6 +28,7 @@ Instead of using a tuple, consider using `fuzzN`.
 
 import Array exposing (Array)
 import Char
+import String
 import Util exposing (..)
 import Lazy.List exposing (LazyList)
 import Shrink exposing (Shrinker)
@@ -160,15 +161,15 @@ int =
 inclusive. Shrunken values will also be within the range.
 -}
 intRange : Int -> Int -> Fuzzer Int
-intRange min max =
+intRange lo hi =
     custom
         (Random.frequency
-            [ ( 8, Random.int min max )
-            , ( 1, Random.constant min )
-            , ( 1, Random.constant max )
+            [ ( 8, Random.int lo hi )
+            , ( 1, Random.constant lo )
+            , ( 1, Random.constant hi )
             ]
         )
-        (Shrink.keepIf (\i -> i >= min && i <= max) Shrink.int)
+        (Shrink.keepIf (\i -> i >= lo && i <= hi) Shrink.int)
 
 
 {-| A fuzzer for float values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
@@ -192,15 +193,15 @@ float =
 value, inclusive. Shrunken values will also be within the range.
 -}
 floatRange : Float -> Float -> Fuzzer Float
-floatRange min max =
+floatRange lo hi =
     custom
         (Random.frequency
-            [ ( 8, Random.float min max )
-            , ( 1, Random.constant min )
-            , ( 1, Random.constant max )
+            [ ( 8, Random.float lo hi )
+            , ( 1, Random.constant lo )
+            , ( 1, Random.constant hi )
             ]
         )
-        (Shrink.keepIf (\i -> i >= min && i <= max) Shrink.float)
+        (Shrink.keepIf (\i -> i >= lo && i <= hi) Shrink.float)
 
 
 {-| A fuzzer for percentage values. Generates random floats between `0.0` and
@@ -232,36 +233,26 @@ charGenerator =
     (Random.map Char.fromCode (Random.int 32 126))
 
 
-{-| A fuzzer for string values. Generates random printable ascii strings whose
-length is between 0 and 10.
+{-| A fuzzer for string values. Generates random printable ascii strings.
 -}
 string : Fuzzer String
 string =
     custom (rangeLengthString 0 10 charGenerator)
+        -- see #50
         Shrink.string
 
 
-{-| A fuzzer for string values. Generates random printable strings whose
-length can be specified.
-
-For example, use `stringOfLength 20 200` will generate longer strings.
-Use this when the content of the string matters. For example
-in the case of encoding, where a longer string is more likely to
-show a strange corner case.
-
-This will Err if the min length is greater than the max length
-or if either is less than 0.
+{-| A fuzzer for string values whose length is within a given range, inclusive.
+Generates random printable ascii strings. Shrunken strings will also have
+lengths within the range.
 -}
-stringOfLength : Int -> Int -> Result String (Fuzzer String)
-stringOfLength minLen maxLen =
-    if minLen > maxLen then
-        Err "The Miniumum length of the string must be less than or equal to the max length"
-    else if minLen < 0 || maxLen <= 0 then
-        Err "Length must not be negative"
-    else
-        Shrink.string
-            |> custom (rangeLengthString minLen maxLen charGenerator)
-            |> Ok
+stringLengthRange : Int -> Int -> Fuzzer String
+stringLengthRange lo hi =
+    custom
+        (rangeLengthString lo hi charGenerator)
+        -- because strings only get shorter and the length is nonnegative,
+        -- we only need to check the lower bound.
+        (Shrink.keepIf (\s -> String.length s >= lo) Shrink.string)
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
