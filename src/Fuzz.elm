@@ -255,24 +255,25 @@ This will crash if the min lenght is greater than the max length or if either is
 -}
 stringOfLength : Int -> Int -> Fuzzer String
 stringOfLength minLen maxLen =
-    if minLen > maxLen
-    then Debug.crash "The Miniumum length of the string must be less than or equal to the max length"
-    else if minLen < 0 || maxLen <= 0
-    then Debug.crash "Length must not be negative"
-    else custom (rangeLengthString minLen maxLen charGenerator)
-        Shrink.string
+    if minLen > maxLen then
+        Debug.crash "The Miniumum length of the string must be less than or equal to the max length"
+    else if minLen < 0 || maxLen <= 0 then
+        Debug.crash "Length must not be negative"
+    else
+        custom (rangeLengthString minLen maxLen charGenerator)
+            Shrink.string
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
 -}
 maybe : Fuzzer a -> Fuzzer (Maybe a)
 maybe (Internal.Fuzzer baseFuzzer) =
-    Internal.Fuzzer
-        <| \noShrink ->
+    Internal.Fuzzer <|
+        \noShrink ->
             case baseFuzzer noShrink of
                 Gen gen ->
-                    Gen
-                        <| Random.map2
+                    Gen <|
+                        Random.map2
                             (\useNothing val ->
                                 if useNothing then
                                     Nothing
@@ -283,8 +284,8 @@ maybe (Internal.Fuzzer baseFuzzer) =
                             gen
 
                 Shrink genTree ->
-                    Shrink
-                        <| Random.map2
+                    Shrink <|
+                        Random.map2
                             (\useNothing tree ->
                                 if useNothing then
                                     RoseTree.singleton Nothing
@@ -300,12 +301,12 @@ a result.
 -}
 result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
 result (Internal.Fuzzer fError) (Internal.Fuzzer fValue) =
-    Internal.Fuzzer
-        <| \noShrink ->
+    Internal.Fuzzer <|
+        \noShrink ->
             case ( fError noShrink, fValue noShrink ) of
                 ( Gen genErr, Gen genVal ) ->
-                    Gen
-                        <| Random.map3
+                    Gen <|
+                        Random.map3
                             (\useError err val ->
                                 if useError then
                                     Err err
@@ -317,8 +318,8 @@ result (Internal.Fuzzer fError) (Internal.Fuzzer fValue) =
                             genVal
 
                 ( Shrink genTreeErr, Shrink genTreeVal ) ->
-                    Shrink
-                        <| Random.map3
+                    Shrink <|
+                        Random.map3
                             (\useError errorTree valueTree ->
                                 if useError then
                                     RoseTree.map Err errorTree
@@ -737,19 +738,19 @@ frequency list =
     else if List.sum (List.map fst list) <= 0 then
         Err "Frequency weights must sum to more than 0."
     else
-        Ok
-            <| Internal.Fuzzer
-            <| \noShrink ->
-                if noShrink then
-                    list
-                        |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenVal fuzzer ))
-                        |> Random.frequency
-                        |> Gen
-                else
-                    list
-                        |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
-                        |> Random.frequency
-                        |> Shrink
+        Ok <|
+            Internal.Fuzzer <|
+                \noShrink ->
+                    if noShrink then
+                        list
+                            |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenVal fuzzer ))
+                            |> Random.frequency
+                            |> Gen
+                    else
+                        list
+                            |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
+                            |> Random.frequency
+                            |> Shrink
 
 
 {-| Calls `frequency` and handles `Err` results by crashing with the given
