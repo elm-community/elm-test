@@ -360,6 +360,13 @@ list (Internal.Fuzzer f) =
 
 listShrinkHelp : List (RoseTree a) -> RoseTree (List a)
 listShrinkHelp listOfTrees =
+    {- Shrinking a list of RoseTrees
+       We need to do two things. First, shrink individual values. Second, shorten the list.
+       To shrink individual values, we create every list copy of the input listwhere any
+       one value is replaced by a shrunken form.
+       To shorten the length of the list, slide windows of various lengths over it.
+       In all cases, recurse! The goal is to make a little forward progress and then recurse.
+    -}
     let
         n =
             List.length listOfTrees
@@ -367,18 +374,22 @@ listShrinkHelp listOfTrees =
         root =
             List.map RoseTree.root listOfTrees
 
-        shrunkenFirstElement =
-            case listOfTrees of
+        shrinkOne prefix list =
+            case list of
                 [] ->
                     Lazy.List.empty
 
                 (Rose x shrunkenXs) :: more ->
-                    let
-                        recursed =
-                            listShrinkHelp more
-                    in
-                        shrunkenXs
-                            |> Lazy.List.map (\shrunkenX -> RoseTree.map2 (::) shrunkenX recursed)
+                    Lazy.List.map (\childTree -> prefix ++ (childTree :: more) |> listShrinkHelp) shrunkenXs
+
+        shrunkenVals =
+            Lazy.List.numbers
+                |> Lazy.List.map (\i -> i - 1)
+                |> Lazy.List.take n
+                |> Lazy.List.flatMap
+                    (\i ->
+                        shrinkOne (List.take i listOfTrees) (List.drop i listOfTrees)
+                    )
 
         shortened =
             Lazy.List.iterate (\n -> n // 2) n
@@ -397,45 +408,7 @@ listShrinkHelp listOfTrees =
                     head :: tail ->
                         Lazy.List.cons (List.take windowSize aList) (shorter windowSize tail)
     in
-        Rose root (Lazy.List.append shortened shrunkenFirstElement)
-
-
-
-{-
-
-           shortened =
-               Lazy.List.iterate (\n -> n // 2) n
-                   |> Lazy.List.takeWhile (\x -> x > 0)
-                   |> Lazy.List.flatMap shorter listOfTrees
-
-           shorter windowSize aList =
-               if windowSize < List.length aList then
-                   Lazy.List.empty
-               else
-
-                   case aList of
-                   [] -> Lazy.List.empty
-                   Rose x shrunkenXs::rest ->
-
-
-
-
-   (Lazy.List.map (flip (:::) xs) (shrink x) +++ Lazy.List.map ((:::) x) (shrinkOne xs)
-
-                       RoseTree.singleton <| List.drop len root)
-
-           {-
-              shrinkElement list =
-                  case list of
-                      [] ->
-                          Lazy.List.empty
-
-                      (Rose x shrunkenXs) :: more ->
-                          List.map (RoseTree.map (\head -> head :: more)) shrunkenXs
-           -}
-       in
-           Rose root shorter
--}
+        Rose root (Lazy.List.append shortened shrunkenVals)
 
 
 {-| Given a fuzzer of a type, create a fuzzer of an array of that type.
@@ -466,6 +439,13 @@ tuple ( Internal.Fuzzer fA, Internal.Fuzzer fB ) =
 
 tupleShrinkHelp : RoseTree a -> RoseTree b -> RoseTree ( a, b )
 tupleShrinkHelp ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) =
+    {- Shrinking a tuple of RoseTrees
+       Recurse on all tuples created by substituting one element for any of its shrunken values.
+
+       A weakness of this algorithm is that it expects that values can be shrunken independently.
+       That is, to shrink from (a,b) to (a',b'), we must go through (a',b) or (a,b').
+       "No pairs sum to zero" is a pathological predicate that cannot be shrunken this way.
+    -}
     let
         root =
             ( root1, root2 )
