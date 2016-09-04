@@ -122,7 +122,7 @@ fuzzerTests =
 
 shrinkingTests : Test
 shrinkingTests =
-    describe "tests that fail to test shrinking"
+    describe "Tests that fail intentionally to test shrinking"
         [ fuzz2 int int "Every pair of ints has a zero" <|
             \i j ->
                 (i == 0)
@@ -149,4 +149,19 @@ shrinkingTests =
                     || (l == 0)
                     || (m == 0)
                     |> Expect.true "This should fail with (1,1,1,1,1)"
+        , fuzz (list int) "All lists are sorted" <|
+            \aList ->
+                let
+                    checkPair l =
+                        case l of
+                            a :: b :: more ->
+                                if a > b then
+                                    False
+                                else
+                                    checkPair (b :: more)
+
+                            _ ->
+                                True
+                in
+                    checkPair aList |> Expect.true "This should fail with [1,0] or [0,-1]"
         ]

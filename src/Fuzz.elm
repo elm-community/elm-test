@@ -387,18 +387,21 @@ listShrinkHelp listOfTrees =
                 |> Lazy.List.map (\i -> i - 1)
                 |> Lazy.List.take n
                 |> Lazy.List.flatMap
-                    (\i ->
-                        shrinkOne (List.take i listOfTrees) (List.drop i listOfTrees)
-                    )
+                    (\i -> shrinkOne (List.take i listOfTrees) (List.drop i listOfTrees))
 
         shortened =
-            Lazy.List.iterate (\n -> n // 2) n
-                |> Lazy.List.takeWhile (\x -> x > 0)
-                |> Lazy.List.flatMap (\len -> shorter len listOfTrees)
+            (if n > 6 then
+                Lazy.List.iterate (\n -> n // 2) n
+                    |> Lazy.List.takeWhile (\x -> x > 0)
+             else
+                Lazy.List.fromList [1..n]
+            )
+                |> Lazy.List.flatMap (\len -> shorter len listOfTrees False)
                 |> Lazy.List.map listShrinkHelp
 
-        shorter windowSize aList =
-            if windowSize >= List.length aList then
+        shorter windowSize aList recursing =
+            -- Tricky: take the whole list if we've recursed down here, but don't let a list shrink to itself
+            if windowSize > List.length aList || (windowSize == List.length aList && not recursing) then
                 Lazy.List.empty
             else
                 case aList of
@@ -406,9 +409,11 @@ listShrinkHelp listOfTrees =
                         Lazy.List.empty
 
                     head :: tail ->
-                        Lazy.List.cons (List.take windowSize aList) (shorter windowSize tail)
+                        Lazy.List.cons (List.take windowSize aList) (shorter windowSize tail True)
     in
-        Rose root (Lazy.List.append shortened shrunkenVals)
+        Lazy.List.append shortened shrunkenVals
+            |> Lazy.List.cons (RoseTree.singleton [])
+            |> Rose root
 
 
 {-| Given a fuzzer of a type, create a fuzzer of an array of that type.
