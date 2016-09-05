@@ -350,25 +350,22 @@ equalLists expected actual =
         |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
 
 Failures resemble code written in pipeline style, so you can tell
-which argument is which, and reports which keys were missing from or added to the actual dict and which had different values:
+which argument is which, and reports which keys were missing from
+or added to each dict:
 
     -- Fails
-    (Dict.fromList [ ( 1, "one" ), ( 2, "too" ), ( 5, "five" ) ])
-        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ), ( 3, "three" ), ( 4, "four" ) ])
+    (Dict.fromList [ ( 1, "one" ), ( 2, "too" ) ])
+        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ), ( 3, "three" ) ])
 
     {-
 
-    Dict.fromList [(1,"one"),(2,"too"),(5,"five")]
+    Dict.fromList [(1,"one"),(2,"too")]
+    diff: -[ (2,"two"), (3,"three") ] +[ (2,"too") ]
     ╷
     │ Expect.equalDicts
     ╵
-    Dict.fromList [(1,"one"),(2,"two"),(3,"three"),(4,"four")]
-    Was missing keys: -[ 3, 4 ]
-    Had extra keys: +[ 5 ]
-    Diffs:
-      For key: 2
-        Expected: "two"
-        Actual: "too"
+    diff: +[ (2,"two"), (3,"three") ] -[ (2,"too") ]
+    Dict.fromList [(1,"one"),(2,"two"),(3,"three")]
 
     -}
 -}
@@ -378,51 +375,19 @@ equalDicts expected actual =
         pass
     else
         let
-            differ k v ( missingKeys, diffs ) =
-                if not <| Dict.member k actual then
-                    ( Set.insert k missingKeys, diffs )
+            differ dict k v diffs =
+                if Dict.get k dict == Just v then
+                    diffs
                 else
-                    let
-                        actualVal =
-                            Dict.get k actual
-                    in
-                        if actualVal == Just v then
-                            ( missingKeys, diffs )
-                        else
-                            ( missingKeys, ( k, v, actualVal ) :: diffs )
+                    ( k, v ) :: diffs
 
-            ( missingKeys, diffs ) =
-                Dict.foldr differ ( Set.empty, [] ) expected
-
-            diffsMessage =
-                diffs
-                    |> List.map
-                        (\( key, expectedVal, actualVal ) ->
-                            [ "  For key: " ++ toString key
-                            , "    Expected: " ++ toString expectedVal
-                            , "    Actual: " ++ (actualVal |> Maybe.map toString |> Maybe.withDefault "")
-                            ]
-                        )
-                    |> List.concat
-                    |> String.join "\n"
+            missingKeys =
+                Dict.foldr (differ actual) [] expected
 
             extraKeys =
-                Set.diff (Set.fromList <| Dict.keys actual) (Set.fromList <| Dict.keys expected)
-                    |> formatSet Extra
-
-            baseFailureMessage =
-                (reportFailure "Expect.equalDicts" (toString expected) (toString actual))
-
-            failureMessage =
-                [ baseFailureMessage
-                , "Was missing keys: " ++ formatSet Missing missingKeys
-                , "Had extra keys: " ++ extraKeys
-                , "Diffs:"
-                , diffsMessage
-                ]
-                    |> String.join "\n"
+                Dict.foldr (differ expected) [] actual
         in
-            fail failureMessage
+            fail (reportCollectionFailure "Expect.equalDicts" expected actual missingKeys extraKeys)
 
 
 {-| Passes if the arguments are equal sets.
@@ -459,48 +424,13 @@ equalSets expected actual =
         let
             missingKeys =
                 Set.diff expected actual
+                    |> Set.toList
 
             extraKeys =
                 Set.diff actual expected
-
-            failureMessage =
-                [ toString actual
-                , "diff:" ++ formatSet Missing missingKeys ++ formatSet Extra extraKeys
-                , "╷"
-                , "│ Expect.equalSets"
-                , "╵"
-                , "diff:" ++ formatSet Extra missingKeys ++ formatSet Missing extraKeys
-                , toString expected
-                ]
-                    |> String.join "\n"
+                    |> Set.toList
         in
-            fail failureMessage
-
-
-type Diff
-    = Extra
-    | Missing
-
-
-formatSet : Diff -> Set comparable -> String
-formatSet diff set =
-    if Set.isEmpty set then
-        ""
-    else
-        let
-            modifier =
-                case diff of
-                    Extra ->
-                        "+"
-
-                    Missing ->
-                        "-"
-        in
-            set
-                |> Set.toList
-                |> List.map toString
-                |> String.join ", "
-                |> (\s -> " " ++ modifier ++ "[ " ++ s ++ " ]")
+            fail (reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys)
 
 
 {-| Always passes.
@@ -595,6 +525,44 @@ reportFailure comparison expected actual =
     , expected
     ]
         |> String.join "\n"
+
+
+reportCollectionFailure : String -> a -> b -> List c -> List d -> String
+reportCollectionFailure comparison expected actual missingKeys extraKeys =
+    [ toString actual
+    , "diff:" ++ formatDiffs Missing missingKeys ++ formatDiffs Extra extraKeys
+    , "╷"
+    , "│ " ++ comparison
+    , "╵"
+    , "diff:" ++ formatDiffs Extra missingKeys ++ formatDiffs Missing extraKeys
+    , toString expected
+    ]
+        |> String.join "\n"
+
+
+type Diff
+    = Extra
+    | Missing
+
+
+formatDiffs : Diff -> List a -> String
+formatDiffs diffType diffs =
+    if List.isEmpty diffs then
+        ""
+    else
+        let
+            modifier =
+                case diffType of
+                    Extra ->
+                        "+"
+
+                    Missing ->
+                        "-"
+        in
+            diffs
+                |> List.map toString
+                |> String.join ", "
+                |> (\d -> " " ++ modifier ++ "[ " ++ d ++ " ]")
 
 
 compareWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
