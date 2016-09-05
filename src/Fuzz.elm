@@ -143,13 +143,9 @@ order =
 
 
 {-| A fuzzer for int values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
-Prioritizes generating "interesting numbers" by distributing values
-according to the following probability weights:
 
-3.0: -50 to 50
-1.0: 0 to (Random.maxInt - Random.minInt)
-1.0: (Random.minInt - Random.maxInt) to 0
-0.2: 0 exactly
+It's possible for this fuzzer to generate any 32-bit integer, but it favors
+numbers between -50 and 50 and especially zero.
 -}
 int : Fuzzer Int
 int =
@@ -181,14 +177,10 @@ intRange lo hi =
 
 
 {-| A fuzzer for float values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
-Prioritizes generating "interesting numbers" by distributing values
-according to the following probability weights:
 
-3.0: -50.0 to 50.0
-1.0: -1.0 to 1.0
-1.0: 0 to (Random.maxInt - Random.minInt)
-1.0: (Random.minInt - Random.maxInt) to 0
-0.5: 0 exactly
+
+It's possible for this fuzzer to generate any other floating-point value, but it
+favors numbers between -50 and 50, numbers between -1 and 1, and especially zero.
 -}
 float : Fuzzer Float
 float =
@@ -249,13 +241,9 @@ charGenerator =
     (Random.map Char.fromCode (Random.int 32 126))
 
 
-{-| Generates random printable ASCII strings. Prioritizes a mix of string lengths by
-distributing the lengths according to the following probability weights:
+{-| Generates random printable ASCII strings of up to 1000 characters.
 
-3.0: length 1-10
-1.0: length 11-50
-1.0: length 50-1000
-0.2: length 0 (empty string)
+Shorter strings are more common, especially the empty string.
 -}
 string : Fuzzer String
 string =
