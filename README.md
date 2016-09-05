@@ -44,7 +44,7 @@ This code includes a few common things:
 * [`Expect`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Expect) to determine if a test should pass or fail
 * [`fuzz`](http://package.elm-lang.org/packages/elm-community/elm-test/latest/Test#fuzz) to run a function that produces a test several times with randomly-generated inputs
 
-Check out [a large real-world test suite](https://github.com/rtfeldman/elm-css/tree/master/test) for more.
+Check out [a large real-world test suite](https://github.com/rtfeldman/elm-css/tree/master/tests) for more.
 
 ### Running tests locally
 
