@@ -725,21 +725,26 @@ unwindLazyList lazyListOfGenerators =
 
 {-| Filter values from a fuzzer that do not satisfy the provided predicate.
 Shrunken values will also satisfy the predicate, however a restrictive predicate
-will make shrinking less effective.
+will make shrinking less effective. A good use of this function filters out only
+a small number of values that are difficult to avoid producing.
+
+    nonEqualStrings =
+        tuple (string, string) |> filter (\(a,b) -> a /= b)
 
 **Warning:** The predicate must return `True` fairly often for values generated
-by the input fuzzer. If the predicate rarely or never returns `True`, using the
-resulting fuzzer will crash your program.
+by the input fuzzer. If the predicate rarely or never returns `True`, then there
+are no acceptable values for the fuzzer to produce, so instead it will crash
+your program.
 
     badCrashingFuzzer =
         filter (\_ -> False) anotherFuzzer
 -}
 filter : (a -> Bool) -> Fuzzer a -> Fuzzer a
 filter predicate (Internal.Fuzzer baseFuzzer) =
-    {- -- Filtering with Fuzzers as Generators of Rosetrees --
+    {- Filtering with Fuzzers as Generators of Rosetrees
        Generate a rosetree. Regenerate until the root element isn't filtered out.
        For each subtree:
-           If the subtree root is invalid, drop the entire subtree.
+           If the subtree root is filtered out, drop the entire subtree.
            Otherwise, recurse on each child subtree.
     -}
     let
@@ -750,7 +755,7 @@ filter predicate (Internal.Fuzzer baseFuzzer) =
             else
                 Nothing
 
-        --regenerateIfRejected : RoseTree a -> Random.Generator (RoseTree a)
+        --regenerateIfRejected : Random.Generator (RoseTree a) -> RoseTree a -> Random.Generator (RoseTree a)
         regenerateIfRejected genTree (Rose a list) =
             if predicate a then
                 list
