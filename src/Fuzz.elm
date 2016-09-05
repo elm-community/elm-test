@@ -297,10 +297,10 @@ maybe (Internal.Fuzzer baseFuzzer) =
 a result.
 -}
 result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
-result (Internal.Fuzzer fError) (Internal.Fuzzer fValue) =
+result (Internal.Fuzzer baseFuzzerError) (Internal.Fuzzer baseFuzzerValue) =
     Internal.Fuzzer <|
         \noShrink ->
-            case ( fError noShrink, fValue noShrink ) of
+            case ( baseFuzzerError noShrink, baseFuzzerValue noShrink ) of
                 ( Gen genErr, Gen genVal ) ->
                     Gen <|
                         Random.map3
@@ -335,7 +335,7 @@ result (Internal.Fuzzer fError) (Internal.Fuzzer fValue) =
 Generates random lists of varying length, favoring shorter lists.
 -}
 list : Fuzzer a -> Fuzzer (List a)
-list (Internal.Fuzzer f) =
+list (Internal.Fuzzer baseFuzzer) =
     let
         genLength =
             Random.frequency
@@ -348,7 +348,7 @@ list (Internal.Fuzzer f) =
     in
         Internal.Fuzzer
             (\noShrink ->
-                case f noShrink of
+                case baseFuzzer noShrink of
                     Gen genVal ->
                         genLength
                             |> (flip Random.andThen) (\i -> (Random.list i genVal))
@@ -366,7 +366,7 @@ listShrinkHelp : List (RoseTree a) -> RoseTree (List a)
 listShrinkHelp listOfTrees =
     {- Shrinking a list of RoseTrees
        We need to do two things. First, shrink individual values. Second, shorten the list.
-       To shrink individual values, we create every list copy of the input listwhere any
+       To shrink individual values, we create every list copy of the input list where any
        one value is replaced by a shrunken form.
        To shorten the length of the list, slide windows of various lengths over it.
        In all cases, recurse! The goal is to make a little forward progress and then recurse.
@@ -431,10 +431,10 @@ array fuzzer =
 {-| Turn a tuple of fuzzers into a fuzzer of tuples.
 -}
 tuple : ( Fuzzer a, Fuzzer b ) -> Fuzzer ( a, b )
-tuple ( Internal.Fuzzer fA, Internal.Fuzzer fB ) =
+tuple ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB ) =
     Internal.Fuzzer
         (\noShrink ->
-            case ( fA noShrink, fB noShrink ) of
+            case ( baseFuzzerA noShrink, baseFuzzerB noShrink ) of
                 ( Gen genA, Gen genB ) ->
                     Gen <| Random.map2 (,) genA genB
 
@@ -473,10 +473,10 @@ tupleShrinkHelp ((Rose root1 children1) as rose1) ((Rose root2 children2) as ros
 {-| Turn a 3-tuple of fuzzers into a fuzzer of 3-tuples.
 -}
 tuple3 : ( Fuzzer a, Fuzzer b, Fuzzer c ) -> Fuzzer ( a, b, c )
-tuple3 ( Internal.Fuzzer fA, Internal.Fuzzer fB, Internal.Fuzzer fC ) =
+tuple3 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzzer baseFuzzerC ) =
     Internal.Fuzzer
         (\noShrink ->
-            case ( fA noShrink, fB noShrink, fC noShrink ) of
+            case ( baseFuzzerA noShrink, baseFuzzerB noShrink, baseFuzzerC noShrink ) of
                 ( Gen genA, Gen genB, Gen genC ) ->
                     Gen <| Random.map3 (,,) genA genB genC
 
@@ -512,10 +512,10 @@ tupleShrinkHelp3 ((Rose root1 children1) as rose1) ((Rose root2 children2) as ro
 {-| Turn a 4-tuple of fuzzers into a fuzzer of 4-tuples.
 -}
 tuple4 : ( Fuzzer a, Fuzzer b, Fuzzer c, Fuzzer d ) -> Fuzzer ( a, b, c, d )
-tuple4 ( Internal.Fuzzer fA, Internal.Fuzzer fB, Internal.Fuzzer fC, Internal.Fuzzer fD ) =
+tuple4 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzzer baseFuzzerC, Internal.Fuzzer baseFuzzerD ) =
     Internal.Fuzzer
         (\noShrink ->
-            case ( fA noShrink, fB noShrink, fC noShrink, fD noShrink ) of
+            case ( baseFuzzerA noShrink, baseFuzzerB noShrink, baseFuzzerC noShrink, baseFuzzerD noShrink ) of
                 ( Gen genA, Gen genB, Gen genC, Gen genD ) ->
                     Gen <| Random.map4 (,,,) genA genB genC genD
 
@@ -555,10 +555,10 @@ tupleShrinkHelp4 rose1 rose2 rose3 rose4 =
 {-| Turn a 5-tuple of fuzzers into a fuzzer of 5-tuples.
 -}
 tuple5 : ( Fuzzer a, Fuzzer b, Fuzzer c, Fuzzer d, Fuzzer e ) -> Fuzzer ( a, b, c, d, e )
-tuple5 ( Internal.Fuzzer fA, Internal.Fuzzer fB, Internal.Fuzzer fC, Internal.Fuzzer fD, Internal.Fuzzer fE ) =
+tuple5 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzzer baseFuzzerC, Internal.Fuzzer baseFuzzerD, Internal.Fuzzer baseFuzzerE ) =
     Internal.Fuzzer
         (\noShrink ->
-            case ( fA noShrink, fB noShrink, fC noShrink, fD noShrink, fE noShrink ) of
+            case ( baseFuzzerA noShrink, baseFuzzerB noShrink, baseFuzzerC noShrink, baseFuzzerD noShrink, baseFuzzerE noShrink ) of
                 ( Gen genA, Gen genB, Gen genC, Gen genD, Gen genE ) ->
                     Gen <| Random.map5 (,,,,) genA genB genC genD genE
 
@@ -616,10 +616,10 @@ constant x =
 {-| Map a function over a fuzzer. This applies to both the generated and the shruken values.
 -}
 map : (a -> b) -> Fuzzer a -> Fuzzer b
-map transform (Internal.Fuzzer f) =
+map transform (Internal.Fuzzer baseFuzzer) =
     Internal.Fuzzer
         (\noShrink ->
-            case f noShrink of
+            case baseFuzzer noShrink of
                 Gen genVal ->
                     Gen <| Random.map transform genVal
 
@@ -666,10 +666,10 @@ andMap =
 {-| Create a fuzzer based on the result of another fuzzer.
 -}
 andThen : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
-andThen transform (Internal.Fuzzer f) =
+andThen transform (Internal.Fuzzer baseFuzzer) =
     Internal.Fuzzer
         (\noShrink ->
-            case f noShrink of
+            case baseFuzzer noShrink of
                 Gen genVal ->
                     Gen <| Random.andThen genVal (transform >> Internal.unpackGenVal)
 
@@ -735,7 +735,7 @@ resulting fuzzer will crash your program.
         filter (\_ -> False) anotherFuzzer
 -}
 filter : (a -> Bool) -> Fuzzer a -> Fuzzer a
-filter predicate (Internal.Fuzzer f) =
+filter predicate (Internal.Fuzzer baseFuzzer) =
     {- -- Filtering with Fuzzers as Generators of Rosetrees --
        Generate a rosetree. Regenerate until the root element isn't filtered out.
        For each subtree:
@@ -762,7 +762,7 @@ filter predicate (Internal.Fuzzer f) =
     in
         Internal.Fuzzer
             (\noShrink ->
-                case f noShrink of
+                case baseFuzzer noShrink of
                     Gen genVal ->
                         Gen <| Random.filter predicate genVal
 
