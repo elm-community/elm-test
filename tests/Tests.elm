@@ -1,7 +1,8 @@
 module Tests exposing (all)
 
 import Test exposing (..)
-import Test.Expectation exposing (Expectation)
+import Test.Expectation exposing (Expectation(..))
+import Test.Internal as TI
 import Fuzz exposing (..)
 import String
 import Expect
@@ -13,7 +14,7 @@ import Random.Pcg as Random
 all : Test
 all =
     Test.concat
-        [ readmeExample, bug39, fuzzerTests {- , shrinkingTests -} ]
+        [ readmeExample, bug39, fuzzerTests, shrinkingTests ]
 
 
 {-| Regression test for https://github.com/elm-community/elm-test/issues/39
@@ -120,48 +121,93 @@ fuzzerTests =
         ]
 
 
+testShrinking : Test -> Test
+testShrinking test =
+    case test of
+        TI.Test runTest ->
+            TI.Test
+                (\seed runs ->
+                    let
+                        expectations =
+                            runTest seed runs
+
+                        goodShrink expectation =
+                            case expectation of
+                                Pass ->
+                                    Nothing
+
+                                Fail given outcome ->
+                                    let
+                                        acceptable =
+                                            String.split "|" outcome
+                                    in
+                                        if List.member given acceptable then
+                                            Nothing
+                                        else
+                                            Just <| "Got shrunken value " ++ given ++ " but expected " ++ String.join " or " acceptable
+                    in
+                        expectations
+                            |> List.filterMap goodShrink
+                            |> List.map Expect.fail
+                            |> (\list ->
+                                    if List.isEmpty list then
+                                        [ Expect.pass ]
+                                    else
+                                        list
+                               )
+                )
+
+        TI.Labeled desc labeledTest ->
+            TI.Labeled desc (testShrinking labeledTest)
+
+        TI.Batch tests ->
+            TI.Batch (List.map testShrinking tests)
+
+
 shrinkingTests : Test
 shrinkingTests =
-    describe "Tests that fail intentionally to test shrinking"
-        [ fuzz2 int int "Every pair of ints has a zero" <|
-            \i j ->
-                (i == 0)
-                    || (j == 0)
-                    |> Expect.true "This should fail with (1,1)"
-        , fuzz3 int int int "Every triple of ints has a zero" <|
-            \i j k ->
-                (i == 0)
-                    || (j == 0)
-                    || (k == 0)
-                    |> Expect.true "This should fail with (1,1,1)"
-        , fuzz4 int int int int "Every 4-tuple of ints has a zero" <|
-            \i j k l ->
-                (i == 0)
-                    || (j == 0)
-                    || (k == 0)
-                    || (l == 0)
-                    |> Expect.true "This should fail with (1,1,1,1)"
-        , fuzz5 int int int int int "Every 5-tuple of ints has a zero" <|
-            \i j k l m ->
-                (i == 0)
-                    || (j == 0)
-                    || (k == 0)
-                    || (l == 0)
-                    || (m == 0)
-                    |> Expect.true "This should fail with (1,1,1,1,1)"
-        , fuzz (list int) "All lists are sorted" <|
-            \aList ->
-                let
-                    checkPair l =
-                        case l of
-                            a :: b :: more ->
-                                if a > b then
-                                    False
-                                else
-                                    checkPair (b :: more)
+    testShrinking <|
+        describe "Tests that fail intentionally to test shrinking"
+            [ fuzz2 int int "Every pair of ints has a zero" <|
+                \i j ->
+                    (i == 0)
+                        || (j == 0)
+                        |> Expect.true "(1,1)"
+            , fuzz (result string int) "Fuzz.result" <| \r -> Expect.pass
+            , fuzz3 int int int "Every triple of ints has a zero" <|
+                \i j k ->
+                    (i == 0)
+                        || (j == 0)
+                        || (k == 0)
+                        |> Expect.true "(1,1,1)"
+            , fuzz4 int int int int "Every 4-tuple of ints has a zero" <|
+                \i j k l ->
+                    (i == 0)
+                        || (j == 0)
+                        || (k == 0)
+                        || (l == 0)
+                        |> Expect.true "(1,1,1,1)"
+            , fuzz5 int int int int int "Every 5-tuple of ints has a zero" <|
+                \i j k l m ->
+                    (i == 0)
+                        || (j == 0)
+                        || (k == 0)
+                        || (l == 0)
+                        || (m == 0)
+                        |> Expect.true "(1,1,1,1,1)"
+            , fuzz (list int) "All lists are sorted" <|
+                \aList ->
+                    let
+                        checkPair l =
+                            case l of
+                                a :: b :: more ->
+                                    if a > b then
+                                        False
+                                    else
+                                        checkPair (b :: more)
 
-                            _ ->
-                                True
-                in
-                    checkPair aList |> Expect.true "This should fail with [1,0] or [0,-1]"
-        ]
+                                _ ->
+                                    True
+                    in
+                        checkPair aList |> Expect.true "[1,0]|[0,-1]"
+            ]
