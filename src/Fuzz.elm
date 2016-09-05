@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, stringLengthRange, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, filter, maybe, intRange, list, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -12,7 +12,7 @@ this way, fuzzers can usually find the smallest or simplest input that
 reproduces a bug.
 
 ## Common Fuzzers
-@docs bool, int, intRange, float, floatRange, percentage, string, stringLengthRange, maybe, result, list, array
+@docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
 @docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, filter, frequency, frequencyOrCrash
@@ -28,7 +28,6 @@ Instead of using a tuple, consider using `fuzzN`.
 
 import Array exposing (Array)
 import Char
-import String
 import Util exposing (..)
 import Lazy.List exposing (LazyList)
 import Shrink exposing (Shrinker)
@@ -143,7 +142,10 @@ order =
         custom (Random.map intToOrder (Random.int 0 2)) Shrink.order
 
 
-{-| A fuzzer for int values.
+{-| A fuzzer for int values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
+
+It's possible for this fuzzer to generate any 32-bit integer, but it favors
+numbers between -50 and 50 and especially zero.
 -}
 int : Fuzzer Int
 int =
@@ -175,6 +177,10 @@ intRange lo hi =
 
 
 {-| A fuzzer for float values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
+
+
+It's possible for this fuzzer to generate any other floating-point value, but it
+favors numbers between -50 and 50, numbers between -1 and 1, and especially zero.
 -}
 float : Fuzzer Float
 float =
@@ -235,26 +241,24 @@ charGenerator =
     (Random.map Char.fromCode (Random.int 32 126))
 
 
-{-| A fuzzer for string values. Generates random printable ascii strings.
+{-| Generates random printable ASCII strings of up to 1000 characters.
+
+Shorter strings are more common, especially the empty string.
 -}
 string : Fuzzer String
 string =
-    custom (rangeLengthString 0 10 charGenerator)
-        -- see #50
-        Shrink.string
-
-
-{-| A fuzzer for string values whose length is within a given range, inclusive.
-Generates random printable ascii strings. Shrunken strings will also have
-lengths within the range.
--}
-stringLengthRange : Int -> Int -> Fuzzer String
-stringLengthRange lo hi =
-    custom
-        (rangeLengthString lo hi charGenerator)
-        -- because strings only get shorter and the length is nonnegative,
-        -- we only need to check the lower bound.
-        (Shrink.keepIf (\s -> String.length s >= lo) Shrink.string)
+    let
+        generator : Generator String
+        generator =
+            Random.frequency
+                [ ( 3, Random.int 1 10 )
+                , ( 0.2, Random.constant 0 )
+                , ( 1, Random.int 11 50 )
+                , ( 1, Random.int 50 1000 )
+                ]
+                `Random.andThen` (lengthString charGenerator)
+    in
+        custom generator Shrink.string
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.

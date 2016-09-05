@@ -21,9 +21,9 @@ rangeLengthArray minLength maxLength generator =
 
 rangeLengthString : Int -> Int -> Generator Char -> Generator String
 rangeLengthString minLength maxLength charGenerator =
-    let
-        string stringLength charGenerator =
-            map String.fromList (list stringLength charGenerator)
-    in
-        (int minLength maxLength)
-            `andThen` (\len -> string len charGenerator)
+    (int minLength maxLength) `andThen` (lengthString charGenerator)
+
+
+lengthString : Generator Char -> Int -> Generator String
+lengthString charGenerator stringLength =
+    map String.fromList (list stringLength charGenerator)
