@@ -363,8 +363,8 @@ which argument is which, and reports which keys were missing from or added to th
     │ Expect.equalDicts
     ╵
     Dict.fromList [(1,"one"),(2,"two"),(3,"three"),(4,"four")]
-    Was missing keys: 3, 4
-    Had extra keys: 5
+    Was missing keys: -[ 3, 4 ]
+    Had extra keys: +[ 5 ]
     Diffs:
       For key: 2
         Expected: "two"
@@ -408,14 +408,14 @@ equalDicts expected actual =
 
             extraKeys =
                 Set.diff (Set.fromList <| Dict.keys actual) (Set.fromList <| Dict.keys expected)
-                    |> formatSet
+                    |> formatSet Extra
 
             baseFailureMessage =
                 (reportFailure "Expect.equalDicts" (toString expected) (toString actual))
 
             failureMessage =
                 [ baseFailureMessage
-                , "Was missing keys: " ++ formatSet missingKeys
+                , "Was missing keys: " ++ formatSet Missing missingKeys
                 , "Had extra keys: " ++ extraKeys
                 , "Diffs:"
                 , diffsMessage
@@ -433,7 +433,7 @@ equalDicts expected actual =
 
 Failures resemble code written in pipeline style, so you can tell
 which argument is which, and reports which keys were missing from
-the actual set and which were extra:
+or added to each set:
 
     -- Fails
     (Set.fromList [ 1, 2, 4, 6 ])
@@ -442,12 +442,12 @@ the actual set and which were extra:
     {-
 
     Set.fromList [1,2,4,6]
+    diff: -[ 5 ] +[ 4, 6 ]
     ╷
     │ Expect.equalSets
     ╵
+    diff: +[ 5 ] -[ 4, 6 ]
     Set.fromList [1,2,5]
-    Was missing keys: 5
-    Had extra keys: 4, 6
 
     -}
 -}
@@ -458,30 +458,49 @@ equalSets expected actual =
     else
         let
             missingKeys =
-                Set.diff expected actual |> formatSet
+                Set.diff expected actual
 
             extraKeys =
-                Set.diff actual expected |> formatSet
-
-            baseFailureMessage =
-                (reportFailure "Expect.equalSets" (toString expected) (toString actual))
+                Set.diff actual expected
 
             failureMessage =
-                [ baseFailureMessage
-                , "Was missing keys: " ++ missingKeys
-                , "Had extra keys: " ++ extraKeys
+                [ toString actual
+                , "diff:" ++ formatSet Missing missingKeys ++ formatSet Extra extraKeys
+                , "╷"
+                , "│ Expect.equalSets"
+                , "╵"
+                , "diff:" ++ formatSet Extra missingKeys ++ formatSet Missing extraKeys
+                , toString expected
                 ]
                     |> String.join "\n"
         in
             fail failureMessage
 
 
-formatSet : Set comparable -> String
-formatSet set =
-    set
-        |> Set.toList
-        |> List.map toString
-        |> String.join ", "
+type Diff
+    = Extra
+    | Missing
+
+
+formatSet : Diff -> Set comparable -> String
+formatSet diff set =
+    if Set.isEmpty set then
+        ""
+    else
+        let
+            modifier =
+                case diff of
+                    Extra ->
+                        "+"
+
+                    Missing ->
+                        "-"
+        in
+            set
+                |> Set.toList
+                |> List.map toString
+                |> String.join ", "
+                |> (\s -> " " ++ modifier ++ "[ " ++ s ++ " ]")
 
 
 {-| Always passes.
