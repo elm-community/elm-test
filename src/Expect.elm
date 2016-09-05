@@ -276,7 +276,7 @@ false message bool =
 
 Failures resemble code written in pipeline style, so you can tell
 which argument is which, and reports which index the lists first
-differed at:
+differed at or which list was longer:
 
     -- Fails
     [ 1, 2, 4, 6 ]
@@ -285,9 +285,11 @@ differed at:
     {-
 
     [1,2,4,6]
+    first diff at index index 2: +`4`, -`5`
     ╷
-    │ Expect.equalLists: differed at index 2. Expected `4`, got `5`.
+    │ Expect.equalLists
     ╵
+    first diff at index index 2: +`5`, -`4`
     [1,2,5]
 
     -}
@@ -302,27 +304,25 @@ equalLists expected actual =
                 List.map2 (,) actual expected
                     |> List.indexedMap (,)
                     |> List.filterMap
-                        (\( index, ( e, a ) ) ->
+                        (\( index, ( a, e ) ) ->
                             if e == a then
                                 Nothing
                             else
-                                Just ( index, e, a )
+                                Just ( index, a, e )
                         )
                     |> List.head
                     |> Maybe.map
-                        (\( index, e, a ) ->
-                            fail <|
-                                reportFailure
-                                    ("Expect.equalLists: differed at index "
-                                        ++ toString index
-                                        ++ ". Expected `"
-                                        ++ toString e
-                                        ++ "`, got `"
-                                        ++ toString a
-                                        ++ "`."
-                                    )
-                                    (toString expected)
-                                    (toString actual)
+                        (\( index, a, e ) ->
+                            [ toString actual
+                            , "first diff at index index " ++ toString index ++ ": +`" ++ toString a ++ "`, -`" ++ toString e ++ "`"
+                            , "╷"
+                            , "│ Expect.equalLists"
+                            , "╵"
+                            , "first diff at index index " ++ toString index ++ ": +`" ++ toString e ++ "`, -`" ++ toString a ++ "`"
+                            , toString expected
+                            ]
+                                |> String.join "\n"
+                                |> fail
                         )
         in
             case result of
@@ -332,11 +332,11 @@ equalLists expected actual =
                 Nothing ->
                     case compare (List.length actual) (List.length expected) of
                         GT ->
-                            reportFailure "Expect.equalLists: was longer than expected" (toString expected) (toString actual)
+                            reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
                                 |> fail
 
                         LT ->
-                            reportFailure "Expect.equalLists: was shorter than expected" (toString expected) (toString actual)
+                            reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
                                 |> fail
 
                         _ ->
