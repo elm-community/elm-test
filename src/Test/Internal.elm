@@ -5,7 +5,7 @@ import Test.Expectation exposing (Expectation(..))
 import Dict exposing (Dict)
 import Shrink exposing (Shrinker)
 import Fuzz exposing (Fuzzer)
-import Fuzz.Internal as Internal
+import Fuzz.Internal exposing (unpackGenVal, unpackGenTree)
 import RoseTree exposing (RoseTree(..))
 import Lazy.List
 
@@ -42,26 +42,21 @@ filterHelp lastCheckPassed isKeepable test =
 
 
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest (Internal.Fuzzer f) desc getExpectation =
-    -- Fuzz test algorithm with opt-in RoseTrees:
-    -- Generate a single value by passing the fuzzer True (indicates skip shrinking)
-    -- Run the test on that value
-    -- If it fails:
-    -- -- Generate the rosetree by passing the fuzzer False *and the same random seed*
-    -- -- Find the new failure by looking at the children for any shrunken values:
-    -- -- -- If a shrunken value causes a failure, recurse on its children
-    -- -- -- If no shrunken value replicates the failure, use the root
-    -- Whether it passes or fails, do this n times
+fuzzTest fuzzer desc getExpectation =
+    {- Fuzz test algorithm with opt-in RoseTrees:
+       Generate a single value by passing the fuzzer True (indicates skip shrinking)
+       Run the test on that value. If it fails:
+           Generate the rosetree by passing the fuzzer False *and the same random seed*
+           Find the new failure by looking at the children for any shrunken values:
+               If a shrunken value causes a failure, recurse on its children
+               If no shrunken value replicates the failure, use the root
+       Whether it passes or fails, do this n times
+    -}
     let
         getFailures failures currentSeed remainingRuns =
             let
                 genVal =
-                    case f True of
-                        Internal.Gen gv ->
-                            gv
-
-                        err ->
-                            Debug.crash "This shouldn't happen: fuzzTest 1" err
+                    unpackGenVal fuzzer
 
                 ( value, nextSeed ) =
                     Random.step genVal currentSeed
@@ -74,12 +69,7 @@ fuzzTest (Internal.Fuzzer f) desc getExpectation =
                         failedExpectation ->
                             let
                                 genTree =
-                                    case f False of
-                                        Internal.Shrink gt ->
-                                            gt
-
-                                        err ->
-                                            Debug.crash "This shouldn't happen: fuzzTest 2" err
+                                    unpackGenTree fuzzer
 
                                 ( rosetree, nextSeedAgain ) =
                                     Random.step genTree currentSeed
