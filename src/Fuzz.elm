@@ -143,7 +143,14 @@ order =
         custom (Random.map intToOrder (Random.int 0 2)) Shrink.order
 
 
-{-| A fuzzer for int values.
+{-| A fuzzer for int values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
+Prioritizes generating "interesting numbers" by distributing values
+according to the following probability weights:
+
+3.0: -50 to 50
+1.0: 0 to (Random.maxInt - Random.minInt)
+1.0: (Random.minInt - Random.maxInt) to 0
+0.2: 0 exactly
 -}
 int : Fuzzer Int
 int =
@@ -175,6 +182,14 @@ intRange lo hi =
 
 
 {-| A fuzzer for float values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
+Prioritizes generating "interesting numbers" by distributing values
+according to the following probability weights:
+
+3.0: -50.0 to 50.0
+1.0: -1.0 to 1.0
+1.0: 0 to (Random.maxInt - Random.minInt)
+1.0: (Random.minInt - Random.maxInt) to 0
+0.5: 0 exactly
 -}
 float : Fuzzer Float
 float =
