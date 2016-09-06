@@ -83,3 +83,10 @@ drop-in replacement for the `ElmTest 1.0` API, except implemented in terms of
 the current `elm-test`. It also includes support for `elm-check` tests.
 
 This lets you use the latest test runners right now, and upgrade incrementally.
+
+## Releases
+| Version | Notes |
+| ------- | ----- |
+| [**2.1.0**](https://github.com/elm-community/elm-test/tree/2.1.0) | Switch to rose trees for `Fuzz.andThen`, other API additions.
+| [**2.0.0**](https://github.com/elm-community/elm-test/tree/2.0.0) | Scratch-rewrite to project-fuzzball
+| [**1.0.0**](https://github.com/elm-community/elm-test/tree/1.0.0) | ElmTest initial release
