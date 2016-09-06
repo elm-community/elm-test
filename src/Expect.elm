@@ -1,4 +1,4 @@
-module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalLists, equalDicts, equalSets, onFail)
+module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalLists, equalDicts, equalSets, onFail, between, all, custom)
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
 
@@ -10,6 +10,7 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 * [`atMost`](#atMost) `(arg2 <= arg1)`
 * [`greaterThan`](#greaterThan) `(arg2 > arg1)`
 * [`atLeast`](#atLeast) `(arg2 >= arg1)`
+* [`between`](#between) `(arg1 <= arg3 <= arg2)`
 * [`true`](#true) `(arg == True)`
 * [`false`](#false) `(arg == False)`
 
@@ -19,7 +20,7 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 
 ## Comparisons
 
-@docs lessThan, atMost, greaterThan, atLeast
+@docs lessThan, atMost, greaterThan, atLeast, between
 
 ## Booleans
 
@@ -31,7 +32,7 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 
 ## Customizing
 
-@docs pass, fail, onFail, getFailure
+@docs all, pass, fail, custom, onFail, getFailure
 -}
 
 import Test.Expectation
@@ -212,6 +213,38 @@ which argument is which:
 atLeast : comparable -> comparable -> Expectation
 atLeast =
     compareWith "Expect.atLeast" (>=)
+
+
+{-| Passes if the third argument is greater than or equal to the first, *and*
+less than or equal to the second
+
+    4 |> Expect.between 2 4
+
+    -- Passes because (l <= 4 && 4 <= 4) is True
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which:
+
+    -- Fails because (0 >= 3) is False
+    List.length []
+        |> Expect.atLeast between 3 5
+
+    {-
+
+    0
+    ╷
+    │ Expect.between
+    ╵
+    3 and 5
+
+    -}
+-}
+between : comparable -> comparable -> comparable -> Expectation
+between lo hi val =
+    if lo <= val && val <= hi then
+        pass
+    else
+        fail <| reportFailure "Expect.between" (toString val) <| toString lo ++ " and " ++ toString hi
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
@@ -433,6 +466,29 @@ equalSets expected actual =
             fail (reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys)
 
 
+{-| Expect many expectations to all pass. If the list provided is empty, the
+test fails, because this is certainly a bug in your test and we don't want to
+give you false confidence in your suite.
+
+    fuzz (list string) "All lists of strings contain 'foo' and 'bar' <|
+        all [ List.member "foo" >> true "didn't have 'foo'"
+            , List.member "bar" >> true "didn't have 'bar'"
+            ]
+-}
+all : List (a -> Expectation) -> a -> Expectation
+all expectations actual =
+    if List.isEmpty expectations then
+        fail "Expect.all must not be given an empty list!"
+    else
+        expectations
+            |> List.map ((|>) actual)
+            |> List.filter ((/=) Test.Expectation.Pass)
+            -- TODO show all failures not just the first
+            |>
+                List.head
+            |> Maybe.withDefault pass
+
+
 {-| Always passes.
 
     import Json.Decode exposing (decodeString, int)
@@ -473,6 +529,20 @@ pass =
 fail : String -> Expectation
 fail =
     Test.Expectation.Fail ""
+
+
+{-| Create a custom expectation. The logic lives in the provided function that
+takes the expected and actual values and produces either `Err "an error
+message"` indicating a failure or `Ok ()` indicating a pass.
+-}
+custom : (a -> b -> Result String ()) -> a -> b -> Expectation
+custom f expected actual =
+    case f expected actual of
+        Ok () ->
+            pass
+
+        Err str ->
+            fail <| reportFailure str (toString expected) (toString actual)
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
