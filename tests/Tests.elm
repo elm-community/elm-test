@@ -101,11 +101,10 @@ fuzzerTests =
                                 ( tuple ( list int, array float )
                                 , maybe bool
                                 , result unit char
-                                , tuple4
+                                , tuple3
                                     ( percentage
                                     , map2 (+) int int
                                     , frequencyOrCrash [ ( 1, constant True ), ( 3, constant False ) ]
-                                    , Fuzz.filter (\i -> i % 10 /= 0) int
                                     )
                                 , tuple3 ( intRange 0 100, floatRange -51 pi, map abs int )
                                 )
