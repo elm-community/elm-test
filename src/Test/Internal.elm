@@ -5,7 +5,9 @@ import Test.Expectation exposing (Expectation(..))
 import Dict exposing (Dict)
 import Shrink exposing (Shrinker)
 import Fuzz exposing (Fuzzer)
-import Fuzz.Internal as Internal
+import Fuzz.Internal exposing (unpackGenVal, unpackGenTree)
+import RoseTree exposing (RoseTree(..))
+import Lazy.List
 
 
 type Test
@@ -40,18 +42,39 @@ filterHelp lastCheckPassed isKeepable test =
 
 
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest (Internal.Fuzzer { generator, shrinker }) desc getExpectation =
+fuzzTest fuzzer desc getExpectation =
+    {- Fuzz test algorithm with opt-in RoseTrees:
+       Generate a single value by passing the fuzzer True (indicates skip shrinking)
+       Run the test on that value. If it fails:
+           Generate the rosetree by passing the fuzzer False *and the same random seed*
+           Find the new failure by looking at the children for any shrunken values:
+               If a shrunken value causes a failure, recurse on its children
+               If no shrunken value replicates the failure, use the root
+       Whether it passes or fails, do this n times
+    -}
     let
         getFailures failures currentSeed remainingRuns =
             let
-                ( val, nextSeed ) =
-                    Random.step generator currentSeed
+                genVal =
+                    unpackGenVal fuzzer
+
+                ( value, nextSeed ) =
+                    Random.step genVal currentSeed
 
                 newFailures =
-                    if getExpectation val == Pass then
-                        failures
-                    else
-                        shrinkAndAdd shrinker getExpectation val failures
+                    case getExpectation value of
+                        Pass ->
+                            failures
+
+                        failedExpectation ->
+                            let
+                                genTree =
+                                    unpackGenTree fuzzer
+
+                                ( rosetree, nextSeedAgain ) =
+                                    Random.step genTree currentSeed
+                            in
+                                shrinkAndAdd rosetree getExpectation failedExpectation failures
             in
                 if remainingRuns == 1 then
                     newFailures
@@ -76,13 +99,28 @@ fuzzTest (Internal.Fuzzer { generator, shrinker }) desc getExpectation =
         Labeled desc (Test run)
 
 
-shrinkAndAdd : Shrinker a -> (a -> Expectation) -> a -> Dict String Expectation -> Dict String Expectation
-shrinkAndAdd shrinker getExpectation val dict =
+shrinkAndAdd : RoseTree a -> (a -> Expectation) -> Expectation -> Dict String Expectation -> Dict String Expectation
+shrinkAndAdd rootTree getExpectation root'sExpectation dict =
+    -- Knowing that the root already failed, adds the shrunken failure to the dictionary
     let
-        result =
-            Shrink.shrink (getExpectation >> isFail) shrinker val
+        shrink oldExpectation (Rose root branches) =
+            case Lazy.List.headAndTail branches of
+                Just ( (Rose branch _) as rosetree, moreLazyRoseTrees ) ->
+                    -- either way, recurse with the most recent failing expectation, and failing input with its list of shrunken values
+                    case getExpectation branch of
+                        Pass ->
+                            shrink oldExpectation (Rose root moreLazyRoseTrees)
+
+                        newExpectation ->
+                            shrink newExpectation rosetree
+
+                Nothing ->
+                    ( root, oldExpectation )
+
+        ( result, finalExpectation ) =
+            shrink root'sExpectation rootTree
     in
-        Dict.insert (toString result) (getExpectation result) dict
+        Dict.insert (toString result) finalExpectation dict
 
 
 formatExpectation : ( String, Expectation ) -> Expectation
