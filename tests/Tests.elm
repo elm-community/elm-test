@@ -133,7 +133,7 @@ testShrinking test =
                         goodShrink expectation =
                             case expectation of
                                 Pass ->
-                                    Nothing
+                                    Just "Expected this test to fail, but it passed!"
 
                                 Fail given outcome ->
                                     let
@@ -172,7 +172,6 @@ shrinkingTests =
                     (i == 0)
                         || (j == 0)
                         |> Expect.true "(1,1)"
-            , fuzz (result string int) "Fuzz.result" <| \r -> Expect.pass
             , fuzz3 int int int "Every triple of ints has a zero" <|
                 \i j k ->
                     (i == 0)
