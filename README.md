@@ -53,7 +53,7 @@ There are several ways you can run tests locally:
 * [from your terminal](https://github.com/rtfeldman/node-test-runner) via `npm install -g elm-test`
 * [from your browser](https://github.com/rtfeldman/html-test-runner)
 
-Here's how set up and run your tests using the CLI test runner.
+Here's how to set up and run your tests using the CLI test runner.
 
 1. Run `npm install -g elm-test` if you haven't already.
 2. `cd` into the directory that has your `elm-package.json`.
