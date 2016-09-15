@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, maybe, intRange, list, array, frequency, frequencyOrCrash, oneof)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -15,7 +15,7 @@ reproduces a bug.
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
-@docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, frequency, frequencyOrCrash
+@docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, frequency, frequencyOrCrash, oneof
 
 ## Tuple Fuzzers
 Instead of using a tuple, consider using `fuzzN`.
@@ -597,6 +597,23 @@ tupleShrinkHelp5 rose1 rose2 rose3 rose4 rose5 =
             |> Lazy.List.append shrink2
             |> Lazy.List.append shrink1
             |> Rose root
+
+{-| create a fuzzer that takes a list of values and selects one at random
+for example
+
+oneof ["USA", "Canada", "Mexico"] will result in randomly selecting on of those values
+
+-}
+
+oneof: List a -> Fuzzer a
+oneof values =
+    let
+        toFreq v = (1.0, v)
+    in
+        List.map constant values
+            |> List.map toFreq
+            |> frequencyOrCrash
+
 
 
 {-| Create a fuzzer that only and always returns the value provided, and performs no shrinking. This is hardly random,
