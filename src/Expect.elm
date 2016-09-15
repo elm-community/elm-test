@@ -1,4 +1,4 @@
-module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, onFail)
+module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, onFail, maybeEqual, resultEqual)
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
 
@@ -24,6 +24,10 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 ## Booleans
 
 @docs true, false
+
+## Maybe and Result
+
+@ maybeEqual resultEqual
 
 ## Customizing
 
@@ -362,3 +366,25 @@ compareWith label compare expected actual =
         pass
     else
         fail (reportFailure label (toString expected) (toString actual))
+{-|
+If given a result compare the value to a refrence, if match pass, fail on different values or Err
+
+-}
+
+resultEqual : a -> Result b a -> Expectation
+resultEqual refrence result =
+   case result of
+       Ok value ->
+           equal value refrence
+       Err _-> fail "Expected OK, got Err"
+
+{-|
+ assert that a maybe has a value and it is what is expected
+-}
+maybeEqual : a -> Maybe a -> Expectation
+maybeEqual refrence value =
+    case value of
+        Just x ->
+            equal x refrence
+        Nothing ->
+            fail <| "Expected a value and got Nothing"
