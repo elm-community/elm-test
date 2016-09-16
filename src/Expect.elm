@@ -1,4 +1,4 @@
-module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, onFail)
+module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalLists, equalDicts, equalSets, onFail)
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
 
@@ -25,12 +25,18 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 
 @docs true, false
 
+## Collections
+
+@docs equalLists, equalDicts, equalSets
+
 ## Customizing
 
 @docs pass, fail, onFail, getFailure
 -}
 
 import Test.Expectation
+import Dict exposing (Dict)
+import Set exposing (Set)
 import String
 
 
@@ -262,6 +268,171 @@ false message bool =
         pass
 
 
+{-| Passes if the arguments are equal lists.
+
+    -- Passes
+    [1, 2, 3]
+        |> Expect.equalLists [1, 2, 3]
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which, and reports which index the lists first
+differed at or which list was longer:
+
+    -- Fails
+    [ 1, 2, 4, 6 ]
+        |> Expect.equalLists [ 1, 2, 5 ]
+
+    {-
+
+    [1,2,4,6]
+    first diff at index index 2: +`4`, -`5`
+    ╷
+    │ Expect.equalLists
+    ╵
+    first diff at index index 2: +`5`, -`4`
+    [1,2,5]
+
+    -}
+-}
+equalLists : List a -> List a -> Expectation
+equalLists expected actual =
+    if expected == actual then
+        pass
+    else
+        let
+            result =
+                List.map2 (,) actual expected
+                    |> List.indexedMap (,)
+                    |> List.filterMap
+                        (\( index, ( a, e ) ) ->
+                            if e == a then
+                                Nothing
+                            else
+                                Just ( index, a, e )
+                        )
+                    |> List.head
+                    |> Maybe.map
+                        (\( index, a, e ) ->
+                            [ toString actual
+                            , "first diff at index index " ++ toString index ++ ": +`" ++ toString a ++ "`, -`" ++ toString e ++ "`"
+                            , "╷"
+                            , "│ Expect.equalLists"
+                            , "╵"
+                            , "first diff at index index " ++ toString index ++ ": +`" ++ toString e ++ "`, -`" ++ toString a ++ "`"
+                            , toString expected
+                            ]
+                                |> String.join "\n"
+                                |> fail
+                        )
+        in
+            case result of
+                Just failure ->
+                    failure
+
+                Nothing ->
+                    case compare (List.length actual) (List.length expected) of
+                        GT ->
+                            reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
+                                |> fail
+
+                        LT ->
+                            reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
+                                |> fail
+
+                        _ ->
+                            pass
+
+
+{-| Passes if the arguments are equal dicts.
+
+    -- Passes
+    (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
+        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which, and reports which keys were missing from
+or added to each dict:
+
+    -- Fails
+    (Dict.fromList [ ( 1, "one" ), ( 2, "too" ) ])
+        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ), ( 3, "three" ) ])
+
+    {-
+
+    Dict.fromList [(1,"one"),(2,"too")]
+    diff: -[ (2,"two"), (3,"three") ] +[ (2,"too") ]
+    ╷
+    │ Expect.equalDicts
+    ╵
+    diff: +[ (2,"two"), (3,"three") ] -[ (2,"too") ]
+    Dict.fromList [(1,"one"),(2,"two"),(3,"three")]
+
+    -}
+-}
+equalDicts : Dict comparable a -> Dict comparable a -> Expectation
+equalDicts expected actual =
+    if Dict.toList expected == Dict.toList actual then
+        pass
+    else
+        let
+            differ dict k v diffs =
+                if Dict.get k dict == Just v then
+                    diffs
+                else
+                    ( k, v ) :: diffs
+
+            missingKeys =
+                Dict.foldr (differ actual) [] expected
+
+            extraKeys =
+                Dict.foldr (differ expected) [] actual
+        in
+            fail (reportCollectionFailure "Expect.equalDicts" expected actual missingKeys extraKeys)
+
+
+{-| Passes if the arguments are equal sets.
+
+    -- Passes
+    (Set.fromList [1, 2])
+        |> Expect.equalSets (Set.fromList [1, 2])
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which, and reports which keys were missing from
+or added to each set:
+
+    -- Fails
+    (Set.fromList [ 1, 2, 4, 6 ])
+        |> Expect.equalSets (Set.fromList [ 1, 2, 5 ])
+
+    {-
+
+    Set.fromList [1,2,4,6]
+    diff: -[ 5 ] +[ 4, 6 ]
+    ╷
+    │ Expect.equalSets
+    ╵
+    diff: +[ 5 ] -[ 4, 6 ]
+    Set.fromList [1,2,5]
+
+    -}
+-}
+equalSets : Set comparable -> Set comparable -> Expectation
+equalSets expected actual =
+    if Set.toList expected == Set.toList actual then
+        pass
+    else
+        let
+            missingKeys =
+                Set.diff expected actual
+                    |> Set.toList
+
+            extraKeys =
+                Set.diff actual expected
+                    |> Set.toList
+        in
+            fail (reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys)
+
+
 {-| Always passes.
 
     import Json.Decode exposing (decodeString, int)
@@ -354,6 +525,44 @@ reportFailure comparison expected actual =
     , expected
     ]
         |> String.join "\n"
+
+
+reportCollectionFailure : String -> a -> b -> List c -> List d -> String
+reportCollectionFailure comparison expected actual missingKeys extraKeys =
+    [ toString actual
+    , "diff:" ++ formatDiffs Missing missingKeys ++ formatDiffs Extra extraKeys
+    , "╷"
+    , "│ " ++ comparison
+    , "╵"
+    , "diff:" ++ formatDiffs Extra missingKeys ++ formatDiffs Missing extraKeys
+    , toString expected
+    ]
+        |> String.join "\n"
+
+
+type Diff
+    = Extra
+    | Missing
+
+
+formatDiffs : Diff -> List a -> String
+formatDiffs diffType diffs =
+    if List.isEmpty diffs then
+        ""
+    else
+        let
+            modifier =
+                case diffType of
+                    Extra ->
+                        "+"
+
+                    Missing ->
+                        "-"
+        in
+            diffs
+                |> List.map toString
+                |> String.join ", "
+                |> (\d -> " " ++ modifier ++ "[ " ++ d ++ " ]")
 
 
 compareWith : String -> (a -> b -> Bool) -> b -> a -> Expectation

@@ -4,6 +4,8 @@ import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
 import Test.Internal as TI
 import Fuzz exposing (..)
+import Dict
+import Set
 import String
 import Expect
 import Fuzz.Internal
@@ -43,6 +45,18 @@ readmeExample =
                     "ABCDEFG"
                         |> String.reverse
                         |> Expect.equal "GFEDCBA"
+            , test "equal lists" <|
+                \() ->
+                    [ 1, 2, 3 ]
+                        |> Expect.equalLists [ 1, 2, 3 ]
+            , test "equal dicts" <|
+                \() ->
+                    (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
+                        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
+            , test "equal sets" <|
+                \() ->
+                    (Set.fromList [ 1, 2, 3 ])
+                        |> Expect.equalSets (Set.fromList [ 1, 2, 3 ])
             , fuzz string "restores the original string if you run it again" <|
                 \randomlyGeneratedString ->
                     randomlyGeneratedString
