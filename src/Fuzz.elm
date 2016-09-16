@@ -163,6 +163,10 @@ int =
 
 {-| A fuzzer for int values within between a given minimum and maximum value,
 inclusive. Shrunken values will also be within the range.
+
+Remember that [Random.maxInt](http://package.elm-lang.org/packages/elm-lang/core/latest/Random#maxInt)
+is the maximum possible int value, so you can do `intRange x Random.maxInt` to get all
+the ints x or bigger.
 -}
 intRange : Int -> Int -> Fuzzer Int
 intRange lo hi =
