@@ -3,9 +3,11 @@ sudo: false
 cache:
   directories:
     - test/elm-stuff/build-artifacts
+    - sysconfcpus
 
 os:
   - osx
+  - linux
 
 env:
   matrix:
@@ -17,6 +19,15 @@ before_install:
     then brew update; brew install nvm; mkdir ~/.nvm; export NVM_DIR=~/.nvm; source $(brew --prefix nvm)/nvm.sh;
     fi
   - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
+    if [ ! -d sysconfcpus/bin ];
+    then
+      git clone https://github.com/obmarg/libsysconfcpus.git;
+      cd libsysconfcpus;
+      ./configure --prefix=$TRAVIS_BUILD_DIR/sysconfcpus;
+      make && make install;
+      cd ..;
+    fi
 
 install:
   - nvm install $TARGET_NODE_VERSION
@@ -25,6 +36,9 @@ install:
   - npm --version
   - cd tests
   - npm install -g elm@$ELM_VERSION elm-test
+  - mv $(npm config get prefix)/bin/elm-make $(npm config get prefix)/bin/elm-make-old
+  - echo "#\!/bin/bash\\n\\necho \"Running elm-make with sysconfcpus -n 2\"\\n\\n$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make-old \"\$@\"" > $(npm config get prefix)/bin/elm-make
+  - chmod +x $(npm config get prefix)/bin/elm-make
   - npm install
   - elm package install --yes
 
