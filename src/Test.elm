@@ -60,7 +60,7 @@ filter =
 {-| Apply a description to a list of tests.
 
     import Test exposing (describe, test, fuzz)
-    import Fuzz expoing (int)
+    import Fuzz exposing (int)
     import Expect
 
 
