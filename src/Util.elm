@@ -11,19 +11,22 @@ import String
 rangeLengthList : Int -> Int -> Generator a -> Generator (List a)
 rangeLengthList minLength maxLength generator =
     (int minLength maxLength)
-        `andThen` (\len -> list len generator)
+        |> andThen (\len -> list len generator)
 
 
 rangeLengthArray : Int -> Int -> Generator a -> Generator (Array a)
 rangeLengthArray minLength maxLength generator =
-    rangeLengthList minLength maxLength generator |> map Array.fromList
+    rangeLengthList minLength maxLength generator
+        |> map Array.fromList
 
 
 rangeLengthString : Int -> Int -> Generator Char -> Generator String
 rangeLengthString minLength maxLength charGenerator =
-    (int minLength maxLength) `andThen` (lengthString charGenerator)
+    (int minLength maxLength)
+        |> andThen (lengthString charGenerator)
 
 
 lengthString : Generator Char -> Int -> Generator String
 lengthString charGenerator stringLength =
-    map String.fromList (list stringLength charGenerator)
+    list stringLength charGenerator
+        |> map String.fromList
