@@ -61,7 +61,7 @@ Here is an example for a record:
     position =
         Fuzz.custom
             (Random.map2 Position (Random.int -100 100) (Random.int -100 100))
-            (\{ x, y } -> Shrink.map Position (Shrink.int x) `Shrink.andMap` (Shrink.int y))
+            (\{ x, y } -> Shrink.map Position (Shrink.int x) |> Shrink.andMap (Shrink.int y))
 
 Here is an example for a custom union type, assuming there is already a `genName : Generator String` defined:
 
