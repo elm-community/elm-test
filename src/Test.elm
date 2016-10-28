@@ -201,7 +201,7 @@ fuzz =
 
 {-| Run a [fuzz test](#fuzz) using two random inputs.
 
-This is a convenicence function that lets you skip calling [`Fuzz.tuple`](../Fuzz#tuple).
+This is a convenience function that lets you skip calling [`Fuzz.tuple`](../Fuzz#tuple).
 
 See [`fuzzWith`](#fuzzWith) for an example of writing this in tuple style.
 
@@ -230,7 +230,7 @@ fuzz2 fuzzA fuzzB desc =
 
 {-| Run a [fuzz test](#fuzz) using three random inputs.
 
-This is a convenicence function that lets you skip calling [`Fuzz.tuple3`](../Fuzz#tuple3).
+This is a convenience function that lets you skip calling [`Fuzz.tuple3`](../Fuzz#tuple3).
 -}
 fuzz3 :
     Fuzzer a
@@ -249,7 +249,7 @@ fuzz3 fuzzA fuzzB fuzzC desc =
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
 
-This is a convenicence function that lets you skip calling [`Fuzz.tuple4`](../Fuzz#tuple4).
+This is a convenience function that lets you skip calling [`Fuzz.tuple4`](../Fuzz#tuple4).
 -}
 fuzz4 :
     Fuzzer a
@@ -269,7 +269,7 @@ fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
 
 {-| Run a [fuzz test](#fuzz) using five random inputs.
 
-This is a convenicence function that lets you skip calling [`Fuzz.tuple5`](../Fuzz#tuple5).
+This is a convenience function that lets you skip calling [`Fuzz.tuple5`](../Fuzz#tuple5).
 -}
 fuzz5 :
     Fuzzer a
