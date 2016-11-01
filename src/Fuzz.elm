@@ -677,8 +677,8 @@ andMap fuzzerVal fuzzerFunc =
 
 {-| Create a fuzzer based on the result of another fuzzer.
 -}
-andThen : Fuzzer a -> (a -> Fuzzer b) -> Fuzzer b
-andThen (Internal.Fuzzer baseFuzzer) transform =
+andThen : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
+andThen transform (Internal.Fuzzer baseFuzzer) =
     Internal.Fuzzer
         (\noShrink ->
             case baseFuzzer noShrink of
