@@ -1,5 +1,6 @@
 module Tests exposing (all)
 
+import Tuple
 import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
 import Test.Internal as TI
@@ -93,6 +94,10 @@ fuzzerTests =
                     testStringLengthIsPreserved [ a, b, c, d, e ]
             ]
         , fuzz
+            (intRange 1 6)
+            "intRange"
+            (Expect.greaterThan 0)
+        , fuzz
             (frequencyOrCrash [ ( 1, intRange 1 6 ), ( 1, intRange 1 20 ) ])
             "Fuzz.frequency(OrCrash)"
             (Expect.greaterThan 0)
@@ -124,10 +129,10 @@ fuzzerTests =
                                 )
 
                         valNoShrink =
-                            aFuzzer |> Fuzz.Internal.unpackGenVal |> step |> fst
+                            aFuzzer |> Fuzz.Internal.unpackGenVal |> step |> Tuple.first
 
                         valWithShrink =
-                            aFuzzer |> Fuzz.Internal.unpackGenTree |> step |> fst |> RoseTree.root
+                            aFuzzer |> Fuzz.Internal.unpackGenTree |> step |> Tuple.first |> RoseTree.root
                     in
                         Expect.equal valNoShrink valWithShrink
             ]

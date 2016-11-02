@@ -16,6 +16,7 @@ own tests, you should use these runners; see the `README` for more information.
 @docs formatLabels
 -}
 
+import Tuple
 import Test exposing (Test)
 import Test.Internal as Internal
 import Expect exposing (Expectation)
@@ -75,7 +76,7 @@ fromTest runs seed test =
             Internal.Batch subTests ->
                 subTests
                     |> List.foldl (distributeSeeds runs) ( seed, [] )
-                    |> snd
+                    |> Tuple.second
                     |> Batch
 
 

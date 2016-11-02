@@ -26,6 +26,7 @@ Instead of using a tuple, consider using `fuzzN`.
 
 -}
 
+import Tuple
 import Array exposing (Array)
 import Char
 import Util exposing (..)
@@ -763,7 +764,7 @@ frequency list =
         Err "You must provide at least one frequency pair."
     else if List.any (\( weight, _ ) -> weight < 0) list then
         Err "No frequency weights can be less than 0."
-    else if List.sum (List.map fst list) <= 0 then
+    else if List.sum (List.map Tuple.first list) <= 0 then
         Err "Frequency weights must sum to more than 0."
     else
         Ok <|
