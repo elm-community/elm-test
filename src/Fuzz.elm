@@ -671,8 +671,8 @@ The argument order is meant to accomodate chaining:
 Note that shrinking may be better using mapN.
 -}
 andMap : Fuzzer a -> Fuzzer (a -> b) -> Fuzzer b
-andMap fuzzerVal fuzzerFunc =
-    map2 (<|) fuzzerFunc fuzzerVal
+andMap =
+    map2 (|>)
 
 
 {-| Create a fuzzer based on the result of another fuzzer.
