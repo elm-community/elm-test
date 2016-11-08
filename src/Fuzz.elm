@@ -26,7 +26,6 @@ Instead of using a tuple, consider using `fuzzN`.
 
 -}
 
-import Tuple
 import Array exposing (Array)
 import Char
 import Util exposing (..)

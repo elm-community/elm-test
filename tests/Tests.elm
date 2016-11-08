@@ -1,6 +1,5 @@
 module Tests exposing (all)
 
-import Tuple
 import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
 import Test.Internal as TI
