@@ -8,14 +8,13 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 -}
 
 import Runner.Log
-import Html.App
 import Html
 import Tests
 
 
-main : Program Never
+main : Program Never () msg
 main =
-    Html.App.beginnerProgram
+    Html.beginnerProgram
         { model = ()
         , update = \_ _ -> ()
         , view = \() -> Html.text "Check the console for useful output!"

@@ -61,7 +61,7 @@ Here is an example for a record:
     position =
         Fuzz.custom
             (Random.map2 Position (Random.int -100 100) (Random.int -100 100))
-            (\{ x, y } -> Shrink.map Position (Shrink.int x) `Shrink.andMap` (Shrink.int y))
+            (\{ x, y } -> Shrink.map Position (Shrink.int x) |> Shrink.andMap (Shrink.int y))
 
 Here is an example for a custom union type, assuming there is already a `genName : Generator String` defined:
 
@@ -72,7 +72,7 @@ Here is an example for a custom union type, assuming there is already a `genName
     question =
         let
             generator =
-                Random.bool `Random.andThen` (\b ->
+                Random.bool |> Random.andThen (\b ->
                     if b then
                         Random.map Name genName
                     else
@@ -260,7 +260,7 @@ string =
                 , ( 1, Random.int 11 50 )
                 , ( 1, Random.int 50 1000 )
                 ]
-                `Random.andThen` (lengthString charGenerator)
+                |> Random.andThen (lengthString charGenerator)
     in
         custom generator Shrink.string
 
@@ -355,12 +355,12 @@ list (Internal.Fuzzer baseFuzzer) =
                 case baseFuzzer noShrink of
                     Gen genVal ->
                         genLength
-                            |> (flip Random.andThen) (\i -> (Random.list i genVal))
+                            |> Random.andThen (\i -> (Random.list i genVal))
                             |> Gen
 
                     Shrink genTree ->
                         genLength
-                            |> (flip Random.andThen) (\i -> (Random.list i genTree))
+                            |> Random.andThen (\i -> (Random.list i genTree))
                             |> Random.map listShrinkHelp
                             |> Shrink
             )
@@ -394,7 +394,7 @@ listShrinkHelp listOfTrees =
             Lazy.List.numbers
                 |> Lazy.List.map (\i -> i - 1)
                 |> Lazy.List.take n
-                |> Lazy.List.flatMap
+                |> Lazy.List.andThen
                     (\i -> shrinkOne (List.take i listOfTrees) (List.drop i listOfTrees))
 
         shortened =
@@ -402,9 +402,9 @@ listShrinkHelp listOfTrees =
                 Lazy.List.iterate (\n -> n // 2) n
                     |> Lazy.List.takeWhile (\x -> x > 0)
              else
-                Lazy.List.fromList [1..n]
+                Lazy.List.fromList (List.range 1 n)
             )
-                |> Lazy.List.flatMap (\len -> shorter len listOfTrees False)
+                |> Lazy.List.andThen (\len -> shorter len listOfTrees False)
                 |> Lazy.List.map listShrinkHelp
 
         shorter windowSize aList recursing =
@@ -661,10 +661,18 @@ map5 transform fuzzA fuzzB fuzzC fuzzD fuzzE =
 
 
 {-| Map over many fuzzers. This can act as mapN for N > 5.
+
+The argument order is meant to accomodate chaining:
+
+    map f aFuzzer
+        |> andMap anotherFuzzer
+        |> andMap aThirdFuzzer
+
+Note that shrinking may be better using mapN.
 -}
-andMap : Fuzzer (a -> b) -> Fuzzer a -> Fuzzer b
+andMap : Fuzzer a -> Fuzzer (a -> b) -> Fuzzer b
 andMap =
-    map2 (<|)
+    map2 (|>)
 
 
 {-| Create a fuzzer based on the result of another fuzzer.
@@ -675,7 +683,7 @@ andThen transform (Internal.Fuzzer baseFuzzer) =
         (\noShrink ->
             case baseFuzzer noShrink of
                 Gen genVal ->
-                    Gen <| Random.andThen genVal (transform >> Internal.unpackGenVal)
+                    Gen <| Random.andThen (transform >> Internal.unpackGenVal) genVal
 
                 Shrink genTree ->
                     Shrink <| andThenRoseTrees transform genTree
@@ -684,23 +692,24 @@ andThen transform (Internal.Fuzzer baseFuzzer) =
 
 andThenRoseTrees : (a -> Fuzzer b) -> Generator (RoseTree a) -> Generator (RoseTree b)
 andThenRoseTrees transform genTree =
-    Random.andThen genTree
-        (\(Rose root branches) ->
-            let
-                -- genOtherChildren : Generator (LazyList (RoseTree b))
-                genOtherChildren =
-                    branches
-                        |> Lazy.List.map (\rt -> RoseTree.map (transform >> Internal.unpackGenTree) rt |> unwindRoseTree)
-                        |> unwindLazyList
-                        |> Random.map (Lazy.List.map RoseTree.flatten)
-            in
-                Random.map2
-                    (\(Rose trueRoot root'sChildren) otherChildren ->
-                        Rose trueRoot (Lazy.List.append root'sChildren otherChildren)
-                    )
-                    (Internal.unpackGenTree (transform root))
-                    genOtherChildren
-        )
+    genTree
+        |> Random.andThen
+            (\(Rose root branches) ->
+                let
+                    genOtherChildren : Generator (LazyList (RoseTree b))
+                    genOtherChildren =
+                        branches
+                            |> Lazy.List.map (\rt -> RoseTree.map (transform >> Internal.unpackGenTree) rt |> unwindRoseTree)
+                            |> unwindLazyList
+                            |> Random.map (Lazy.List.map RoseTree.flatten)
+                in
+                    Random.map2
+                        (\(Rose trueRoot rootsChildren) otherChildren ->
+                            Rose trueRoot (Lazy.List.append rootsChildren otherChildren)
+                        )
+                        (Internal.unpackGenTree (transform root))
+                        genOtherChildren
+            )
 
 
 unwindRoseTree : RoseTree (Generator a) -> Generator (RoseTree a)
@@ -754,7 +763,7 @@ frequency list =
         Err "You must provide at least one frequency pair."
     else if List.any (\( weight, _ ) -> weight < 0) list then
         Err "No frequency weights can be less than 0."
-    else if List.sum (List.map fst list) <= 0 then
+    else if List.sum (List.map Tuple.first list) <= 0 then
         Err "Frequency weights must sum to more than 0."
     else
         Ok <|

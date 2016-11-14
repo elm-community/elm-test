@@ -75,7 +75,7 @@ fromTest runs seed test =
             Internal.Batch subTests ->
                 subTests
                     |> List.foldl (distributeSeeds runs) ( seed, [] )
-                    |> snd
+                    |> Tuple.second
                     |> Batch
 
 

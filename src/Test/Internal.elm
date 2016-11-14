@@ -100,7 +100,7 @@ fuzzTest fuzzer desc getExpectation =
 
 
 shrinkAndAdd : RoseTree a -> (a -> Expectation) -> Expectation -> Dict String Expectation -> Dict String Expectation
-shrinkAndAdd rootTree getExpectation root'sExpectation dict =
+shrinkAndAdd rootTree getExpectation rootsExpectation dict =
     -- Knowing that the root already failed, adds the shrunken failure to the dictionary
     let
         shrink oldExpectation (Rose root branches) =
@@ -118,7 +118,7 @@ shrinkAndAdd rootTree getExpectation root'sExpectation dict =
                     ( root, oldExpectation )
 
         ( result, finalExpectation ) =
-            shrink root'sExpectation rootTree
+            shrink rootsExpectation rootTree
     in
         Dict.insert (toString result) finalExpectation dict
 
