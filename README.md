@@ -84,8 +84,13 @@ Here are some examples of running tests on CI servers:
 * Not even your test modules can import unexposed functions, so test them only as the exposed interface uses them. Don't expose a function just to test it. Every exposed function should have tests. (If you practice TDD, this happens automatically!)
 * `elm-test` is designed to test functions, not effects. To test them, use [elm-testable](http://package.elm-lang.org/packages/avh4/elm-testable/latest). For integration or end-to-end testing, use your favorite PhantomJS or Selenium webdriver, such as Capybara.
 
-## Upgrading from the old elm-test
+## Upgrading
+### From 0.17
+You will need to delete `elm-stuff` and `tests/elm-stuff`.
 
+If you are using the Node runner, you will need to pull down the new `Main.elm`: `curl -o tests/Main.elm https://raw.githubusercontent.com/rtfeldman/node-test-runner/master/templates/Main.elm`
+
+### From the old elm-test
 [`legacy-elm-test`](http://package.elm-lang.org/packages/rtfeldman/legacy-elm-test/latest) provides a
 drop-in replacement for the `ElmTest 1.0` API, except implemented in terms of
 the current `elm-test`. It also includes support for `elm-check` tests.
@@ -95,6 +100,7 @@ This lets you use the latest test runners right now, and upgrade incrementally.
 ## Releases
 | Version | Notes |
 | ------- | ----- |
+| [**3.0.0**](https://github.com/elm-community/elm-test/tree/3.0.0) | Update for Elm 0.18; switch the argument order of `Fuzz.andMap`.
 | [**2.1.0**](https://github.com/elm-community/elm-test/tree/2.1.0) | Switch to rose trees for `Fuzz.andThen`, other API additions.
 | [**2.0.0**](https://github.com/elm-community/elm-test/tree/2.0.0) | Scratch-rewrite to project-fuzzball
 | [**1.0.0**](https://github.com/elm-community/elm-test/tree/1.0.0) | ElmTest initial release
