@@ -595,7 +595,7 @@ compareWith label compare expected actual =
 {-| Passes if each of the given functions passes when applied to the subject.
 
 **NOTE:** Passing an empty list is assumed to be a mistake, so `Expect.all []`
-will always return a failed expectation no mater what else it is passed.
+will always return a failed expectation no matter what else it is passed.
 
     Expect.all
         [ Expect.greaterThan -2
