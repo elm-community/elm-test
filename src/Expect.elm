@@ -594,6 +594,9 @@ compareWith label compare expected actual =
 
 {-| Passes if each of the given functions passes when applied to the subject.
 
+**NOTE:** Passing an empty list is assumed to be a mistake, so `Expect.all []`
+will always return a failed expectation no mater what else it is passed.
+
     Expect.all
         [ Expect.greaterThan -2
         , Expect.lessThan 5
@@ -625,6 +628,14 @@ which argument is which:
 -}
 all : List (subject -> Expectation) -> subject -> Expectation
 all list query =
+    if List.isEmpty list then
+        fail "Expect.all received an empty list. I assume this was due to a mistake somewhere, so I'm failing this test!"
+    else
+        allHelp list query
+
+
+allHelp : List (subject -> Expectation) -> subject -> Expectation
+allHelp list query =
     case list of
         [] ->
             pass
@@ -632,7 +643,7 @@ all list query =
         check :: rest ->
             case check query of
                 Test.Expectation.Pass ->
-                    all rest query
+                    allHelp rest query
 
                 outcome ->
                     outcome
