@@ -1,4 +1,23 @@
-module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, atMost, lessThan, greaterThan, atLeast, true, false, equalLists, equalDicts, equalSets, onFail)
+module Expect
+    exposing
+        ( Expectation
+        , pass
+        , fail
+        , getFailure
+        , equal
+        , notEqual
+        , atMost
+        , lessThan
+        , greaterThan
+        , atLeast
+        , true
+        , false
+        , equalLists
+        , equalDicts
+        , equalSets
+        , onFail
+        , all
+        )
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
 
@@ -15,7 +34,7 @@ module Expect exposing (Expectation, pass, fail, getFailure, equal, notEqual, at
 
 ## Basic Expectations
 
-@docs Expectation, equal, notEqual
+@docs Expectation, equal, notEqual, all
 
 ## Comparisons
 
@@ -571,3 +590,60 @@ compareWith label compare expected actual =
         pass
     else
         fail (reportFailure label (toString expected) (toString actual))
+
+
+{-| Passes if each of the given functions passes when applied to the subject.
+
+**NOTE:** Passing an empty list is assumed to be a mistake, so `Expect.all []`
+will always return a failed expectation no matter what else it is passed.
+
+    Expect.all
+        [ Expect.greaterThan -2
+        , Expect.lessThan 5
+        ]
+        (List.length [])
+
+    -- Passes because (0 > -2) is True and (0 < 5) is also True
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which:
+
+    -- Fails because (0 > -10) is False
+    List.length []
+        |> Expect.all
+            [ Expect.greaterThan -2
+            , Expect.lessThan -10
+            , Expect.equal 0
+            ]
+
+    {-
+
+    0
+    ╷
+    │ Expect.lessThan
+    ╵
+    -10
+
+    -}
+-}
+all : List (subject -> Expectation) -> subject -> Expectation
+all list query =
+    if List.isEmpty list then
+        fail "Expect.all received an empty list. I assume this was due to a mistake somewhere, so I'm failing this test!"
+    else
+        allHelp list query
+
+
+allHelp : List (subject -> Expectation) -> subject -> Expectation
+allHelp list query =
+    case list of
+        [] ->
+            pass
+
+        check :: rest ->
+            case check query of
+                Test.Expectation.Pass ->
+                    allHelp rest query
+
+                outcome ->
+                    outcome
