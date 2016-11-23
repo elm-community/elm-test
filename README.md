@@ -100,6 +100,7 @@ This lets you use the latest test runners right now, and upgrade incrementally.
 ## Releases
 | Version | Notes |
 | ------- | ----- |
+| [**3.1.0**](https://github.com/elm-community/elm-test/tree/3.1.0) | Add Expect.all
 | [**3.0.0**](https://github.com/elm-community/elm-test/tree/3.0.0) | Update for Elm 0.18; switch the argument order of `Fuzz.andMap`.
 | [**2.1.0**](https://github.com/elm-community/elm-test/tree/2.1.0) | Switch to rose trees for `Fuzz.andThen`, other API additions.
 | [**2.0.0**](https://github.com/elm-community/elm-test/tree/2.0.0) | Scratch-rewrite to project-fuzzball
