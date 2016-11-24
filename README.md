@@ -88,7 +88,7 @@ Here are some examples of running tests on CI servers:
 ### From 0.17
 You will need to delete `elm-stuff` and `tests/elm-stuff`.
 
-If you are using the Node runner, you will need to pull down the new `Main.elm`: `curl -o tests/Main.elm https://raw.githubusercontent.com/rtfeldman/node-test-runner/master/templates/Main.elm`
+If you are using the Node runner, you will need to install the latest version (`npm update -g elm-test`) and pull down the new `Main.elm`: `curl -o tests/Main.elm https://raw.githubusercontent.com/rtfeldman/node-test-runner/master/templates/Main.elm`
 
 ### From the old elm-test
 [`legacy-elm-test`](http://package.elm-lang.org/packages/rtfeldman/legacy-elm-test/latest) provides a
