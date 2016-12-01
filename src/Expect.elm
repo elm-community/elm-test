@@ -91,7 +91,7 @@ which argument is which:
 -}
 equal : a -> a -> Expectation
 equal =
-    compareWith "Expect.equal" (==)
+    equateWith "Expect.equal" (==)
 
 
 {-| Passes if the arguments are not equal.
@@ -117,7 +117,7 @@ equal =
 -}
 notEqual : a -> a -> Expectation
 notEqual =
-    compareWith "Expect.notEqual" (/=)
+    equateWith "Expect.notEqual" (/=)
 
 
 {-| Passes if the second argument is less than the first.
@@ -352,11 +352,9 @@ equalLists expected actual =
                     case compare (List.length actual) (List.length expected) of
                         GT ->
                             reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
-                                |> fail
 
                         LT ->
                             reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
-                                |> fail
 
                         _ ->
                             pass
@@ -535,15 +533,66 @@ onFail str expectation =
             Test.Expectation.Fail { failure | description = str, reason = Test.Expectation.Custom }
 
 
-reportFailure : String -> String -> String -> String
+{-| Passes if each of the given functions passes when applied to the subject.
+**NOTE:** Passing an empty list is assumed to be a mistake, so `Expect.all []`
+will always return a failed expectation no matter what else it is passed.
+    Expect.all
+        [ Expect.greaterThan -2
+        , Expect.lessThan 5
+        ]
+        (List.length [])
+    -- Passes because (0 > -2) is True and (0 < 5) is also True
+Failures resemble code written in pipeline style, so you can tell
+which argument is which:
+    -- Fails because (0 > -10) is False
+    List.length []
+        |> Expect.all
+            [ Expect.greaterThan -2
+            , Expect.lessThan -10
+            , Expect.equal 0
+            ]
+    {-
+    0
+    ╷
+    │ Expect.lessThan
+    ╵
+    -10
+    -}
+-}
+all : List (subject -> Expectation) -> subject -> Expectation
+all list query =
+    if List.isEmpty list then
+        fail "Expect.all received an empty list. I assume this was due to a mistake somewhere, so I'm failing this test!"
+    else
+        allHelp list query
+
+
+allHelp : List (subject -> Expectation) -> subject -> Expectation
+allHelp list query =
+    case list of
+        [] ->
+            pass
+
+        check :: rest ->
+            case check query of
+                Test.Expectation.Pass ->
+                    allHelp rest query
+
+                outcome ->
+                    outcome
+
+
+
+{---- Private helper functions ----}
+
+
+reportFailure : String -> String -> String -> Expectation
 reportFailure comparison expected actual =
-    [ actual
-    , "╷"
-    , "│ " ++ comparison
-    , "╵"
-    , expected
-    ]
-        |> String.join "\n"
+    Test.Expectation.Fail
+        { given = ""
+        , description = comparison
+        , reason = Test.Expectation.Comparison (toString expected) (toString actual)
+        }
 
 
 reportCollectionFailure : String -> a -> b -> List c -> List d -> String
@@ -584,66 +633,23 @@ formatDiffs diffType diffs =
                 |> (\d -> " " ++ modifier ++ "[ " ++ d ++ " ]")
 
 
+equateWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
+equateWith =
+    testWith Test.Expectation.Equals
+
+
 compareWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
-compareWith label compare expected actual =
+compareWith =
+    testWith Test.Expectation.Comparison
+
+
+testWith : (String -> String -> Test.Expectation.Reason) -> String -> (a -> b -> Bool) -> b -> a -> Expectation
+testWith makeReason label compare expected actual =
     if compare actual expected then
         pass
     else
-        fail (reportFailure label (toString expected) (toString actual))
-
-
-{-| Passes if each of the given functions passes when applied to the subject.
-
-**NOTE:** Passing an empty list is assumed to be a mistake, so `Expect.all []`
-will always return a failed expectation no matter what else it is passed.
-
-    Expect.all
-        [ Expect.greaterThan -2
-        , Expect.lessThan 5
-        ]
-        (List.length [])
-
-    -- Passes because (0 > -2) is True and (0 < 5) is also True
-
-Failures resemble code written in pipeline style, so you can tell
-which argument is which:
-
-    -- Fails because (0 > -10) is False
-    List.length []
-        |> Expect.all
-            [ Expect.greaterThan -2
-            , Expect.lessThan -10
-            , Expect.equal 0
-            ]
-
-    {-
-
-    0
-    ╷
-    │ Expect.lessThan
-    ╵
-    -10
-
-    -}
--}
-all : List (subject -> Expectation) -> subject -> Expectation
-all list query =
-    if List.isEmpty list then
-        fail "Expect.all received an empty list. I assume this was due to a mistake somewhere, so I'm failing this test!"
-    else
-        allHelp list query
-
-
-allHelp : List (subject -> Expectation) -> subject -> Expectation
-allHelp list query =
-    case list of
-        [] ->
-            pass
-
-        check :: rest ->
-            case check query of
-                Test.Expectation.Pass ->
-                    allHelp rest query
-
-                outcome ->
-                    outcome
+        Test.Expectation.Fail
+            { given = ""
+            , description = label
+            , reason = makeReason (toString expected) (toString actual)
+            }
