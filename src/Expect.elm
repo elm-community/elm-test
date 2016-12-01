@@ -320,28 +320,30 @@ equalLists expected actual =
     else
         let
             result =
-                List.map2 (,) actual expected
+                List.map2 (,) expected actual
                     |> List.indexedMap (,)
                     |> List.filterMap
-                        (\( index, ( a, e ) ) ->
+                        (\( index, ( e, a ) ) ->
                             if e == a then
                                 Nothing
                             else
-                                Just ( index, a, e )
+                                Just ( index, e, a )
                         )
                     |> List.head
                     |> Maybe.map
-                        (\( index, a, e ) ->
-                            [ toString actual
-                            , "first diff at index index " ++ toString index ++ ": +`" ++ toString a ++ "`, -`" ++ toString e ++ "`"
-                            , "╷"
-                            , "│ Expect.equalLists"
-                            , "╵"
-                            , "first diff at index index " ++ toString index ++ ": +`" ++ toString e ++ "`, -`" ++ toString a ++ "`"
-                            , toString expected
-                            ]
-                                |> String.join "\n"
-                                |> fail
+                        (\( index, e, a ) ->
+                            let
+                                reason =
+                                    Test.Expectation.ListDiff
+                                        (toString expected)
+                                        (toString actual)
+                                        ( index, toString e, toString a )
+                            in
+                                Test.Expectation.Fail
+                                    { given = ""
+                                    , description = "Expect.equalLists"
+                                    , reason = reason
+                                    }
                         )
         in
             case result of
@@ -404,7 +406,7 @@ equalDicts expected actual =
             extraKeys =
                 Dict.foldr (differ expected) [] actual
         in
-            fail (reportCollectionFailure "Expect.equalDicts" expected actual missingKeys extraKeys)
+            reportCollectionFailure "Expect.equalDicts" expected actual missingKeys extraKeys
 
 
 {-| Passes if the arguments are equal sets.
@@ -447,7 +449,7 @@ equalSets expected actual =
                 Set.diff actual expected
                     |> Set.toList
         in
-            fail (reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys)
+            reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys
 
 
 {-| Always passes.
@@ -595,42 +597,19 @@ reportFailure comparison expected actual =
         }
 
 
-reportCollectionFailure : String -> a -> b -> List c -> List d -> String
+reportCollectionFailure : String -> a -> b -> List c -> List d -> Expectation
 reportCollectionFailure comparison expected actual missingKeys extraKeys =
-    [ toString actual
-    , "diff:" ++ formatDiffs Missing missingKeys ++ formatDiffs Extra extraKeys
-    , "╷"
-    , "│ " ++ comparison
-    , "╵"
-    , "diff:" ++ formatDiffs Extra missingKeys ++ formatDiffs Missing extraKeys
-    , toString expected
-    ]
-        |> String.join "\n"
-
-
-type Diff
-    = Extra
-    | Missing
-
-
-formatDiffs : Diff -> List a -> String
-formatDiffs diffType diffs =
-    if List.isEmpty diffs then
-        ""
-    else
-        let
-            modifier =
-                case diffType of
-                    Extra ->
-                        "+"
-
-                    Missing ->
-                        "-"
-        in
-            diffs
-                |> List.map toString
-                |> String.join ", "
-                |> (\d -> " " ++ modifier ++ "[ " ++ d ++ " ]")
+    Test.Expectation.Fail
+        { given = ""
+        , description = comparison
+        , reason =
+            Test.Expectation.CollectionDiff
+                { expected = toString expected
+                , actual = toString actual
+                , extra = List.map toString extraKeys
+                , missing = List.map toString missingKeys
+                }
+        }
 
 
 equateWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
