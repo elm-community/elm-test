@@ -490,8 +490,8 @@ pass =
                     Expect.fail err
 -}
 fail : String -> Expectation
-fail =
-    Test.Expectation.Fail ""
+fail str =
+    Test.Expectation.Fail { given = "", description = str, reason = Test.Expectation.Custom }
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
@@ -515,8 +515,8 @@ getFailure expectation =
         Test.Expectation.Pass ->
             Nothing
 
-        Test.Expectation.Fail given message ->
-            Just { given = given, message = message }
+        Test.Expectation.Fail { given, description } ->
+            Just { given = given, message = description }
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
@@ -531,8 +531,8 @@ onFail str expectation =
         Test.Expectation.Pass ->
             expectation
 
-        Test.Expectation.Fail given _ ->
-            Test.Expectation.Fail given str
+        Test.Expectation.Fail failure ->
+            Test.Expectation.Fail { failure | description = str, reason = Test.Expectation.Custom }
 
 
 reportFailure : String -> String -> String -> String
