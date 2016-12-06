@@ -19,7 +19,7 @@ import Lazy.List as LL
 all : Test
 all =
     Test.concat
-        [ readmeExample, bug39, fuzzerTests, shrinkingTests ]
+        [ readmeExample, bug39, expectationTests, fuzzerTests, shrinkingTests ]
 
 
 {-| Regression test for https://github.com/elm-community/elm-test/issues/39
@@ -66,6 +66,21 @@ readmeExample =
                         |> String.reverse
                         |> String.reverse
                         |> Expect.equal randomlyGeneratedString
+            ]
+        ]
+
+
+expectationTests : Test
+expectationTests =
+    describe "Test specific expectations"
+        [ describe "Expect.within"
+            [ fuzz float "pythagorean identity" <|
+                \x ->
+                    (sin x) ^ 2 + (cos x) ^ 2 |> Expect.within 0.000001 1.0
+            , test "floats known to not add exactly" <|
+                \() -> 0.1 + 0.2 |> Expect.within 0.000000001 0.3
+            , test "approximation of pi" <|
+                \() -> 3.14 |> Expect.within 0.01 pi
             ]
         ]
 

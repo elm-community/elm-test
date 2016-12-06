@@ -10,6 +10,7 @@ module Expect
         , lessThan
         , greaterThan
         , atLeast
+        , within
         , true
         , false
         , equalLists
@@ -38,7 +39,7 @@ module Expect
 
 ## Comparisons
 
-@docs lessThan, atMost, greaterThan, atLeast
+@docs lessThan, atMost, greaterThan, atLeast, within
 
 ## Booleans
 
@@ -232,6 +233,39 @@ which argument is which:
 atLeast : comparable -> comparable -> Expectation
 atLeast =
     compareWith "Expect.atLeast" (>=)
+
+
+{-| Passes if the second and third arguments are equal within a tolerance
+specified by the first argument. This is indended to avoid failing because of
+minor inaccuracies introduced by floating point arithmetic.
+
+    -- Fails because 0.1 + 0.2 == 0.30000000000000004 (yes, seriously)
+    0.1 + 0.2 |> Expect.equal 0.3
+
+    -- So instead write this test, which passes
+    0.1 + 0.2 |> Expect.within 0.000000001 0.3
+
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which:
+
+    -- Fails because 3.14 is not close enough to pi
+    3.14 |> Expect.within 0.0001 pi
+
+    {-
+
+    3.14
+    ╷
+    │ Expect.within 0.0001
+    ╵
+    3.141592653589793
+
+    -}
+-}
+within : Float -> Float -> Float -> Expectation
+within tolerance =
+    compareWith ("Expect.within " ++ toString tolerance)
+        (\a b -> abs (a - b) < tolerance)
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
