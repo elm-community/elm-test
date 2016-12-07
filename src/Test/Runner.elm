@@ -1,4 +1,4 @@
-module Test.Runner exposing (Runnable, Runner(..), run, fromTest, formatLabels)
+module Test.Runner exposing (Runnable, Runner(..), run, fromTest, formatLabels, Shrinkable, fuzz, shrink)
 
 {-| A collection of functions used by authors of test runners. To run your
 own tests, you should use these runners; see the `README` for more information.
@@ -14,11 +14,20 @@ own tests, you should use these runners; see the `README` for more information.
 ## Formatting
 
 @docs formatLabels
+
+## Fuzzers
+These functions give you the ability to run fuzzers separate of running fuzz tests.
+
+@docs Shrinkable, fuzz, shrink
 -}
 
 import Test exposing (Test)
 import Test.Internal as Internal
+import RoseTree exposing (RoseTree(Rose))
+import Lazy.List as LazyList exposing (LazyList)
 import Expect exposing (Expectation)
+import Fuzz exposing (Fuzzer)
+import Fuzz.Internal
 import Random.Pcg
 import String
 
@@ -147,3 +156,46 @@ formatLabels formatDescription formatTest labels =
                 |> List.map formatDescription
                 |> (::) (formatTest test)
                 |> List.reverse
+
+
+{-| A `Shrinkable a` is an opaque type that allows you to obtain a value of type
+`a` that is smaller than the one you've previously obtained.
+-}
+type Shrinkable a
+    = S { down : LazyList (RoseTree a), over : LazyList (RoseTree a) }
+
+
+{-| Given a fuzzer, return a random generator to produce a value and a
+Shrinkable. The value is what a fuzz test would have received as input.
+-}
+fuzz : Fuzzer a -> Random.Pcg.Generator ( a, Shrinkable a )
+fuzz fuzzer =
+    Fuzz.Internal.unpackGenTree fuzzer
+        |> Random.Pcg.map
+            (\(Rose root children) ->
+                ( root, S { down = children, over = LazyList.empty } )
+            )
+
+
+{-| Given a Shrinkable, attempt to shrink the value further. Pass `False` to
+indicate that the last value you've seen (from either `fuzz` or this function)
+caused the test to **fail**. This will attempt to find a smaller value. Pass
+`True` if the test passed. If you have already seen a failure, this will attempt
+to shrink that failure in another way. In both cases, it may be impossible to
+shrink the value, represented by `Nothing`.
+-}
+shrink : Bool -> Shrinkable a -> Maybe ( a, Shrinkable a )
+shrink causedPass (S { down, over }) =
+    let
+        tryNext =
+            if causedPass then
+                over
+            else
+                down
+    in
+        case LazyList.headAndTail tryNext of
+            Just ( Rose root children, tl ) ->
+                Just ( root, S { down = children, over = tl } )
+
+            Nothing ->
+                Nothing
