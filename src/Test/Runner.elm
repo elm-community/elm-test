@@ -158,11 +158,17 @@ formatLabels formatDescription formatTest labels =
                 |> List.reverse
 
 
+type alias Shrunken a =
+    { down : LazyList (RoseTree a)
+    , over : LazyList (RoseTree a)
+    }
+
+
 {-| A `Shrinkable a` is an opaque type that allows you to obtain a value of type
 `a` that is smaller than the one you've previously obtained.
 -}
 type Shrinkable a
-    = S { down : LazyList (RoseTree a), over : LazyList (RoseTree a) }
+    = Shrinkable (Shrunken a)
 
 
 {-| Given a fuzzer, return a random generator to produce a value and a
@@ -173,7 +179,7 @@ fuzz fuzzer =
     Fuzz.Internal.unpackGenTree fuzzer
         |> Random.Pcg.map
             (\(Rose root children) ->
-                ( root, S { down = children, over = LazyList.empty } )
+                ( root, Shrinkable { down = children, over = LazyList.empty } )
             )
 
 
@@ -185,7 +191,7 @@ to shrink that failure in another way. In both cases, it may be impossible to
 shrink the value, represented by `Nothing`.
 -}
 shrink : Bool -> Shrinkable a -> Maybe ( a, Shrinkable a )
-shrink causedPass (S { down, over }) =
+shrink causedPass (Shrinkable { down, over }) =
     let
         tryNext =
             if causedPass then
@@ -195,7 +201,7 @@ shrink causedPass (S { down, over }) =
     in
         case LazyList.headAndTail tryNext of
             Just ( Rose root children, tl ) ->
-                Just ( root, S { down = children, over = tl } )
+                Just ( root, Shrinkable { down = children, over = tl } )
 
             Nothing ->
                 Nothing
