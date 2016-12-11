@@ -591,26 +591,26 @@ allHelp list query =
 
 reportFailure : String -> String -> String -> Expectation
 reportFailure comparison expected actual =
-    Test.Expectation.Fail
-        { given = ""
-        , description = comparison
-        , reason = Test.Expectation.Comparison (toString expected) (toString actual)
-        }
+    { given = ""
+    , description = comparison
+    , reason = Test.Expectation.Comparison (toString expected) (toString actual)
+    }
+        |> Test.Expectation.Fail
 
 
 reportCollectionFailure : String -> a -> b -> List c -> List d -> Expectation
 reportCollectionFailure comparison expected actual missingKeys extraKeys =
-    Test.Expectation.Fail
-        { given = ""
-        , description = comparison
-        , reason =
-            Test.Expectation.CollectionDiff
-                { expected = toString expected
-                , actual = toString actual
-                , extra = List.map toString extraKeys
-                , missing = List.map toString missingKeys
-                }
+    { given = ""
+    , description = comparison
+    , reason =
+        { expected = toString expected
+        , actual = toString actual
+        , extra = List.map toString extraKeys
+        , missing = List.map toString missingKeys
         }
+            |> Test.Expectation.CollectionDiff
+    }
+        |> Test.Expectation.Fail
 
 
 {-| String arg is label, e.g. "Expect.equal".
@@ -630,8 +630,8 @@ testWith makeReason label runTest expected actual =
     if runTest actual expected then
         pass
     else
-        Test.Expectation.Fail
-            { given = ""
-            , description = label
-            , reason = makeReason (toString expected) (toString actual)
-            }
+        { given = ""
+        , description = label
+        , reason = makeReason (toString expected) (toString actual)
+        }
+            |> Test.Expectation.Fail
