@@ -3,6 +3,7 @@ module Tests exposing (all)
 import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
 import Test.Internal as TI
+import Test.Runner
 import Fuzz exposing (..)
 import Dict
 import Set
@@ -11,6 +12,8 @@ import Expect
 import Fuzz.Internal
 import RoseTree
 import Random.Pcg as Random
+import Shrink
+import Lazy.List as LL
 
 
 all : Test
@@ -134,6 +137,7 @@ fuzzerTests =
                             aFuzzer |> Fuzz.Internal.unpackGenTree |> step |> Tuple.first |> RoseTree.root
                     in
                         Expect.equal valNoShrink valWithShrink
+            , manualFuzzerTests
             ]
         ]
 
@@ -227,3 +231,85 @@ shrinkingTests =
                     in
                         checkPair aList |> Expect.true "[1,0]|[0,-1]"
             ]
+
+
+{-| get a good distribution of random seeds, and don't shrink our seeds!
+-}
+randomSeedFuzzer : Fuzzer Random.Seed
+randomSeedFuzzer =
+    custom (Random.int 0 (2 ^ 32 - 1)) Shrink.noShrink |> Fuzz.map Random.initialSeed
+
+
+manualFuzzerTests : Test
+manualFuzzerTests =
+    describe "Test Test.Runner.{fuzz, shrink}"
+        [ fuzz randomSeedFuzzer "Claim there are no even numbers" <|
+            \seed ->
+                let
+                    -- fuzzer is gauranteed to produce an even number
+                    fuzzer =
+                        Fuzz.intRange 2 10000
+                            |> Fuzz.map
+                                (\n ->
+                                    if failsTest n then
+                                        n
+                                    else
+                                        n + 1
+                                )
+
+                    failsTest n =
+                        n % 2 == 0
+
+                    pair =
+                        Random.step (Test.Runner.fuzz fuzzer) seed |> Tuple.first
+
+                    unfold acc maybePair =
+                        case maybePair of
+                            Just ( valN, shrinkN ) ->
+                                if failsTest valN then
+                                    unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
+                                else
+                                    unfold acc (Test.Runner.shrink True shrinkN)
+
+                            Nothing ->
+                                acc
+                in
+                    unfold [] (Just pair)
+                        |> Expect.all
+                            [ List.all failsTest >> Expect.true "Not all elements were even"
+                            , List.head
+                                >> Maybe.map (Expect.all [ Expect.lessThan 5, Expect.atLeast 0 ])
+                                >> Maybe.withDefault (Expect.fail "Did not cause failure")
+                            , List.reverse >> List.head >> Expect.equal (Just (Tuple.first pair))
+                            ]
+        , fuzz randomSeedFuzzer "No strings contain the letter e" <|
+            \seed ->
+                let
+                    -- fuzzer is gauranteed to produce a string with the letter e
+                    fuzzer =
+                        map2 (\pre suf -> pre ++ "e" ++ suf) string string
+
+                    failsTest =
+                        String.contains "e"
+
+                    pair =
+                        Random.step (Test.Runner.fuzz fuzzer) seed |> Tuple.first
+
+                    unfold acc maybePair =
+                        case maybePair of
+                            Just ( valN, shrinkN ) ->
+                                if failsTest valN then
+                                    unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
+                                else
+                                    unfold acc (Test.Runner.shrink True shrinkN)
+
+                            Nothing ->
+                                acc
+                in
+                    unfold [] (Just pair)
+                        |> Expect.all
+                            [ List.all failsTest >> Expect.true "Not all contained the letter e"
+                            , List.head >> Expect.equal (Just "e")
+                            , List.reverse >> List.head >> Expect.equal (Just (Tuple.first pair))
+                            ]
+        ]
