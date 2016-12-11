@@ -233,40 +233,83 @@ shrinkingTests =
             ]
 
 
+{-| get a good distribution of random seeds, and don't shrink our seeds!
+-}
+randomSeedFuzzer : Fuzzer Random.Seed
+randomSeedFuzzer =
+    custom (Random.int 0 (2 ^ 32 - 1)) Shrink.noShrink |> Fuzz.map Random.initialSeed
+
+
 manualFuzzerTests : Test
 manualFuzzerTests =
-    -- get a good distribution of random seeds, and don't shrink our seeds!
-    fuzz (custom (Random.int Random.minInt Random.maxInt) Shrink.noShrink) "Test Test.Runner.{fuzz, shrink}" <|
-        \i ->
-            let
-                seed =
-                    Random.initialSeed i
+    describe "Test Test.Runner.{fuzz, shrink}"
+        [ fuzz randomSeedFuzzer "Claim there are no even numbers" <|
+            \seed ->
+                let
+                    -- fuzzer is gauranteed to produce an even number
+                    fuzzer =
+                        Fuzz.intRange 2 10000
+                            |> Fuzz.map
+                                (\n ->
+                                    if failsTest n then
+                                        n
+                                    else
+                                        n + 1
+                                )
 
-                -- fuzzer is gauranteed to produce an even number
-                fuzzer =
-                    Fuzz.intRange 2 10000 |> Fuzz.map (\x -> x * 2)
+                    failsTest n =
+                        n % 2 == 0
 
-                -- we are claiming that there are no even numbers
-                isEven n =
-                    n % 2 == 0
+                    pair =
+                        Random.step (Test.Runner.fuzz fuzzer) seed |> Tuple.first
 
-                pair =
-                    Random.step (Test.Runner.fuzz fuzzer) seed |> Tuple.first
+                    unfold acc maybePair =
+                        case maybePair of
+                            Just ( valN, shrinkN ) ->
+                                if failsTest valN then
+                                    unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
+                                else
+                                    unfold acc (Test.Runner.shrink True shrinkN)
 
-                unfold acc maybePair =
-                    case maybePair of
-                        Just ( valN, shrinkN ) ->
-                            if isEven valN then
-                                unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
-                            else
-                                unfold acc (Test.Runner.shrink True shrinkN)
+                            Nothing ->
+                                acc
+                in
+                    unfold [] (Just pair)
+                        |> Expect.all
+                            [ List.all failsTest >> Expect.true "Not all elements were even"
+                            , List.head
+                                >> Maybe.map (Expect.all [ Expect.lessThan 5, Expect.atLeast 0 ])
+                                >> Maybe.withDefault (Expect.fail "Did not cause failure")
+                            , List.reverse >> List.head >> Expect.equal (Just (Tuple.first pair))
+                            ]
+        , fuzz randomSeedFuzzer "No strings contain the letter e" <|
+            \seed ->
+                let
+                    -- fuzzer is gauranteed to produce a string with the letter e
+                    fuzzer =
+                        map2 (\pre suf -> pre ++ "e" ++ suf) string string
 
-                        Nothing ->
-                            acc
-            in
-                unfold [] (Just pair)
-                    |> Expect.all
-                        [ List.all isEven >> Expect.true "Not all elements were even"
-                          -- , List.head >> Expect.equal (Just 0)
-                        , List.reverse >> List.head >> Expect.equal (Just (Tuple.first pair))
-                        ]
+                    failsTest =
+                        String.contains "e"
+
+                    pair =
+                        Random.step (Test.Runner.fuzz fuzzer) seed |> Tuple.first
+
+                    unfold acc maybePair =
+                        case maybePair of
+                            Just ( valN, shrinkN ) ->
+                                if failsTest valN then
+                                    unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
+                                else
+                                    unfold acc (Test.Runner.shrink True shrinkN)
+
+                            Nothing ->
+                                acc
+                in
+                    unfold [] (Just pair)
+                        |> Expect.all
+                            [ List.all failsTest >> Expect.true "Not all contained the letter e"
+                            , List.head >> Expect.equal (Just "e")
+                            , List.reverse >> List.head >> Expect.equal (Just (Tuple.first pair))
+                            ]
+        ]
