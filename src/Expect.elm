@@ -515,51 +515,8 @@ getFailure expectation =
         Test.Expectation.Pass ->
             Nothing
 
-        Test.Expectation.Fail { given, description, reason } ->
-            let
-                message =
-                    case reason of
-                        Test.Expectation.Custom ->
-                            description
-
-                        Test.Expectation.Equals e a ->
-                            verticalBar description e a
-
-                        Test.Expectation.Comparison e a ->
-                            verticalBar description e a
-
-                        Test.Expectation.ListDiff e a ( i, itemE, itemA ) ->
-                            verticalBar description e a
-                                ++ "\n\nThe first diff is at index index "
-                                ++ toString i
-                                ++ ": it was `"
-                                ++ itemA
-                                ++ "`, but `"
-                                ++ itemE
-                                ++ "` was expected."
-
-                        Test.Expectation.CollectionDiff { expected, actual, extra, missing } ->
-                            let
-                                extraStr =
-                                    if List.isEmpty extra then
-                                        ""
-                                    else
-                                        "\nThese keys are extra: "
-                                            ++ (extra |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
-
-                                missingStr =
-                                    if List.isEmpty missing then
-                                        ""
-                                    else
-                                        "\nThese keys are missing: "
-                                            ++ (missing |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
-                            in
-                                verticalBar description expected actual
-                                    ++ "\n"
-                                    ++ extraStr
-                                    ++ missingStr
-            in
-                Just { given = given, message = message }
+        Test.Expectation.Fail record ->
+            Just { given = record.given, message = getFailureMessage record }
 
 
 verticalBar : String -> String -> String -> String
@@ -571,6 +528,50 @@ verticalBar comparison expected actual =
     , expected
     ]
         |> String.join "\n"
+
+
+getFailureMessage : { given : String, description : String, reason : Test.Expectation.Reason } -> String
+getFailureMessage { given, description, reason } =
+    case reason of
+        Test.Expectation.Custom ->
+            description
+
+        Test.Expectation.Equals e a ->
+            verticalBar description e a
+
+        Test.Expectation.Comparison e a ->
+            verticalBar description e a
+
+        Test.Expectation.ListDiff e a ( i, itemE, itemA ) ->
+            verticalBar description e a
+                ++ "\n\nThe first diff is at index index "
+                ++ toString i
+                ++ ": it was `"
+                ++ itemA
+                ++ "`, but `"
+                ++ itemE
+                ++ "` was expected."
+
+        Test.Expectation.CollectionDiff { expected, actual, extra, missing } ->
+            let
+                extraStr =
+                    if List.isEmpty extra then
+                        ""
+                    else
+                        "\nThese keys are extra: "
+                            ++ (extra |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
+
+                missingStr =
+                    if List.isEmpty missing then
+                        ""
+                    else
+                        "\nThese keys are missing: "
+                            ++ (missing |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
+            in
+                verticalBar description expected actual
+                    ++ "\n"
+                    ++ extraStr
+                    ++ missingStr
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
