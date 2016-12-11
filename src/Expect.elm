@@ -12,6 +12,7 @@ module Expect
         , atLeast
         , true
         , false
+        , err
         , equalLists
         , equalDicts
         , equalSets
@@ -46,7 +47,7 @@ module Expect
 
 ## Collections
 
-@docs equalLists, equalDicts, equalSets
+@docs err, equalLists, equalDicts, equalSets
 
 ## Customizing
 
@@ -286,6 +287,47 @@ false message bool =
         fail message
     else
         pass
+
+
+{-| Passes if the
+[`Result`](http://package.elm-lang.org/packages/elm-lang/core/latest/Result) is
+an `Err` rather than `Ok`. This is useful for tests where you expect to get an
+error but you don't care about what the actual error is. If your possibly
+erroring function returns a `Maybe`, simply use `Expect.equal Nothing`.
+
+    -- Passes
+    String.toInt "not an int"
+        |> Expect.err
+
+Test failures will be printed with the unexpected `Ok` value contrasting with
+any `Err`.
+
+    -- Fails
+    String.toInt "20"
+        |> Expect.err
+
+    {-
+
+    Ok 20
+    ╷
+    │ Expect.err
+    ╵
+    Err _
+
+    -}
+-}
+err : Result a b -> Expectation
+err result =
+    case result of
+        Ok _ ->
+            { given = ""
+            , description = "Expect.err"
+            , reason = Test.Expectation.Comparison "Err _" (toString result)
+            }
+                |> Test.Expectation.Fail
+
+        Err _ ->
+            pass
 
 
 {-| Passes if the arguments are equal lists.
