@@ -543,14 +543,16 @@ getFailureMessage { given, description, reason } =
             verticalBar description e a
 
         Test.Expectation.ListDiff e a ( i, itemE, itemA ) ->
-            verticalBar description e a
-                ++ "\n\nThe first diff is at index index "
-                ++ toString i
-                ++ ": it was `"
-                ++ itemA
-                ++ "`, but `"
-                ++ itemE
-                ++ "` was expected."
+            String.join ""
+                [ verticalBar description e a
+                , "\n\nThe first diff is at index index "
+                , toString i
+                , ": it was `"
+                , itemA
+                , "`, but `"
+                , itemE
+                , "` was expected."
+                ]
 
         Test.Expectation.CollectionDiff { expected, actual, extra, missing } ->
             let
@@ -568,10 +570,12 @@ getFailureMessage { given, description, reason } =
                         "\nThese keys are missing: "
                             ++ (missing |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
             in
-                verticalBar description expected actual
-                    ++ "\n"
-                    ++ extraStr
-                    ++ missingStr
+                String.join ""
+                    [ verticalBar description expected actual
+                    , "\n"
+                    , extraStr
+                    , missingStr
+                    ]
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
@@ -667,6 +671,8 @@ reportCollectionFailure comparison expected actual missingKeys extraKeys =
         }
 
 
+{-| String arg is label, e.g. "Expect.equal".
+-}
 equateWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
 equateWith =
     testWith Test.Expectation.Equals
@@ -678,8 +684,8 @@ compareWith =
 
 
 testWith : (String -> String -> Test.Expectation.Reason) -> String -> (a -> b -> Bool) -> b -> a -> Expectation
-testWith makeReason label compare expected actual =
-    if compare actual expected then
+testWith makeReason label runTest expected actual =
+    if runTest actual expected then
         pass
     else
         Test.Expectation.Fail

@@ -27,10 +27,8 @@ type Reason
         }
 
 
-
---type alias CollectionDiff = {
-
-
+{-| Set the given (fuzz test input) of an expectation.
+-}
 withGiven : String -> Expectation -> Expectation
 withGiven newGiven expectation =
     case expectation of
