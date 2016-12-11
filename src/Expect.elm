@@ -54,6 +54,7 @@ module Expect
 -}
 
 import Test.Expectation
+import Test.Message exposing (failureMessage)
 import Dict exposing (Dict)
 import Set exposing (Set)
 import String
@@ -516,66 +517,7 @@ getFailure expectation =
             Nothing
 
         Test.Expectation.Fail record ->
-            Just { given = record.given, message = getFailureMessage record }
-
-
-verticalBar : String -> String -> String -> String
-verticalBar comparison expected actual =
-    [ actual
-    , "╷"
-    , "│ " ++ comparison
-    , "╵"
-    , expected
-    ]
-        |> String.join "\n"
-
-
-getFailureMessage : { given : String, description : String, reason : Test.Expectation.Reason } -> String
-getFailureMessage { given, description, reason } =
-    case reason of
-        Test.Expectation.Custom ->
-            description
-
-        Test.Expectation.Equals e a ->
-            verticalBar description e a
-
-        Test.Expectation.Comparison e a ->
-            verticalBar description e a
-
-        Test.Expectation.ListDiff e a ( i, itemE, itemA ) ->
-            String.join ""
-                [ verticalBar description e a
-                , "\n\nThe first diff is at index index "
-                , toString i
-                , ": it was `"
-                , itemA
-                , "`, but `"
-                , itemE
-                , "` was expected."
-                ]
-
-        Test.Expectation.CollectionDiff { expected, actual, extra, missing } ->
-            let
-                extraStr =
-                    if List.isEmpty extra then
-                        ""
-                    else
-                        "\nThese keys are extra: "
-                            ++ (extra |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
-
-                missingStr =
-                    if List.isEmpty missing then
-                        ""
-                    else
-                        "\nThese keys are missing: "
-                            ++ (missing |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
-            in
-                String.join ""
-                    [ verticalBar description expected actual
-                    , "\n"
-                    , extraStr
-                    , missingStr
-                    ]
+            Just { given = record.given, message = failureMessage record }
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
