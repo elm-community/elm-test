@@ -157,10 +157,10 @@ testShrinking test =
                                 Pass ->
                                     Just "Expected this test to fail, but it passed!"
 
-                                Fail given outcome ->
+                                Fail { given, description } ->
                                     let
                                         acceptable =
-                                            String.split "|" outcome
+                                            String.split "|" description
                                     in
                                         if List.member given acceptable then
                                             Nothing

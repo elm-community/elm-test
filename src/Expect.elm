@@ -54,6 +54,7 @@ module Expect
 -}
 
 import Test.Expectation
+import Test.Message exposing (failureMessage)
 import Dict exposing (Dict)
 import Set exposing (Set)
 import String
@@ -91,7 +92,7 @@ which argument is which:
 -}
 equal : a -> a -> Expectation
 equal =
-    compareWith "Expect.equal" (==)
+    equateWith "Expect.equal" (==)
 
 
 {-| Passes if the arguments are not equal.
@@ -117,7 +118,7 @@ equal =
 -}
 notEqual : a -> a -> Expectation
 notEqual =
-    compareWith "Expect.notEqual" (/=)
+    equateWith "Expect.notEqual" (/=)
 
 
 {-| Passes if the second argument is less than the first.
@@ -320,28 +321,30 @@ equalLists expected actual =
     else
         let
             result =
-                List.map2 (,) actual expected
+                List.map2 (,) expected actual
                     |> List.indexedMap (,)
                     |> List.filterMap
-                        (\( index, ( a, e ) ) ->
+                        (\( index, ( e, a ) ) ->
                             if e == a then
                                 Nothing
                             else
-                                Just ( index, a, e )
+                                Just ( index, e, a )
                         )
                     |> List.head
                     |> Maybe.map
-                        (\( index, a, e ) ->
-                            [ toString actual
-                            , "first diff at index index " ++ toString index ++ ": +`" ++ toString a ++ "`, -`" ++ toString e ++ "`"
-                            , "╷"
-                            , "│ Expect.equalLists"
-                            , "╵"
-                            , "first diff at index index " ++ toString index ++ ": +`" ++ toString e ++ "`, -`" ++ toString a ++ "`"
-                            , toString expected
-                            ]
-                                |> String.join "\n"
-                                |> fail
+                        (\( index, e, a ) ->
+                            let
+                                reason =
+                                    Test.Expectation.ListDiff
+                                        (toString expected)
+                                        (toString actual)
+                                        ( index, toString e, toString a )
+                            in
+                                Test.Expectation.Fail
+                                    { given = ""
+                                    , description = "Expect.equalLists"
+                                    , reason = reason
+                                    }
                         )
         in
             case result of
@@ -352,11 +355,9 @@ equalLists expected actual =
                     case compare (List.length actual) (List.length expected) of
                         GT ->
                             reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
-                                |> fail
 
                         LT ->
                             reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
-                                |> fail
 
                         _ ->
                             pass
@@ -406,7 +407,7 @@ equalDicts expected actual =
             extraKeys =
                 Dict.foldr (differ expected) [] actual
         in
-            fail (reportCollectionFailure "Expect.equalDicts" expected actual missingKeys extraKeys)
+            reportCollectionFailure "Expect.equalDicts" expected actual missingKeys extraKeys
 
 
 {-| Passes if the arguments are equal sets.
@@ -449,7 +450,7 @@ equalSets expected actual =
                 Set.diff actual expected
                     |> Set.toList
         in
-            fail (reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys)
+            reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys
 
 
 {-| Always passes.
@@ -490,8 +491,8 @@ pass =
                     Expect.fail err
 -}
 fail : String -> Expectation
-fail =
-    Test.Expectation.Fail ""
+fail str =
+    Test.Expectation.Fail { given = "", description = str, reason = Test.Expectation.Custom }
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
@@ -515,8 +516,8 @@ getFailure expectation =
         Test.Expectation.Pass ->
             Nothing
 
-        Test.Expectation.Fail given message ->
-            Just { given = given, message = message }
+        Test.Expectation.Fail record ->
+            Just { given = record.given, message = failureMessage record }
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
@@ -531,83 +532,21 @@ onFail str expectation =
         Test.Expectation.Pass ->
             expectation
 
-        Test.Expectation.Fail given _ ->
-            Test.Expectation.Fail given str
-
-
-reportFailure : String -> String -> String -> String
-reportFailure comparison expected actual =
-    [ actual
-    , "╷"
-    , "│ " ++ comparison
-    , "╵"
-    , expected
-    ]
-        |> String.join "\n"
-
-
-reportCollectionFailure : String -> a -> b -> List c -> List d -> String
-reportCollectionFailure comparison expected actual missingKeys extraKeys =
-    [ toString actual
-    , "diff:" ++ formatDiffs Missing missingKeys ++ formatDiffs Extra extraKeys
-    , "╷"
-    , "│ " ++ comparison
-    , "╵"
-    , "diff:" ++ formatDiffs Extra missingKeys ++ formatDiffs Missing extraKeys
-    , toString expected
-    ]
-        |> String.join "\n"
-
-
-type Diff
-    = Extra
-    | Missing
-
-
-formatDiffs : Diff -> List a -> String
-formatDiffs diffType diffs =
-    if List.isEmpty diffs then
-        ""
-    else
-        let
-            modifier =
-                case diffType of
-                    Extra ->
-                        "+"
-
-                    Missing ->
-                        "-"
-        in
-            diffs
-                |> List.map toString
-                |> String.join ", "
-                |> (\d -> " " ++ modifier ++ "[ " ++ d ++ " ]")
-
-
-compareWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
-compareWith label compare expected actual =
-    if compare actual expected then
-        pass
-    else
-        fail (reportFailure label (toString expected) (toString actual))
+        Test.Expectation.Fail failure ->
+            Test.Expectation.Fail { failure | description = str, reason = Test.Expectation.Custom }
 
 
 {-| Passes if each of the given functions passes when applied to the subject.
-
 **NOTE:** Passing an empty list is assumed to be a mistake, so `Expect.all []`
 will always return a failed expectation no matter what else it is passed.
-
     Expect.all
         [ Expect.greaterThan -2
         , Expect.lessThan 5
         ]
         (List.length [])
-
     -- Passes because (0 > -2) is True and (0 < 5) is also True
-
 Failures resemble code written in pipeline style, so you can tell
 which argument is which:
-
     -- Fails because (0 > -10) is False
     List.length []
         |> Expect.all
@@ -615,15 +554,12 @@ which argument is which:
             , Expect.lessThan -10
             , Expect.equal 0
             ]
-
     {-
-
     0
     ╷
     │ Expect.lessThan
     ╵
     -10
-
     -}
 -}
 all : List (subject -> Expectation) -> subject -> Expectation
@@ -647,3 +583,55 @@ allHelp list query =
 
                 outcome ->
                     outcome
+
+
+
+{---- Private helper functions ----}
+
+
+reportFailure : String -> String -> String -> Expectation
+reportFailure comparison expected actual =
+    { given = ""
+    , description = comparison
+    , reason = Test.Expectation.Comparison (toString expected) (toString actual)
+    }
+        |> Test.Expectation.Fail
+
+
+reportCollectionFailure : String -> a -> b -> List c -> List d -> Expectation
+reportCollectionFailure comparison expected actual missingKeys extraKeys =
+    { given = ""
+    , description = comparison
+    , reason =
+        { expected = toString expected
+        , actual = toString actual
+        , extra = List.map toString extraKeys
+        , missing = List.map toString missingKeys
+        }
+            |> Test.Expectation.CollectionDiff
+    }
+        |> Test.Expectation.Fail
+
+
+{-| String arg is label, e.g. "Expect.equal".
+-}
+equateWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
+equateWith =
+    testWith Test.Expectation.Equals
+
+
+compareWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
+compareWith =
+    testWith Test.Expectation.Comparison
+
+
+testWith : (String -> String -> Test.Expectation.Reason) -> String -> (a -> b -> Bool) -> b -> a -> Expectation
+testWith makeReason label runTest expected actual =
+    if runTest actual expected then
+        pass
+    else
+        { given = ""
+        , description = label
+        , reason = makeReason (toString expected) (toString actual)
+        }
+            |> Test.Expectation.Fail

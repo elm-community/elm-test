@@ -1,16 +1,39 @@
-module Test.Expectation exposing (Expectation(..), withGiven)
+module Test.Expectation exposing (Expectation(..), Reason(..), withGiven)
 
 
 type Expectation
     = Pass
-    | Fail String String
+    | Fail { given : String, description : String, reason : Reason }
 
 
+
+-- TODO: given : Maybe String
+
+
+type Reason
+    = Custom
+    | Equals String String
+    | Comparison String String
+      -- Expected, actual, (index of problem, expected element, actual element)
+    | ListDiff String String ( Int, String, String )
+      {- I don't think we need to show the diff twice with + and - reversed. Just show it after the main vertical bar.
+         "Extra" and "missing" are relative to the actual value.
+      -}
+    | CollectionDiff
+        { expected : String
+        , actual : String
+        , extra : List String
+        , missing : List String
+        }
+
+
+{-| Set the given (fuzz test input) of an expectation.
+-}
 withGiven : String -> Expectation -> Expectation
-withGiven given outcome =
-    case outcome of
-        Fail _ message ->
-            Fail given message
+withGiven newGiven expectation =
+    case expectation of
+        Fail failure ->
+            Fail { failure | given = newGiven }
 
         Pass ->
-            outcome
+            expectation
