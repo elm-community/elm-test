@@ -78,6 +78,11 @@ testStringLengthIsPreserved strings =
         |> Expect.equal (String.length (List.foldl (++) "" strings))
 
 
+die : Fuzzer Int
+die =
+    Fuzz.intRange 1 6
+
+
 fuzzerTests : Test
 fuzzerTests =
     describe "Fuzzer methods that use Debug.crash don't call it"
@@ -107,6 +112,12 @@ fuzzerTests =
         , fuzz (andThen (\i -> intRange 0 (2 ^ i)) (intRange 1 8))
             "Fuzz.andThen"
             (Expect.atMost 256)
+        , fuzz
+            (map2 (,) die die |> conditional 10 (\( a, b ) -> ( a, 7 )) (\( a, b ) -> a /= b))
+            "conditional: reroll dies until they are not equal"
+          <|
+            \( roll1, roll2 ) ->
+                roll1 |> Expect.notEqual roll2
         , describe "Whitebox testing using Fuzz.Internal"
             [ fuzz (intRange 0 0xFFFFFFFF) "the same value is generated with and without shrinking" <|
                 \i ->
