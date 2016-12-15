@@ -82,7 +82,11 @@ Here are some examples of running tests on CI servers:
 * For simple functions, it's okay to copy the implementation to the test; this is a useful regression check. But if the implementation isn't obviously right, try to write tests that don't duplicate the suspect logic. The great thing about fuzz tests is that you don't have to arrive at the exact same value as the code under test, just state something that will be true of that value.
 * If you're writing a library that wraps an existing standard or protocol, use examples from the specification or docs as unit tests. Anything in your README should be backed by a unit test (sadly there's no easy way to keep them in sync).
 * Not even your test modules can import unexposed functions, so test them only as the exposed interface uses them. Don't expose a function just to test it. Every exposed function should have tests. (If you practice TDD, this happens automatically!)
-* `elm-test` is designed to test functions, not effects. To test them, use [elm-testable](http://package.elm-lang.org/packages/avh4/elm-testable/latest). For integration or end-to-end testing, use your favorite PhantomJS or Selenium webdriver, such as Capybara.
+* `elm-test` is designed to test functions, but you can also test views using [elm-html-test(http://package.elm-lang.org/packages/eeue56/elm-html-test/latest). For integration or end-to-end testing, use your favorite PhantomJS or Selenium webdriver, such as Capybara.
+<!-- Not updated for 0.18!
+To test effects, use [elm-testable](http://package.elm-lang.org/packages/avh4/elm-testable/latest).
+-->
+
 
 ## Upgrading
 ### From 0.17
