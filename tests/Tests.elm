@@ -14,22 +14,13 @@ import RoseTree
 import Random.Pcg as Random
 import Shrink
 import Lazy.List as LL
+import Helpers exposing (..)
 
 
 all : Test
 all =
     Test.concat
-        [ readmeExample, bug39, fuzzerTests, shrinkingTests ]
-
-
-{-| Regression test for https://github.com/elm-community/elm-test/issues/39
--}
-bug39 : Test
-bug39 =
-    fuzz (intRange 1 32) "small slice end" <|
-        \positiveInt ->
-            positiveInt
-                |> Expect.greaterThan 0
+        [ readmeExample, regressions, fuzzerTests ]
 
 
 readmeExample : Test
@@ -70,12 +61,14 @@ readmeExample =
         ]
 
 
-testStringLengthIsPreserved : List String -> Expectation
-testStringLengthIsPreserved strings =
-    strings
-        |> List.map String.length
-        |> List.sum
-        |> Expect.equal (String.length (List.foldl (++) "" strings))
+regressions : Test
+regressions =
+    describe "regression tests"
+        [ fuzz (intRange 1 32) "for #39" <|
+            \positiveInt ->
+                positiveInt
+                    |> Expect.greaterThan 0
+        ]
 
 
 fuzzerTests : Test
@@ -108,12 +101,9 @@ fuzzerTests =
             "Fuzz.andThen"
             (Expect.atMost 256)
         , describe "Whitebox testing using Fuzz.Internal"
-            [ fuzz (intRange 0 0xFFFFFFFF) "the same value is generated with and without shrinking" <|
-                \i ->
+            [ fuzz randomSeedFuzzer "the same value is generated with and without shrinking" <|
+                \seed ->
                     let
-                        seed =
-                            Random.initialSeed i
-
                         step gen =
                             Random.step gen seed
 
@@ -137,52 +127,10 @@ fuzzerTests =
                             aFuzzer |> Fuzz.Internal.unpackGenTree |> step |> Tuple.first |> RoseTree.root
                     in
                         Expect.equal valNoShrink valWithShrink
+            , shrinkingTests
             , manualFuzzerTests
             ]
         ]
-
-
-testShrinking : Test -> Test
-testShrinking test =
-    case test of
-        TI.Test runTest ->
-            TI.Test
-                (\seed runs ->
-                    let
-                        expectations =
-                            runTest seed runs
-
-                        goodShrink expectation =
-                            case expectation of
-                                Pass ->
-                                    Just "Expected this test to fail, but it passed!"
-
-                                Fail { given, description } ->
-                                    let
-                                        acceptable =
-                                            String.split "|" description
-                                    in
-                                        if List.member given acceptable then
-                                            Nothing
-                                        else
-                                            Just <| "Got shrunken value " ++ given ++ " but expected " ++ String.join " or " acceptable
-                    in
-                        expectations
-                            |> List.filterMap goodShrink
-                            |> List.map Expect.fail
-                            |> (\list ->
-                                    if List.isEmpty list then
-                                        [ Expect.pass ]
-                                    else
-                                        list
-                               )
-                )
-
-        TI.Labeled desc labeledTest ->
-            TI.Labeled desc (testShrinking labeledTest)
-
-        TI.Batch tests ->
-            TI.Batch (List.map testShrinking tests)
 
 
 shrinkingTests : Test
@@ -231,13 +179,6 @@ shrinkingTests =
                     in
                         checkPair aList |> Expect.true "[1,0]|[0,-1]"
             ]
-
-
-{-| get a good distribution of random seeds, and don't shrink our seeds!
--}
-randomSeedFuzzer : Fuzzer Random.Seed
-randomSeedFuzzer =
-    custom (Random.int 0 (2 ^ 32 - 1)) Shrink.noShrink |> Fuzz.map Random.initialSeed
 
 
 manualFuzzerTests : Test
