@@ -114,9 +114,11 @@ fuzzerTests =
             (Expect.atMost 256)
         , fuzz
             (map2 (,) die die
-                |> conditional 10
-                    (\( a, b ) -> ( a, ((b + 1) % 6) ))
-                    (\( a, b ) -> a /= b)
+                |> conditional
+                    { retries = 10
+                    , fallback = (\( a, b ) -> ( a, ((b + 1) % 6) ))
+                    , condition = (\( a, b ) -> a /= b)
+                    }
             )
             "conditional: reroll dice until they are not equal"
           <|

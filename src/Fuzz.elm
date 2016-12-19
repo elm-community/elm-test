@@ -739,24 +739,24 @@ unwindLazyList lazyListOfGenerators =
 {-| Conditionally filter a fuzzer to remove occasional undesirable
 input. Takes a limit for how many retries to attempt, and a fallback
 function to, if no acceptable input can be found, create one from an
-unacceptable one. Also takes a predicate to determine if the input is
+unacceptable one. Also takes a condition to determine if the input is
 acceptable or not, and finally the fuzzer itself.
 
 A good number of max retires is ten. A large number of retries might
 blow the stack.
 -}
-conditional : Int -> (a -> a) -> (a -> Bool) -> Fuzzer a -> Fuzzer a
-conditional maxAttempts fallback predicate fuzzer =
-    if maxAttempts <= 0 then
+conditional : { retries : Int, fallback : a -> a, condition : a -> Bool } -> Fuzzer a -> Fuzzer a
+conditional { retries, fallback, condition } fuzzer =
+    if retries <= 0 then
         map fallback fuzzer
     else
         fuzzer
             |> andThen
                 (\val ->
-                    if predicate val then
+                    if condition val then
                         constant val
                     else
-                        conditional (maxAttempts - 1) fallback predicate fuzzer
+                        conditional { retries = (retries - 1), fallback = fallback, condition = condition } fuzzer
                 )
 
 
