@@ -20,7 +20,7 @@ import Helpers exposing (..)
 all : Test
 all =
     Test.concat
-        [ readmeExample, regressions, fuzzerTests ]
+        [ readmeExample, regressions, expectationTests, fuzzerTests ]
 
 
 readmeExample : Test
@@ -68,6 +68,22 @@ regressions =
             \positiveInt ->
                 positiveInt
                     |> Expect.greaterThan 0
+        ]
+
+
+expectationTests : Test
+expectationTests =
+    describe "Expectations"
+        [ describe "Expect.err"
+            [ test "passes on Err _" <|
+                \() ->
+                    Err 12 |> Expect.err
+            , expectToFail <|
+                test "passes on Ok _" <|
+                    \() ->
+                        Ok 12 |> Expect.err
+            ]
+          -- , describe "Expect.somethingElse" [ ... ]
         ]
 
 
