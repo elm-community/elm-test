@@ -287,6 +287,7 @@ withinCompare tolerance a b =
             (2 - (2 ^ -52)) * 2 ^ 1023
 
         -- smallest positive value representable in a 64bit float with a non-zero radix; the smallest normal number
+        -- below this number we start loosing precision, so that's when we need to look at absolute differences
         float64MinNormal =
             2 ^ -1022
     in
