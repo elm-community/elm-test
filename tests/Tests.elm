@@ -113,8 +113,12 @@ fuzzerTests =
             "Fuzz.andThen"
             (Expect.atMost 256)
         , fuzz
-            (map2 (,) die die |> conditional 10 (\( a, b ) -> ( a, 7 )) (\( a, b ) -> a /= b))
-            "conditional: reroll dies until they are not equal"
+            (map2 (,) die die
+                |> conditional 10
+                    (\( a, b ) -> ( a, ((b + 1) % 6) ))
+                    (\( a, b ) -> a /= b)
+            )
+            "conditional: reroll dice until they are not equal"
           <|
             \( roll1, roll2 ) ->
                 roll1 |> Expect.notEqual roll2
