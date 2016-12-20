@@ -161,6 +161,18 @@ expectationTests =
                             Expect.notWithin delta a b
                     in
                         Expect.notEqual isWithin isNotWithin
+            , fuzz3 float float float "within commutativity" <|
+                \epsilon a b ->
+                    Expect.equal (within epsilon a b) (within epsilon b a)
+            , fuzz3 float float float "notWithin commutativity" <|
+                \epsilon a b ->
+                    Expect.equal (notWithin epsilon a b) (notWithin epsilon b a)
+            , fuzz2 float float "within reflexive" <|
+                \epsilon a b ->
+                    Expect.true "a should be within any tolerance of a" (within epsilon a a)
+            , fuzz2 float float "notWithin reflexive" <|
+                \epsilon a b ->
+                    Expect.true "a should not be notWithin any tolerance of a" (notWithin epsilon a a)
             ]
         ]
 
