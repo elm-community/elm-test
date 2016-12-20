@@ -170,6 +170,10 @@ expectationTests =
             , fuzz2 float float "within reflexive" <|
                 \epsilon a ->
                     Expect.within epsilon a a
+            , expectToFail <|
+                fuzz2 float float "notWithin reflexive" <|
+                    \epsilon a ->
+                        Expect.notWithin epsilon a a
             ]
         ]
 
