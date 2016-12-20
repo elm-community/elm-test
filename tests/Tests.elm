@@ -125,17 +125,17 @@ expectationTests =
                 \epsilon a ->
                     let
                         da =
-                            (toFloat a) * 10 ^ -300
+                            toFloat a * 10 ^ -300
 
                         delta =
-                            abs <| (toFloat a)
+                            abs <| toFloat a
                     in
                         da |> Expect.within delta -da
             , test "Plus minus minNormal equality" <|
                 \() ->
                     let
                         float64minNormal =
-                            (2 ^ -1022)
+                            2 ^ -1022
                     in
                         float64minNormal |> Expect.within float64minNormal float64minNormal
             , test "Very large float equality" <|
@@ -146,11 +146,11 @@ expectationTests =
                     in
                         float64maxValue |> Expect.within 1 float64maxValue
             , test "Very small float equality" <|
-                \() -> (2 ^ -1022) |> Expect.within 1 (2 ^ -1022)
+                \() -> 2 ^ -1022 |> Expect.within 1 (2 ^ -1022)
             , test "Very small plus minus float equality" <|
-                \() -> (2 ^ -1022) |> Expect.within 1 (2 ^ -1022)
+                \() -> 2 ^ -1022 |> Expect.within 1 (2 ^ -1022)
             , test "Very large difference float equality" <|
-                \() -> (2 ^ 1022) |> Expect.notWithin 1 (-(2 ^ 1022))
+                \() -> 2 ^ 1022 |> Expect.notWithin 1 (-(2 ^ 1022))
             , fuzz4 float float float float "Within = not notWithin" <|
                 \epsilon a b delta ->
                     let

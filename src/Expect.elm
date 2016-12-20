@@ -273,7 +273,7 @@ within tolerance =
 -}
 notWithin : Float -> Float -> Float -> Expectation
 notWithin tolerance =
-    compareWith ("Expect.notWithin " ++ toString tolerance) <|
+    compareWith ("Expect.notWithin " ++ toString tolerance)
         (\a b -> not <| withinCompare tolerance a b)
 
 
@@ -282,12 +282,13 @@ withinCompare tolerance a b =
         delta =
             abs (a - b)
 
-        -- largest non-infinite value expressible in a 64bit float
+        -- largest non-infinite value expressible in a 64-bit float
         float64maxValue =
             (2 - (2 ^ -52)) * 2 ^ 1023
 
-        -- smallest positive value representable in a 64bit float with a non-zero radix; the smallest normal number
-        -- below this number we start loosing precision, so that's when we need to look at absolute differences
+        -- smallest positive value representable in a 64-bit float with a non-zero radix
+        -- the smallest normal number below which we start loosing precision,
+        -- so that's when we need to look at absolute differences
         float64MinNormal =
             2 ^ -1022
     in
