@@ -167,10 +167,10 @@ expectationTests =
             , fuzz3 float float float "notWithin commutativity" <|
                 \epsilon a b ->
                     Expect.equal (Expect.notWithin epsilon a b) (Expect.notWithin epsilon b a)
-            , fuzz2 float float "within reflexive" <|
+            , fuzz3 float float float "within reflexive" <|
                 \epsilon a b ->
                     Expect.within epsilon a a
-            , fuzz2 float float "notWithin reflexive" <|
+            , fuzz3 float float float "notWithin reflexive" <|
                 \epsilon a b ->
                     Expect.notWithin epsilon a a
             ]
