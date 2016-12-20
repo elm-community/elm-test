@@ -169,10 +169,10 @@ expectationTests =
                     Expect.equal (Expect.notWithin epsilon a b) (Expect.notWithin epsilon b a)
             , fuzz2 float float "within reflexive" <|
                 \epsilon a b ->
-                    Expect.true "a should be within any tolerance of a" (Expect.within epsilon a a)
+                    Expect.within epsilon a a
             , fuzz2 float float "notWithin reflexive" <|
                 \epsilon a b ->
-                    Expect.true "a should not be notWithin any tolerance of a" (Expect.notWithin epsilon a a)
+                    Expect.notWithin epsilon a a
             ]
         ]
 
