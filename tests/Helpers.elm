@@ -1,4 +1,4 @@
-module Helpers exposing (testStringLengthIsPreserved, expectToFail, testShrinking, randomSeedFuzzer, didFail)
+module Helpers exposing (testStringLengthIsPreserved, expectToFail, testShrinking, randomSeedFuzzer, succeeded)
 
 import Test exposing (Test)
 import Test.Expectation exposing (Expectation(..))
@@ -23,14 +23,14 @@ expectToFail =
     expectFailureHelper (always Nothing)
 
 
-didFail : Expectation -> Bool
-didFail expectation =
+succeeded : Expectation -> Bool
+succeeded expectation =
     case expectation of
         Pass ->
-            False
+            True
 
         Fail _ ->
-            True
+            False
 
 
 expectFailureHelper : ({ description : String, given : String, reason : Test.Expectation.Reason } -> Maybe String) -> Test -> Test
