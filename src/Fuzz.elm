@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, conditional, maybe, intRange, list, array, frequency, frequencyOrCrash)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -15,7 +15,7 @@ reproduces a bug.
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
-@docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, frequency, frequencyOrCrash
+@docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, frequency, frequencyOrCrash, conditional
 
 ## Tuple Fuzzers
 Instead of using a tuple, consider using `fuzzN`.
@@ -734,6 +734,30 @@ unwindLazyList lazyListOfGenerators =
 
         Just ( head, tail ) ->
             Random.map2 Lazy.List.cons head (unwindLazyList tail)
+
+
+{-| Conditionally filter a fuzzer to remove occasional undesirable
+input. Takes a limit for how many retries to attempt, and a fallback
+function to, if no acceptable input can be found, create one from an
+unacceptable one. Also takes a condition to determine if the input is
+acceptable or not, and finally the fuzzer itself.
+
+A good number of max retires is ten. A large number of retries might
+blow the stack.
+-}
+conditional : { retries : Int, fallback : a -> a, condition : a -> Bool } -> Fuzzer a -> Fuzzer a
+conditional { retries, fallback, condition } fuzzer =
+    if retries <= 0 then
+        map fallback fuzzer
+    else
+        fuzzer
+            |> andThen
+                (\val ->
+                    if condition val then
+                        constant val
+                    else
+                        conditional { retries = (retries - 1), fallback = fallback, condition = condition } fuzzer
+                )
 
 
 {-| Create a new `Fuzzer` by providing a list of probabilistic weights to use
