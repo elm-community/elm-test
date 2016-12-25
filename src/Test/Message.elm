@@ -27,6 +27,9 @@ failureMessage { given, description, reason } =
         Comparison e a ->
             verticalBar description e a
 
+        TODO ->
+            "TODO: " ++ description
+
         ListDiff e a ( i, itemE, itemA ) ->
             String.join ""
                 [ verticalBar description e a

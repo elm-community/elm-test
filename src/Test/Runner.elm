@@ -1,7 +1,21 @@
-module Test.Runner exposing (Runnable, Runner(..), run, fromTest, formatLabels, Shrinkable, fuzz, shrink)
+module Test.Runner
+    exposing
+        ( Runnable
+        , Runner(..)
+        , run
+        , fromTest
+        , getFailure
+        , isTodo
+        , formatLabels
+        , Shrinkable
+        , fuzz
+        , shrink
+        )
 
-{-| A collection of functions used by authors of test runners. To run your
-own tests, you should use these runners; see the `README` for more information.
+{-| This is an "experts only" module that exposes functions needed to run and
+display tests. A typical user will use an existing runner library for Node or
+the browser, which is implemented using this interface. A list of these runners
+can be found in the `README`.
 
 ## Runner
 
@@ -10,6 +24,10 @@ own tests, you should use these runners; see the `README` for more information.
 ## Runnable
 
 @docs Runnable, run
+
+## Expectations
+
+@docs getFailure, isTodo
 
 ## Formatting
 
@@ -23,6 +41,8 @@ These functions give you the ability to run fuzzers separate of running fuzz tes
 
 import Test exposing (Test)
 import Test.Internal as Internal
+import Test.Expectation
+import Test.Message exposing (failureMessage)
 import RoseTree exposing (RoseTree(Rose))
 import Lazy.List as LazyList exposing (LazyList)
 import Expect exposing (Expectation)
@@ -114,6 +134,47 @@ distributeSeeds runs test ( startingSeed, runners ) =
                     List.foldl (distributeSeeds runs) ( startingSeed, [] ) tests
             in
                 ( nextSeed, [ Batch (runners ++ nextRunners) ] )
+
+
+{-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
+
+If it is a [`fail`](#fail), return a record containing the failure message,
+along with the given inputs if it was a fuzz test. (If no inputs were involved,
+the record's `given` field will be `Nothign`).
+
+For example, if a fuzz test generates random integers, this might return
+`{ message = "it was supposed to be positive", given = "-1" }`
+
+    getFailure (Expect.fail "this failed")
+    -- Just { message = "this failed", given = "" }
+
+    getFailure (Expect.pass)
+    -- Nothing
+-}
+getFailure : Expectation -> Maybe { given : Maybe String, message : String }
+getFailure expectation =
+    case expectation of
+        Test.Expectation.Pass ->
+            Nothing
+
+        Test.Expectation.Fail record ->
+            Just
+                { given = record.given
+                , message = failureMessage record
+                }
+
+
+{-| Determine if an expectation was created by a call to `Test.todo`. Runners
+may treat these tests differently in their output.
+-}
+isTodo : Expectation -> Bool
+isTodo expectation =
+    case expectation of
+        Test.Expectation.Pass ->
+            False
+
+        Test.Expectation.Fail { reason } ->
+            reason == Test.Expectation.TODO
 
 
 {-| A standard way to format descriptiona and test labels, to keep things

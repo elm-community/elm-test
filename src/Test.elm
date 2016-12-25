@@ -1,4 +1,4 @@
-module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
 {-| A module containing functions for creating and managing tests.
 
@@ -6,7 +6,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, f
 
 ## Organizing Tests
 
-@docs describe, concat, filter
+@docs describe, concat, filter, todo
 
 ## Fuzz Testing
 
@@ -14,6 +14,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, f
 -}
 
 import Test.Internal as Internal
+import Test.Expectation
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
 
@@ -97,6 +98,38 @@ describe desc =
 test : String -> (() -> Expectation) -> Test
 test desc thunk =
     Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
+
+
+{-| Returns a [`Test`](#Test) that is "TODO" (not yet implemented). These tests
+always fail, but test runners will only include them in their output if there
+are no other failures.
+
+These tests aren't meant to be committed to version control. Instead, use them
+when you're brainstorming lots of tests you'd like to write, but you can't
+implement them all at once. When you replace `todo` with a real test, you'll be
+able to see if it fails without clutter from tests still not implemented. But,
+unlike leaving yourself comments, you'll be prompted to implement these tests
+because your suite will fail.
+
+    describe "a new thing"
+        [ todo "does what is expected in the common case"
+        , todo "correctly handles an edge case I just thought of"
+        ]
+
+This functionality is similar to "pending" tests in other frameworks, except
+that a TODO test is considered failing but a pending test often is not.
+-}
+todo : String -> Test
+todo desc =
+    Internal.Test
+        (\_ _ ->
+            [ Test.Expectation.Fail
+                { given = Nothing
+                , description = desc
+                , reason = Test.Expectation.TODO
+                }
+            ]
+        )
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
