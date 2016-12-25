@@ -490,8 +490,8 @@ pass =
                     Expect.fail err
 -}
 fail : String -> Expectation
-fail =
-    Test.Expectation.Fail ""
+fail message =
+    Test.Expectation.Fail { given = "", message = message }
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
@@ -503,11 +503,14 @@ the record's `given` field will be `""`).
 For example, if a fuzz test generates random integers, this might return
 `{ message = "it was supposed to be positive", given = "-1" }`
 
-    getFailure (Expect.fail "this failed")
-    -- Just { message = "this failed", given = "" }
+    >>> getFailure (Expect.fail "this failed")
+    Just { message = "this failed", given = "" }
 
-    getFailure (Expect.pass)
-    -- Nothing
+    >>> getFailure (Expect.pass)
+    Nothing
+
+    >>> getFailure (Expect.pending)
+    Just { message = "this test is pending.", given = "" }
 -}
 getFailure : Expectation -> Maybe { given : String, message : String }
 getFailure expectation =
@@ -515,24 +518,63 @@ getFailure expectation =
         Test.Expectation.Pass ->
             Nothing
 
-        Test.Expectation.Fail given message ->
+        Test.Expectation.Pending ->
+            Just { message = "This test is pending.", given = "" }
+
+        Test.Expectation.Fail { given, message } ->
             Just { given = given, message = message }
 
 
+{-| Returns `True` iff the expectation passed.
+
+    >>> isPass (Expect.fail "this is not a pass")
+    False
+
+    >>> isPass Expect.pending
+    False
+
+    >>> isPass Expect.pass
+    True
+-}
+isPass : Expectation -> Bool
+isPass =
+    (==) Test.Expectation.Pass
+
+
+{-| Returns `True` iff the expectation is pending.
+
+    >>> isPending (Expect.fail "this is not pending, this failed.")
+    False
+
+    >>> isPending Expect.pending
+    True
+
+    >>> isPending Expect.pass
+    False
+-}
+isPending : Expectation -> Bool
+isPending =
+    (==) Test.Expectation.Pending
+
+
 {-| If the given expectation fails, replace its failure message with a custom one.
+This has no effect on a [`pending`](#pending) expectation.
 
     "something"
         |> Expect.equal "something else"
         |> Expect.onFail "thought those two strings would be the same"
 -}
 onFail : String -> Expectation -> Expectation
-onFail str expectation =
+onFail message expectation =
     case expectation of
         Test.Expectation.Pass ->
             expectation
 
-        Test.Expectation.Fail given _ ->
-            Test.Expectation.Fail given str
+        Test.Expectation.Pending ->
+            expectation
+
+        Test.Expectation.Fail { given } ->
+            Test.Expectation.Fail { given = given, message = message }
 
 
 reportFailure : String -> String -> String -> String

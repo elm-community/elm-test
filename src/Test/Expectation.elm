@@ -3,14 +3,18 @@ module Test.Expectation exposing (Expectation(..), withGiven)
 
 type Expectation
     = Pass
-    | Fail String String
+    | Pending
+    | Fail { given : String, message : String }
 
 
 withGiven : String -> Expectation -> Expectation
 withGiven given outcome =
     case outcome of
-        Fail _ message ->
-            Fail given message
+        Fail { message } ->
+            Fail { given = given, message = message }
+
+        Pending ->
+            outcome
 
         Pass ->
             outcome

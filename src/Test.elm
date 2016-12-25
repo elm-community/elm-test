@@ -14,6 +14,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, f
 -}
 
 import Test.Internal as Internal
+import Test.Expectation
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
 
@@ -97,6 +98,32 @@ describe desc =
 test : String -> (() -> Expectation) -> Test
 test desc thunk =
     Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
+
+
+{-| A pending test. If any tests are pending, the test run as a
+whole will fail, but the pending failures will not be reported individually.
+
+These are useful when you want to write bunch of failing test cases and then
+resolve them one at a time.
+
+    import Json.Decode exposing (decodeString, int)
+    import Test exposing (test)
+    import Expect
+
+
+    test "Json.Decode.int can decode the number 42." <|
+        Test.pending <|
+            \() ->
+                case decodeString int "42" of
+                    Ok _ ->
+                        Expect.pass
+
+                    Err err ->
+                        Expect.fail err
+-}
+pending : (a -> Expectation) -> a -> Expectation
+pending _ =
+    (\_ -> Test.Expectation.Pending)
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
