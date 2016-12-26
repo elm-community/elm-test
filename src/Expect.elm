@@ -320,11 +320,10 @@ err : Result a b -> Expectation
 err result =
     case result of
         Ok _ ->
-            { given = ""
-            , description = "Expect.err"
+            { description = "Expect.err"
             , reason = Test.Expectation.Comparison "Err _" (toString result)
             }
-                |> Test.Expectation.Fail
+                |> Test.Expectation.fail
 
         Err _ ->
             pass
@@ -382,9 +381,8 @@ equalLists expected actual =
                                         (toString actual)
                                         ( index, toString e, toString a )
                             in
-                                Test.Expectation.Fail
-                                    { given = ""
-                                    , description = "Expect.equalLists"
+                                Test.Expectation.fail
+                                    { description = "Expect.equalLists"
                                     , reason = reason
                                     }
                         )
@@ -534,7 +532,7 @@ pass =
 -}
 fail : String -> Expectation
 fail str =
-    Test.Expectation.Fail { given = "", description = str, reason = Test.Expectation.Custom }
+    Test.Expectation.fail { description = str, reason = Test.Expectation.Custom }
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
@@ -559,7 +557,10 @@ getFailure expectation =
             Nothing
 
         Test.Expectation.Fail record ->
-            Just { given = record.given, message = failureMessage record }
+            Just
+                { given = record.given |> Maybe.withDefault ""
+                , message = failureMessage record
+                }
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
@@ -633,17 +634,15 @@ allHelp list query =
 
 reportFailure : String -> String -> String -> Expectation
 reportFailure comparison expected actual =
-    { given = ""
-    , description = comparison
+    { description = comparison
     , reason = Test.Expectation.Comparison (toString expected) (toString actual)
     }
-        |> Test.Expectation.Fail
+        |> Test.Expectation.fail
 
 
 reportCollectionFailure : String -> a -> b -> List c -> List d -> Expectation
 reportCollectionFailure comparison expected actual missingKeys extraKeys =
-    { given = ""
-    , description = comparison
+    { description = comparison
     , reason =
         { expected = toString expected
         , actual = toString actual
@@ -652,7 +651,7 @@ reportCollectionFailure comparison expected actual missingKeys extraKeys =
         }
             |> Test.Expectation.CollectionDiff
     }
-        |> Test.Expectation.Fail
+        |> Test.Expectation.fail
 
 
 {-| String arg is label, e.g. "Expect.equal".
@@ -672,8 +671,7 @@ testWith makeReason label runTest expected actual =
     if runTest actual expected then
         pass
     else
-        { given = ""
-        , description = label
+        { description = label
         , reason = makeReason (toString expected) (toString actual)
         }
-            |> Test.Expectation.Fail
+            |> Test.Expectation.fail
