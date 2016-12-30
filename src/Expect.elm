@@ -578,7 +578,10 @@ which argument is which:
 all : List (subject -> Expectation) -> subject -> Expectation
 all list query =
     if List.isEmpty list then
-        fail "Expect.all received an empty list. I assume this was due to a mistake somewhere, so I'm failing this test!"
+        Test.Expectation.fail
+            { reason = Test.Expectation.EmptyList
+            , description = "Expect.all was given an empty list. You must make at least one expectation to have a valid test!"
+            }
     else
         allHelp list query
 
