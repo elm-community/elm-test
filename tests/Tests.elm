@@ -88,7 +88,7 @@ expectationTests =
                             if epsilon /= 0 then
                                 epsilon
                             else
-                                1
+                                1.0
                     in
                         value |> Expect.within (abs eps) value
             , fuzz float "NaN equality" <|
@@ -114,18 +114,48 @@ expectationTests =
                         infinity |> Expect.within epsilon infinity
             , fuzz float "Zero equality" <|
                 \epsilon -> 0.0 |> Expect.within epsilon 0.0
-            , fuzz2 float float "Near-zero equality" <|
+            , fuzz2 float int "Near-zero equality" <|
                 \epsilon a ->
                     let
                         da =
-                            1 / a
+                            10.0 ^ -305 * toFloat a
                     in
                         da |> Expect.within 1 da
+            , fuzz float "Plus-minus epsilon equality for large numbers" <|
+                \a ->
+                    if abs a < 2 ^ -1020 then
+                        Expect.pass
+                    else
+                        let
+                            da =
+                                a * 42
+                        in
+                            Expect.all
+                                [ (\d -> d |> Expect.notWithin 1.999 -d)
+                                , (\d -> d |> Expect.within 2 -d)
+                                , (\d -> d |> Expect.within 2.001 -d)
+                                ]
+                                da
+            , fuzz float "Plus-minus epsilon equality for small numbers" <|
+                \a ->
+                    if abs a < 2 ^ -1020 then
+                        Expect.pass
+                    else
+                        let
+                            da =
+                                a * 2 ^ -100
+                        in
+                            Expect.all
+                                [ (\d -> d |> Expect.notWithin 1.999 -d)
+                                , (\d -> d |> Expect.within 2 -d)
+                                , (\d -> d |> Expect.within 2.001 -d)
+                                ]
+                                da
             , fuzz2 float int "Plus-minus epsilon equality" <|
                 \epsilon a ->
                     let
                         da =
-                            toFloat a * 10 ^ -300
+                            toFloat a * 10.0 ^ -300
 
                         delta =
                             abs <| toFloat a
@@ -135,22 +165,22 @@ expectationTests =
                 \() ->
                     let
                         float64minNormal =
-                            2 ^ -1022
+                            2.0 ^ -1022
                     in
                         float64minNormal |> Expect.within float64minNormal float64minNormal
             , test "Very large float equality" <|
                 \() ->
                     let
                         float64maxValue =
-                            (2 - (2 ^ -52)) * 2 ^ 1023
+                            (2.0 - (2.0 ^ -52)) * 2.0 ^ 1023
                     in
                         float64maxValue |> Expect.within 1 float64maxValue
             , test "Very small float equality" <|
-                \() -> 2 ^ -1022 |> Expect.within 1 (2 ^ -1022)
+                \() -> 2.0 ^ -1022 |> Expect.within 1 (2.0 ^ -1022)
             , test "Very small plus minus float equality" <|
-                \() -> 2 ^ -1022 |> Expect.within 1 (2 ^ -1022)
+                \() -> 2.0 ^ -1022 |> Expect.within 1 (2.0 ^ -1022)
             , test "Very large difference float equality" <|
-                \() -> 2 ^ 1022 |> Expect.notWithin 1 (-(2 ^ 1022))
+                \() -> 2.0 ^ 1000 |> Expect.notWithin 1 (-(2.0 ^ 1000))
             , fuzz4 float float float float "Within = not notWithin" <|
                 \epsilon a b delta ->
                     let
@@ -174,8 +204,33 @@ expectationTests =
                 fuzz2 float float "notWithin reflexive" <|
                     \epsilon a ->
                         Expect.notWithin epsilon a a
+            , test "smoke" <|
+                \() ->
+                    Debug.log "asd"
+                        Expect.notWithin
+                        3
+                        1.0e-10
+                        1.0e-50
+              {- , test "Plot" <|
+                     \() ->
+                         Expect.notEqual [] <|
+                             List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 1000 (1.2 ^ a) (1.2 ^ b))), 1.2 ^ a, 1.2 ^ b )) (succeeded <| (Expect.within 1000 (1.2 ^ a) (1.2 ^ b)))) <|
+                                 List.filter (\( a, b ) -> a <= b) (cartesian (List.map toFloat (List.range -3888 -1000)) (List.map toFloat (List.range -3888 -1000)))
+                 --
+              -}
             ]
         ]
+
+
+
+-- todo test with tolerance 4 and 16; see how it scales (linear? exp?)
+
+
+cartesian : List a -> List b -> List ( a, b )
+cartesian xs ys =
+    List.concatMap
+        (\x -> List.map (\y -> ( x, y )) ys)
+        xs
 
 
 regressions : Test

@@ -278,6 +278,7 @@ notWithin tolerance =
         (\a b -> not <| withinCompare tolerance a b)
 
 
+withinCompare : Float -> Float -> Float -> Bool
 withinCompare tolerance a b =
     let
         delta =
@@ -285,13 +286,13 @@ withinCompare tolerance a b =
 
         -- largest non-infinite value expressible in a 64-bit float
         float64maxValue =
-            (2 - (2 ^ -52)) * 2 ^ 1023
+            (2.0 - (2.0 ^ -52)) * 2.0 ^ 1023
 
         -- smallest positive value representable in a 64-bit float with a non-zero radix
         -- the smallest normal number below which we start loosing precision,
         -- so that's when we need to look at absolute differences
         float64MinNormal =
-            2 ^ -1022
+            2.0 ^ -1022
     in
         if a == b then
             -- if they're *exactly* equal
@@ -299,15 +300,51 @@ withinCompare tolerance a b =
         else if (a == 0 || b == 0 || delta < float64MinNormal) then
             -- very close to zero; use absolute tolerance relative to smallest possible float numbers
             -- (floating point arithmetic has very large relative errors near zero)
-            delta < (tolerance * float64MinNormal)
+            --Debug.log (toString ( "b", a, b, delta, tolerance, (tolerance * float64MinNormal) ))
+            delta <= (tolerance * float64MinNormal)
         else
             -- otherwise, we use relative equality. Tolerance acts as a maximum multiplier between a and b.
             let
                 -- avoid dividing by infinity; use the largest available non-inf value instead
                 abSum =
-                    min ((abs a) + (abs b)) float64maxValue
+                    min ((abs a + abs b) / 2.0) float64maxValue
+
+                absmin =
+                    if abs a < abs b || (abs a == abs b && a < b) then
+                        a
+                    else
+                        b
+
+                absmax =
+                    if abs a > abs b || (abs a == abs b && a > b) then
+                        a
+                    else
+                        b
             in
-                (delta / abSum) < tolerance
+                -- (|a|+|b|)/(mean |a| |b|) is capped at [0,2], so we cannot say that the relative difference should be 3x.
+                -- maybe this algorithm?:
+                -- and:
+                -- (absmin a b) * (1+tol) > absmax a b
+                -- (absmin a b) * (1-tol) < absmax a b
+                Debug.log
+                    (toString ( "absmin", absmin, "absmax", absmax, "tol", tolerance ))
+                <|
+                    Debug.log
+                        (toString ( "low", absmin, "+", (abs absmin), "*", -tolerance, "=", (absmin) + (abs absmin) * (-tolerance) ))
+                    <|
+                        Debug.log
+                            (toString ( "high", absmin, "+", (abs absmin), "*", tolerance, "=", (absmin) + (abs absmin) * tolerance ))
+                        <|
+                            Debug.log
+                                (toString
+                                    ( "parts"
+                                    , (absmin) + (abs absmin) * (-tolerance) <= absmax
+                                    , (absmax <= (absmin) + (abs absmin) * (tolerance))
+                                    )
+                                )
+                            <|
+                                ((absmin) + (abs absmin) * (-tolerance) <= absmax)
+                                    && (absmax <= (absmin) + (abs absmin) * (tolerance))
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
