@@ -239,7 +239,8 @@ atLeast =
 
 {-| Passes if the second and third arguments are equal within a relative tolerance
 specified by the first argument. This is intended to avoid failing because of
-minor inaccuracies introduced by floating point arithmetic.
+minor inaccuracies introduced by floating point arithmetic. Don't use a negative
+tolerance.
 
     -- Fails because 0.1 + 0.2 == 0.30000000000000004 (0.1 is irrational in base 2)
     0.1 + 0.2 |> Expect.equal 0.3
@@ -294,14 +295,20 @@ withinCompare tolerance a b =
         float64MinNormal =
             2.0 ^ -1022
     in
-        if a == b then
+        if tolerance < 0.0 then
+            -- No value is that close to another value. Use a non-negative tolerance.
+            -- The pragmatic way would be to use the absolute of the tolerance, but that
+            -- would only help with the tests for this module itself; otherwise the tolerance
+            -- argument is almost always a constant literal.
+            False
+        else if a == b then
             -- if they're *exactly* equal
             True
-        else if (a == 0 || b == 0 || delta < float64MinNormal) then
+        else if a == 0 || b == 0 || delta < float64MinNormal then
             -- very close to zero; use absolute tolerance relative to smallest possible float numbers
             -- (floating point arithmetic has very large relative errors near zero)
-            --Debug.log (toString ( "b", a, b, delta, tolerance, (tolerance * float64MinNormal) ))
-            delta <= (tolerance * float64MinNormal)
+            Debug.log (toString ( "potato", "b", a, b, delta, "tol", tolerance, (tolerance * float64MinNormal) )) <|
+                (delta <= (tolerance * float64MinNormal))
         else
             -- otherwise, we use relative equality. Tolerance acts as a maximum multiplier between a and b.
             let
