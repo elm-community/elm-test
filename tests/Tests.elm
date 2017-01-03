@@ -195,7 +195,6 @@ expectationTests =
                             , (\d -> 2 * d |> Expect.within 2.001 (-d * 2.0))
                             ]
                             float64minNormal
-                  -- TODO here, actually small epsilons
                 , test "Very large float equality" <|
                     \() ->
                         -- subtract smallest representable double
@@ -230,17 +229,8 @@ expectationTests =
                     fuzz2 float float "notWithin irreflexive" <|
                         \epsilon a ->
                             Expect.notWithin (abs epsilon) a a
-                , test "Plot" <|
-                    \() ->
-                        Expect.notEqual [] <|
-                            List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 30 (1.5 ^ a) (1.5 ^ b))), 1.5 ^ a, 1.5 ^ b )) (succeeded <| (Expect.within 30 (1.5 ^ a) (1.5 ^ b)))) <|
-                                List.filter (\( a, b ) -> True) (cartesian (List.map toFloat (List.range -1840 -1300)) (List.map toFloat (List.range -1840 -1300)))
                 ]
         ]
-
-
-
--- todo test with tolerance 4 and 16; see how it scales (linear? exp?)
 
 
 cartesian : List a -> List b -> List ( a, b )
