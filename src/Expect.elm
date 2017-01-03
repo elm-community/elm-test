@@ -322,46 +322,41 @@ withinCompare tolerance na nb =
         float64MinNormal =
             2.0 ^ -1022
     in
-        {- if tolerance < 0.0 then
-               -- No value is that close to another value. Use a non-negative tolerance.
-               -- The pragmatic way would be to use the absolute of the tolerance, but that
-               -- would only help with the tests for this module itself; otherwise the tolerance
-               -- argument is almost always a constant literal.
-               False
-           else if a == b then
-               -- If they're *exactly* equal.
-               True
-           else if delta < float64MinNormal then
-        -}
-        -- Very close to zero; use unsigned relative tolerance weighted so that values closer to zero have a higher tolerance.
-        -- (floating point arithmetic loses precision below float64MinNormal)
-        -- TODO: bug when delta == tolerance * float64minNormal in the let-in expression below, but why?
-        -- it reduces to (abs smallMag) * float64MinNormal / delta <= largeMag, which is pretty close to the delta < tolerance * float64MinNormal absolute comparison case
-        -- also a point in the middle, but we can ignore that since that should be there (and is also put there by other cases here)
-        -- cutoff how? linear triangle on a log-log graph, from (0,2^
-        let
-            smallMagLimit =
-                (abs smallMag) * (1 - tolerance) * (float64MinNormal / delta)
+        if tolerance < 0.0 then
+            -- No value is that close to another value. Use a non-negative tolerance.
+            -- The pragmatic way would be to use the absolute of the tolerance, but that
+            -- would only help with the tests for this module itself; otherwise the tolerance
+            -- argument is almost always a constant literal.
+            False
+        else if a == b then
+            -- If they're *exactly* equal.
+            True
+        else if delta ^ 2 < float64MinNormal then
+            -- Very close to zero; use unsigned relative tolerance weighted so that values closer to zero have a higher tolerance.
+            -- (floating point arithmetic loses precision below float64MinNormal)
+            -- TODO: bug when delta == tolerance * float64minNormal in the let-in expression below, but why?
+            -- it reduces to (abs smallMag) * float64MinNormal / delta <= largeMag, which is pretty close to the delta < tolerance * float64MinNormal absolute comparison case
+            -- also a point in the middle, but we can ignore that since that should be there (and is also put there by other cases here)
+            -- cutoff how? linear triangle on a log-log graph, from (0,2^
+            let
+                smallMagLimit =
+                    (abs smallMag) * (1 - tolerance) * (float64MinNormal / delta)
 
-            largeMagLimit =
-                (abs smallMag) * (1 + tolerance) * (float64MinNormal / delta)
-        in
-            (smallMagLimit < largeMag) && (largeMag < largeMagLimit)
+                largeMagLimit =
+                    (abs smallMag) * (1 + tolerance) * (float64MinNormal / delta)
+            in
+                (smallMagLimit < largeMag) && (largeMag < largeMagLimit)
+        else
+            -- Otherwise, we use signed relative equality. Tolerance acts as a maximum multiplier between a and b.
+            -- A tolerance of 0.3 means that largeMag is at most 30% less and at most 30% larger than smallMag.
+            let
+                smallMagLimit =
+                    smallMag + (abs smallMag) * -tolerance
 
-
-
-{- else
-   -- Otherwise, we use signed relative equality. Tolerance acts as a maximum multiplier between a and b.
-   -- A tolerance of 0.3 means that largeMag is at most 30% less and at most 30% larger than smallMag.
-   let
-       smallMagLimit =
-           smallMag + (abs smallMag) * -tolerance
-
-       largeMagLimit =
-           smallMag + (abs smallMag) * tolerance
-   in
-       (smallMagLimit <= largeMag) && (largeMag <= largeMagLimit)
--}
+                largeMagLimit =
+                    smallMag + (abs smallMag) * tolerance
+            in
+                (smallMagLimit <= largeMag) && (largeMag <= largeMagLimit)
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
