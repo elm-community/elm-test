@@ -233,8 +233,8 @@ expectationTests =
                 , test "Plot" <|
                     \() ->
                         Expect.notEqual [] <|
-                            List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 1000 (1.5 ^ a) (1.5 ^ b))), 1.5 ^ a, 1.5 ^ b )) (succeeded <| (Expect.within 1000 (1.5 ^ a) (1.5 ^ b)))) <|
-                                List.filter (\( a, b ) -> True || a <= b) (cartesian (List.map toFloat (List.range -1840 -500)) (List.map toFloat (List.range -1840 -500)))
+                            List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 30 (1.5 ^ a) (1.5 ^ b))), 1.5 ^ a, 1.5 ^ b )) (succeeded <| (Expect.within 30 (1.5 ^ a) (1.5 ^ b)))) <|
+                                List.filter (\( a, b ) -> True) (cartesian (List.map toFloat (List.range -1840 -1300)) (List.map toFloat (List.range -1840 -1300)))
                 ]
         ]
 

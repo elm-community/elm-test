@@ -1,8 +1,9 @@
+import os
 import subprocess
 
 import sys
 
-out = subprocess.Popen([r"C:\Users\drathier\AppData\Roaming\npm\elm-test.cmd"], stdout=subprocess.PIPE)
+out = subprocess.Popen([os.getenv('APPDATA') + r"\npm\elm-test.cmd"], stdout=subprocess.PIPE)
 
 for l in out.stdout:
     line = l.decode("utf-8")

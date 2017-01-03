@@ -331,13 +331,9 @@ withinCompare tolerance na nb =
         else if a == b then
             -- If they're *exactly* equal.
             True
-        else if delta ^ 2 < float64MinNormal then
+        else if abs a < float64MinNormal && abs b < float64MinNormal then
             -- Very close to zero; use unsigned relative tolerance weighted so that values closer to zero have a higher tolerance.
             -- (floating point arithmetic loses precision below float64MinNormal)
-            -- TODO: bug when delta == tolerance * float64minNormal in the let-in expression below, but why?
-            -- it reduces to (abs smallMag) * float64MinNormal / delta <= largeMag, which is pretty close to the delta < tolerance * float64MinNormal absolute comparison case
-            -- also a point in the middle, but we can ignore that since that should be there (and is also put there by other cases here)
-            -- cutoff how? linear triangle on a log-log graph, from (0,2^
             let
                 smallMagLimit =
                     (abs smallMag) * (1 - tolerance) * (float64MinNormal / delta)
