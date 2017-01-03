@@ -152,23 +152,23 @@ expectationTests =
                     -- intended to test absolute comparison of numbers with same and different signs,
                     -- i.e. numbers with an absolute difference of less than float64minNormal
                     \a ->
-                        if a == 0 then
-                            Expect.pass
-                        else
-                            let
-                                da =
-                                    (toFloat (a * a)) * float64minValue
-                            in
+                        let
+                            da =
+                                (toFloat (a * a)) * float64minValue
+                        in
+                            if da == 0 then
+                                Expect.pass
+                            else
                                 Expect.all
                                     [ (\d -> 0 |> Expect.notWithin 0 d)
-                                    , (\d -> 0 |> Expect.within 0.999999 d)
+                                    , (\d -> 0 |> Expect.within (1 - 10 ^ -12) d)
                                     , (\d -> 0 |> Expect.within 1 d)
-                                    , (\d -> 0 |> Expect.within 1.000001 d)
+                                    , (\d -> 0 |> Expect.within (1 + 10 ^ -12) d)
                                       -- and negative
                                     , (\d -> 0 |> Expect.notWithin 0 -d)
                                     , (\d -> d |> Expect.notWithin 0 -d)
                                     , (\d -> d |> Expect.within 2 -d)
-                                    , (\d -> d |> Expect.within 2.000001 -d)
+                                    , (\d -> d |> Expect.within (2 + 10 ^ -12) -d)
                                     ]
                                     (if da >= float64minNormal then
                                         -- slightly too large value; divide it down under float64minNormal again
@@ -229,8 +229,20 @@ expectationTests =
                     fuzz2 float float "notWithin irreflexive" <|
                         \epsilon a ->
                             Expect.notWithin (abs epsilon) a a
+                , test "Plot" <|
+                    \() ->
+                        Expect.notEqual [] <|
+                            List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 30 (1.2 ^ a) (1.2 ^ b))), 1.2 ^ a, 1.2 ^ b )) (succeeded <| (Expect.within 30 (1.2 ^ a) (-1.2 ^ b)))) <|
+                                List.filter (\( a, b ) -> True) (cartesian (List.map toFloat (List.range -4800 -3500)) (List.map toFloat (List.range -4800 -3500)))
                 ]
         ]
+
+
+cartesian : List a -> List b -> List ( a, b )
+cartesian xs ys =
+    List.concatMap
+        (\x -> List.map (\y -> ( x, y )) ys)
+        xs
 
 
 regressions : Test

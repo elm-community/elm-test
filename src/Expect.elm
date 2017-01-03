@@ -331,6 +331,12 @@ withinCompare tolerance na nb =
         else if a == b then
             -- If they're *exactly* equal.
             True
+        else if tolerance == 0 then
+            -- No tolerance; they have to be exactly equal.
+            a == b
+        else if abs a < float64minValue * 2 ^ 8 || abs b < float64minValue * 2 ^ 8 || delta < float64minValue * 2 ^ 8 then
+            -- This is extremely close to the smallest absolute value representable in a float.
+            True
         else if abs a < float64MinNormal && abs b < float64MinNormal then
             -- Very close to zero; use unsigned relative tolerance weighted so that values closer to zero have a higher tolerance.
             -- (floating point arithmetic loses precision below float64MinNormal)
@@ -341,7 +347,7 @@ withinCompare tolerance na nb =
                 largeMagLimit =
                     (abs smallMag) * (1 + tolerance) * (float64MinNormal / delta)
             in
-                (smallMagLimit < largeMag) && (largeMag < largeMagLimit)
+                (smallMagLimit <= largeMag) && (largeMag <= largeMagLimit)
         else
             -- Otherwise, we use signed relative equality. Tolerance acts as a maximum multiplier between a and b.
             -- A tolerance of 0.3 means that largeMag is at most 30% less and at most 30% larger than smallMag.
