@@ -280,78 +280,88 @@ notWithin tolerance =
 
 
 withinCompare : Float -> Float -> Float -> Bool
-withinCompare tolerance a b =
+withinCompare tolerance na nb =
     let
+        float64minValue =
+            2 ^ -1074
+
+        -- Avoid the zero case.
+        a =
+            if na /= 0 then
+                na
+            else
+                float64minValue
+
+        b =
+            if nb /= 0 then
+                nb
+            else
+                float64minValue
+
         delta =
             abs (a - b)
 
-        -- largest non-infinite value expressible in a 64-bit float
+        -- Largest non-infinite value expressible in a 64-bit float.
         float64maxValue =
             (2.0 - (2.0 ^ -52)) * 2.0 ^ 1023
 
-        -- smallest positive value representable in a 64-bit float with a non-zero radix
-        -- the smallest normal number below which we start loosing precision,
-        -- so that's when we need to look at absolute differences
+        -- Avoid dividing by infinity; use the largest available non-inf value instead.
+        abSum =
+            min ((abs a + abs b) / 2.0) float64maxValue
+
+        -- The argument closer to and further from zero, respectively.
+        ( smallMag, largeMag ) =
+            if abs a < abs b || (abs a == abs b && a < b) then
+                ( a, b )
+            else
+                ( b, a )
+
+        -- Smallest positive value representable in a 64-bit float with a non-zero radix.
+        -- It's the smallest normal number below which we start loosing precision, so
+        -- that's when we need to look at absolute differences.
         float64MinNormal =
             2.0 ^ -1022
     in
-        if tolerance < 0.0 then
-            -- No value is that close to another value. Use a non-negative tolerance.
-            -- The pragmatic way would be to use the absolute of the tolerance, but that
-            -- would only help with the tests for this module itself; otherwise the tolerance
-            -- argument is almost always a constant literal.
-            False
-        else if a == b then
-            -- if they're *exactly* equal
-            True
-        else if a == 0 || b == 0 || delta < float64MinNormal then
-            -- very close to zero; use absolute tolerance relative to smallest possible float numbers
-            -- (floating point arithmetic has very large relative errors near zero)
-            Debug.log (toString ( "potato", "b", a, b, delta, "tol", tolerance, (tolerance * float64MinNormal) )) <|
-                (delta <= (tolerance * float64MinNormal))
-        else
-            -- otherwise, we use relative equality. Tolerance acts as a maximum multiplier between a and b.
-            let
-                -- avoid dividing by infinity; use the largest available non-inf value instead
-                abSum =
-                    min ((abs a + abs b) / 2.0) float64maxValue
+        {- if tolerance < 0.0 then
+               -- No value is that close to another value. Use a non-negative tolerance.
+               -- The pragmatic way would be to use the absolute of the tolerance, but that
+               -- would only help with the tests for this module itself; otherwise the tolerance
+               -- argument is almost always a constant literal.
+               False
+           else if a == b then
+               -- If they're *exactly* equal.
+               True
+           else if delta < float64MinNormal then
+        -}
+        -- Very close to zero; use unsigned relative tolerance weighted so that values closer to zero have a higher tolerance.
+        -- (floating point arithmetic loses precision below float64MinNormal)
+        -- TODO: bug when delta == tolerance * float64minNormal in the let-in expression below, but why?
+        -- it reduces to (abs smallMag) * float64MinNormal / delta <= largeMag, which is pretty close to the delta < tolerance * float64MinNormal absolute comparison case
+        -- also a point in the middle, but we can ignore that since that should be there (and is also put there by other cases here)
+        -- cutoff how? linear triangle on a log-log graph, from (0,2^
+        let
+            smallMagLimit =
+                (abs smallMag) * (1 - tolerance) * (float64MinNormal / delta)
 
-                absmin =
-                    if abs a < abs b || (abs a == abs b && a < b) then
-                        a
-                    else
-                        b
+            largeMagLimit =
+                (abs smallMag) * (1 + tolerance) * (float64MinNormal / delta)
+        in
+            (smallMagLimit < largeMag) && (largeMag < largeMagLimit)
 
-                absmax =
-                    if abs a > abs b || (abs a == abs b && a > b) then
-                        a
-                    else
-                        b
-            in
-                -- (|a|+|b|)/(mean |a| |b|) is capped at [0,2], so we cannot say that the relative difference should be 3x.
-                -- maybe this algorithm?:
-                -- and:
-                -- (absmin a b) * (1+tol) > absmax a b
-                -- (absmin a b) * (1-tol) < absmax a b
-                Debug.log
-                    (toString ( "absmin", absmin, "absmax", absmax, "tol", tolerance ))
-                <|
-                    Debug.log
-                        (toString ( "low", absmin, "+", (abs absmin), "*", -tolerance, "=", (absmin) + (abs absmin) * (-tolerance) ))
-                    <|
-                        Debug.log
-                            (toString ( "high", absmin, "+", (abs absmin), "*", tolerance, "=", (absmin) + (abs absmin) * tolerance ))
-                        <|
-                            Debug.log
-                                (toString
-                                    ( "parts"
-                                    , (absmin) + (abs absmin) * (-tolerance) <= absmax
-                                    , (absmax <= (absmin) + (abs absmin) * (tolerance))
-                                    )
-                                )
-                            <|
-                                ((absmin) + (abs absmin) * (-tolerance) <= absmax)
-                                    && (absmax <= (absmin) + (abs absmin) * (tolerance))
+
+
+{- else
+   -- Otherwise, we use signed relative equality. Tolerance acts as a maximum multiplier between a and b.
+   -- A tolerance of 0.3 means that largeMag is at most 30% less and at most 30% larger than smallMag.
+   let
+       smallMagLimit =
+           smallMag + (abs smallMag) * -tolerance
+
+       largeMagLimit =
+           smallMag + (abs smallMag) * tolerance
+   in
+       (smallMagLimit <= largeMag) && (largeMag <= largeMagLimit)
+-}
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.

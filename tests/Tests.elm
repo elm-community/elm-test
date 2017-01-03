@@ -159,24 +159,23 @@ expectationTests =
                                 da =
                                     (toFloat (a * a)) * float64minValue
                             in
-                                Debug.log (toString ( "woop", a, float64minValue, da )) <|
-                                    Expect.all
-                                        [ (\d -> 0 |> Expect.notWithin 0 d)
-                                        , (\d -> 0 |> Expect.within 0.999 d)
-                                        , (\d -> 0 |> Expect.within 1 d)
-                                        , (\d -> 0 |> Expect.within 1.001 d)
-                                          -- and negative
-                                        , (\d -> 0 |> Expect.notWithin 0 -d)
-                                        , (\d -> d |> Expect.notWithin 0 -d)
-                                        , (\d -> d |> Expect.within 2 -d)
-                                        , (\d -> d |> Expect.within 2.001 -d)
-                                        ]
-                                        (if da >= float64minNormal then
-                                            -- slightly too large value; divide it down under float64minNormal again
-                                            da * (2 ^ -20)
-                                         else
-                                            da
-                                        )
+                                Expect.all
+                                    [ (\d -> 0 |> Expect.notWithin 0 d)
+                                    , (\d -> 0 |> Expect.within 0.999999 d)
+                                    , (\d -> 0 |> Expect.within 1 d)
+                                    , (\d -> 0 |> Expect.within 1.000001 d)
+                                      -- and negative
+                                    , (\d -> 0 |> Expect.notWithin 0 -d)
+                                    , (\d -> d |> Expect.notWithin 0 -d)
+                                    , (\d -> d |> Expect.within 2 -d)
+                                    , (\d -> d |> Expect.within 2.000001 -d)
+                                    ]
+                                    (if da >= float64minNormal then
+                                        -- slightly too large value; divide it down under float64minNormal again
+                                        da * (2 ^ -20)
+                                     else
+                                        da
+                                    )
                 , test "Plus minus minNormal equality" <|
                     -- this is right on the edge between relative and absolute comparison
                     -- it should be a smooth transition
@@ -196,16 +195,17 @@ expectationTests =
                             , (\d -> 2 * d |> Expect.within 2.001 (-d * 2.0))
                             ]
                             float64minNormal
-                  -- TODO here
+                  -- TODO here, actually small epsilons
                 , test "Very large float equality" <|
                     \() ->
-                        float64maxValue |> Expect.within float64minValue float64maxValue
+                        -- subtract smallest representable double
+                        float64maxValue |> Expect.within 1 (float64maxValue - (8.98846567431 * 10 ^ 307))
                 , test "Very small float equality" <|
-                    \() -> 2.0 ^ -1022 |> Expect.within 1 (2.0 ^ -1022)
+                    \() -> float64minNormal |> Expect.within 1 float64minNormal
                 , test "Very small plus minus float equality" <|
-                    \() -> 2.0 ^ -1022 |> Expect.within 1 (2.0 ^ -1022)
+                    \() -> float64minNormal |> Expect.within 1 float64minNormal
                 , test "Very large difference float equality" <|
-                    \() -> 2.0 ^ 1000 |> Expect.notWithin 1 (-(2.0 ^ 1000))
+                    \() -> 2.0 ^ 1000 |> Expect.notWithin 1 -float64minNormal
                 , fuzz4 float float float float "Within = not notWithin" <|
                     \epsilon a b delta ->
                         let
@@ -225,24 +225,16 @@ expectationTests =
                 , fuzz2 float float "within reflexive" <|
                     \epsilon a ->
                         Expect.within (abs epsilon) a a
+                  -- this next test should always fail
                 , expectToFail <|
-                    fuzz2 float float "notWithin reflexive" <|
+                    fuzz2 float float "notWithin irreflexive" <|
                         \epsilon a ->
                             Expect.notWithin (abs epsilon) a a
-                , test "smoke" <|
+                , test "Plot" <|
                     \() ->
-                        Debug.log "asd"
-                            Expect.notWithin
-                            3
-                            1.0e-10
-                            1.0e-50
-                  {- , test "Plot" <|
-                         \() ->
-                             Expect.notEqual [] <|
-                                 List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 1000 (1.2 ^ a) (1.2 ^ b))), 1.2 ^ a, 1.2 ^ b )) (succeeded <| (Expect.within 1000 (1.2 ^ a) (1.2 ^ b)))) <|
-                                     List.filter (\( a, b ) -> a <= b) (cartesian (List.map toFloat (List.range -3888 -1000)) (List.map toFloat (List.range -3888 -1000)))
-                     --
-                  -}
+                        Expect.notEqual [] <|
+                            List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 1000 (1.5 ^ a) (1.5 ^ b))), 1.5 ^ a, 1.5 ^ b )) (succeeded <| (Expect.within 1000 (1.5 ^ a) (1.5 ^ b)))) <|
+                                List.filter (\( a, b ) -> True || a <= b) (cartesian (List.map toFloat (List.range -1840 -500)) (List.map toFloat (List.range -1840 -500)))
                 ]
         ]
 
