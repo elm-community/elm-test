@@ -306,7 +306,7 @@ withinCompare tolerance a b =
         -- Smallest positive value representable in a 64-bit float with a non-zero radix.
         -- It's the smallest normal number below which we start loosing precision, so
         -- that's when we need to look at absolute differences.
-        float64MinNormal =
+        float64minNormal =
             2.0 ^ -1022
     in
         if tolerance < 0.0 then
@@ -329,16 +329,16 @@ withinCompare tolerance a b =
             -- This is extremely close to the smallest absolute value representable in a float. Ignore the sign; these are equal.
             -- 2^29 is chosen because it is roughly where the signed relative weighted tolerance case below would cut off this range.
             True
-        else if abs a < float64MinNormal && abs b < float64MinNormal then
+        else if abs a < float64minNormal && abs b < float64minNormal then
             -- Very close to zero; use signed relative tolerance weighted so that values closer to zero have a higher tolerance.
-            -- (floating point arithmetic loses precision below float64MinNormal)
+            -- (floating point arithmetic loses precision below float64minNormal)
             --Debug.log (toString ( "dog", a, b, "tol", tolerance )) <|
             let
                 lowMagLimit =
-                    smallMag + (abs smallMag) * -tolerance * (float64MinNormal / delta)
+                    smallMag + (abs smallMag) * -tolerance * (float64minNormal / delta)
 
                 highMagLimit =
-                    smallMag + (abs smallMag) * tolerance * (float64MinNormal / delta)
+                    smallMag + (abs smallMag) * tolerance * (float64minNormal / delta)
             in
                 -- Debug.log (toString ( "puppy", smallMagLimit, "<", largeMag, "<", largeMagLimit, "; small", smallMag )) <|
                 (lowMagLimit <= largeMag)
