@@ -242,7 +242,7 @@ specified by the first argument. This is intended to avoid failing because of
 minor inaccuracies introduced by floating point arithmetic. Don't use a negative
 tolerance.
 
-    -- Fails because 0.1 + 0.2 == 0.30000000000000004 (0.1 is irrational in base 2)
+    -- Fails because 0.1 + 0.2 == 0.30000000000000004 (0.1 is non-terminating in base 2)
     0.1 + 0.2 |> Expect.equal 0.3
 
     -- So instead write this test, which passes
@@ -280,23 +280,10 @@ notWithin tolerance =
 
 
 withinCompare : Float -> Float -> Float -> Bool
-withinCompare tolerance na nb =
+withinCompare tolerance a b =
     let
         float64minValue =
             2 ^ -1074
-
-        -- Avoid the zero case.
-        a =
-            if na /= 0 then
-                na
-            else
-                float64minValue
-
-        b =
-            if nb /= 0 then
-                nb
-            else
-                float64minValue
 
         delta =
             abs (a - b)
@@ -329,36 +316,45 @@ withinCompare tolerance na nb =
             -- argument is almost always a constant literal.
             False
         else if a == b then
+            --  Debug.log (toString ( "lecho", a, b, "tol", tolerance )) <|
             -- If they're *exactly* equal.
             True
         else if tolerance == 0 then
+            --  Debug.log (toString ( "squid", a, b, "tol", tolerance )) <|
             -- No tolerance; they have to be exactly equal.
-            a == b
-        else if abs a < float64minValue * 2 ^ 8 || abs b < float64minValue * 2 ^ 8 || delta < float64minValue * 2 ^ 8 then
-            -- This is extremely close to the smallest absolute value representable in a float.
+            a
+                == b
+        else if ((abs a < float64minValue * 2 ^ 29) && (abs b < float64minValue * 2 ^ 29)) || delta < float64minValue * 2 ^ 29 then
+            -- Debug.log (toString ( "rat", a, b, "tol", tolerance )) <|
+            -- This is extremely close to the smallest absolute value representable in a float. Ignore the sign; these are equal.
+            -- 2^29 is chosen because it is roughly where the signed relative weighted tolerance case below would cut off this range.
             True
         else if abs a < float64MinNormal && abs b < float64MinNormal then
-            -- Very close to zero; use unsigned relative tolerance weighted so that values closer to zero have a higher tolerance.
+            -- Very close to zero; use signed relative tolerance weighted so that values closer to zero have a higher tolerance.
             -- (floating point arithmetic loses precision below float64MinNormal)
+            --Debug.log (toString ( "dog", a, b, "tol", tolerance )) <|
             let
-                smallMagLimit =
-                    (abs smallMag) * (1 - tolerance) * (float64MinNormal / delta)
+                lowMagLimit =
+                    smallMag + (abs smallMag) * -tolerance * (float64MinNormal / delta)
 
-                largeMagLimit =
-                    (abs smallMag) * (1 + tolerance) * (float64MinNormal / delta)
+                highMagLimit =
+                    smallMag + (abs smallMag) * tolerance * (float64MinNormal / delta)
             in
-                (smallMagLimit <= largeMag) && (largeMag <= largeMagLimit)
+                -- Debug.log (toString ( "puppy", smallMagLimit, "<", largeMag, "<", largeMagLimit, "; small", smallMag )) <|
+                (lowMagLimit <= largeMag)
+                    && (largeMag <= highMagLimit)
         else
+            --Debug.log (toString ( "cat", a, b, "tol", tolerance )) <|
             -- Otherwise, we use signed relative equality. Tolerance acts as a maximum multiplier between a and b.
             -- A tolerance of 0.3 means that largeMag is at most 30% less and at most 30% larger than smallMag.
             let
-                smallMagLimit =
+                lowMagLimit =
                     smallMag + (abs smallMag) * -tolerance
 
-                largeMagLimit =
+                highMagLimit =
                     smallMag + (abs smallMag) * tolerance
             in
-                (smallMagLimit <= largeMag) && (largeMag <= largeMagLimit)
+                (lowMagLimit <= largeMag) && (largeMag <= highMagLimit)
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.

@@ -146,36 +146,27 @@ expectationTests =
                                 , (\d -> d |> Expect.within 2.001 -d)
                                 ]
                                 a
-                , fuzz int "Plus-minus epsilon equality" <|
-                    -- int argument to limit range of variable
-                    -- abs ints cover [0, 2^31-1], so we cover ±[2^-1012, 2^-1070]
-                    -- intended to test absolute comparison of numbers with same and different signs,
-                    -- i.e. numbers with an absolute difference of less than float64minNormal
-                    \a ->
+                , fuzz (intRange 1 (2 ^ 15)) "Plus-minus epsilon equality" <|
+                    -- Int argument to limit range of variable.
+                    -- Intended to test less exact comparison of numbers below float64minNormal.
+                    \mult ->
                         let
-                            da =
-                                (toFloat (a * a)) * float64minValue
+                            -- variable such that all test values are below float64minNormal
+                            low =
+                                (toFloat mult) * float64minNormal * 2 ^ -16
+
+                            -- variable such that all test values are above float64minNormal
+                            high =
+                                (toFloat mult) * float64minNormal * 2 ^ 16
                         in
-                            if da == 0 then
-                                Expect.pass
-                            else
-                                Expect.all
-                                    [ (\d -> 0 |> Expect.notWithin 0 d)
-                                    , (\d -> 0 |> Expect.within (1 - 10 ^ -12) d)
-                                    , (\d -> 0 |> Expect.within 1 d)
-                                    , (\d -> 0 |> Expect.within (1 + 10 ^ -12) d)
-                                      -- and negative
-                                    , (\d -> 0 |> Expect.notWithin 0 -d)
-                                    , (\d -> d |> Expect.notWithin 0 -d)
-                                    , (\d -> d |> Expect.within 2 -d)
-                                    , (\d -> d |> Expect.within (2 + 10 ^ -12) -d)
-                                    ]
-                                    (if da >= float64minNormal then
-                                        -- slightly too large value; divide it down under float64minNormal again
-                                        da * (2 ^ -20)
-                                     else
-                                        da
-                                    )
+                            -- a has higher tolerance than b, so b + 10% should not be within b + 9.9%, but the inverse for a
+                            Expect.all
+                                [ (\( low, high ) -> low * 1.1 |> Expect.within 0.10001 low)
+                                , (\( low, high ) -> high * 1.1 |> Expect.within 0.10001 high)
+                                , (\( low, high ) -> low * 1.1 |> Expect.within (1 - 1 / 1.0999999) low)
+                                , (\( low, high ) -> high * 1.1 |> Expect.notWithin (1 - 1 / 1.0999999) high)
+                                ]
+                                ( low, high )
                 , test "Plus minus minNormal equality" <|
                     -- this is right on the edge between relative and absolute comparison
                     -- it should be a smooth transition
@@ -197,7 +188,7 @@ expectationTests =
                             float64minNormal
                 , test "Very large float equality" <|
                     \() ->
-                        -- subtract smallest representable double
+                        -- subtract smallest representable double from float64maxValue
                         float64maxValue |> Expect.within 1 (float64maxValue - (8.98846567431 * 10 ^ 307))
                 , test "Very small float equality" <|
                     \() -> float64minNormal |> Expect.within 1 float64minNormal
@@ -224,16 +215,17 @@ expectationTests =
                 , fuzz2 float float "within reflexive" <|
                     \epsilon a ->
                         Expect.within (abs epsilon) a a
+                , fuzz3 float float float "nothing is nearly equal when tolerance is negative" <|
+                    \epsilon a b ->
+                        if epsilon == 0 then
+                            Expect.pass
+                        else
+                            Expect.notWithin -(abs epsilon) a b
                   -- this next test should always fail
                 , expectToFail <|
                     fuzz2 float float "notWithin irreflexive" <|
                         \epsilon a ->
                             Expect.notWithin (abs epsilon) a a
-                , test "Plot" <|
-                    \() ->
-                        Expect.notEqual [] <|
-                            List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 30 (1.2 ^ a) (1.2 ^ b))), 1.2 ^ a, 1.2 ^ b )) (succeeded <| (Expect.within 30 (1.2 ^ a) (-1.2 ^ b)))) <|
-                                List.filter (\( a, b ) -> True) (cartesian (List.map toFloat (List.range -4800 -3500)) (List.map toFloat (List.range -4800 -3500)))
                 ]
         ]
 
