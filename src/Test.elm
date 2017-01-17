@@ -69,11 +69,11 @@ filter =
             [ test "has no effect on an empty list" <|
                 \() ->
                     List.reverse []
-                        |> Expect.toEqual []
+                        |> Expect.equal []
             , fuzz int "has no effect on a one-item list" <|
                 \num ->
                      List.reverse [ num ]
-                        |> Expect.toEqual [ num ]
+                        |> Expect.equal [ num ]
             ]
         ]
 -}
@@ -92,7 +92,7 @@ describe desc =
     test "the empty list has 0 length" <|
         \() ->
             List.length []
-                |> Expect.toEqual 0
+                |> Expect.equal 0
 -}
 test : String -> (() -> Expectation) -> Test
 test desc thunk =
@@ -140,7 +140,7 @@ for example like this:
         "List.reverse never influences List.member" <|
             \(nums, target) ->
                 List.member target (List.reverse nums)
-                    |> Expect.toEqual (List.member target nums)
+                    |> Expect.equal (List.member target nums)
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzWith options fuzzer desc getTest =
@@ -212,7 +212,7 @@ See [`fuzzWith`](#fuzzWith) for an example of writing this in tuple style.
     fuzz2 (list int) int "List.reverse never influences List.member" <|
         \nums target ->
             List.member target (List.reverse nums)
-                |> Expect.toEqual (List.member target nums)
+                |> Expect.equal (List.member target nums)
 -}
 fuzz2 :
     Fuzzer a
