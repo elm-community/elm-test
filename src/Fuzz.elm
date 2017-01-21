@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, conditional, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, conditional, maybe, intRange, list, array, frequency, frequencyOrCrash, function)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -22,7 +22,7 @@ Instead of using a tuple, consider using `fuzzN`.
 @docs tuple, tuple3, tuple4, tuple5
 
 ## Uncommon Fuzzers
-@docs custom, char, unit, order
+@docs custom, char, unit, order, function
 
 -}
 
@@ -803,6 +803,13 @@ frequency list =
                             |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
                             |> Random.frequency
                             |> Shrink
+
+
+{-| Randomly generate a function!
+-}
+function : (a -> Fuzzer b -> Fuzzer b) -> Fuzzer b -> Fuzzer (a -> b)
+function transform fuzzer =
+    Internal.promote (\val -> transform val fuzzer)
 
 
 {-| Calls `frequency` and handles `Err` results by crashing with the given

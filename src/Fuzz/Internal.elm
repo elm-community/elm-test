@@ -1,7 +1,7 @@
-module Fuzz.Internal exposing (Fuzzer(Fuzzer), Fuzz(..), unpackGenVal, unpackGenTree)
+module Fuzz.Internal exposing (Fuzzer(Fuzzer), Fuzz(..), unpackGenVal, unpackGenTree, promote)
 
 import RoseTree exposing (RoseTree)
-import Random.Pcg exposing (Generator)
+import Random.Pcg as Random exposing (Generator)
 
 
 {- Fuzzers as opt-in RoseTrees
@@ -36,6 +36,41 @@ type Fuzzer a
 type Fuzz a
     = Gen (Generator a)
     | Shrink (Generator (RoseTree a))
+
+
+{-| Used by Fuzz.function - potentially informative links:
+
+* Issue - https://github.com/elm-community/elm-test/issues/109
+* Paper - http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf
+* QuickCheck implementation - https://github.com/nick8325/quickcheck/blob/master/Test/QuickCheck/Gen/Unsafe.hs
+-}
+promote : (a -> Fuzzer b) -> Fuzzer (a -> b)
+promote toFuzzer =
+    let
+        fromBool : Bool -> Fuzz (a -> b)
+        fromBool single =
+            if single then
+                Gen (toGenerator toFuzzer)
+            else
+                Debug.crash "TODO handle shrinking"
+    in
+        Fuzzer fromBool
+
+
+{-| CAUTION: uses unpackGenVal!
+-}
+toGenerator : (a -> Fuzzer b) -> Generator (a -> b)
+toGenerator toFuzzer =
+    Random.independentSeed
+        |> Random.andThen
+            (\seed ->
+                Random.constant
+                    (\a ->
+                        seed
+                            |> Random.step (unpackGenVal (toFuzzer a))
+                            |> Tuple.first
+                    )
+            )
 
 
 unpackGenVal : Fuzzer a -> Generator a
