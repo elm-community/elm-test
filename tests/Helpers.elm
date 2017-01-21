@@ -23,7 +23,7 @@ expectToFail =
     expectFailureHelper (always Nothing)
 
 
-expectFailureHelper : ({ description : String, given : String, reason : Test.Expectation.Reason } -> Maybe String) -> Test -> Test
+expectFailureHelper : ({ description : String, given : Maybe String, reason : Test.Expectation.Reason } -> Maybe String) -> Test -> Test
 expectFailureHelper f test =
     case test of
         TI.Test runTest ->
@@ -67,10 +67,15 @@ testShrinking =
                 acceptable =
                     String.split "|" description
             in
-                if List.member given acceptable then
-                    Nothing
-                else
-                    Just <| "Got shrunken value " ++ given ++ " but expected " ++ String.join " or " acceptable
+                case given of
+                    Nothing ->
+                        Just "Expected this test to have a given value!"
+
+                    Just g ->
+                        if List.member g acceptable then
+                            Nothing
+                        else
+                            Just <| "Got shrunken value " ++ g ++ " but expected " ++ String.join " or " acceptable
     in
         expectFailureHelper handleFailure
 

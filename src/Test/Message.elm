@@ -15,7 +15,7 @@ verticalBar comparison expected actual =
         |> String.join "\n"
 
 
-failureMessage : { given : String, description : String, reason : Reason } -> String
+failureMessage : { given : Maybe String, description : String, reason : Reason } -> String
 failureMessage { given, description, reason } =
     case reason of
         Custom ->
