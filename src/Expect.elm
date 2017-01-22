@@ -265,6 +265,9 @@ which argument is which:
     3.141592653589793
 
     -}
+
+This implementation uses relative tolerance from ±Infinity down to ±2^-1022 (≈±2e-308), and then progressively increases the tolerance down to ±2^-1070 (≈±2e-323), after which it considers all values to be equal to zero. You might encounter small anomalies around these constants, depending on the tolerance used.
+
 -}
 within : Float -> Float -> Float -> Expectation
 within tolerance =

@@ -79,33 +79,53 @@ expectationTests =
                         Ok 12 |> Expect.err
             ]
         , describe "Expect.within" <|
-            {- Want to test:
+            {-
+               What you want to know before reading these tests:
+                   There's a huge amount of small nuances in implementing and testing a general purpose
+                   floating point comparison algorithm. This is reflected in the size and complexity of
+                   these unit tests.
 
-                - some getting-up-to-speed test
-                  - pythagorean identity, pi
+                   In many places we use e.g. 0.501 or 0.499 instead of (1/2); this is because we need
+                   some tolerance of precision loss caused by the comparison algorithm. This tolerance
+                   is brute force binary search tested; if the tests ever fail, increase the relevant
+                   tolerance a bit. There are also some gaps between notWithin and within in some fuzz
+                   tests; this is again because of tolerance.
 
-                - negative/positive number combinations of all below:
-                  - U near-inf
-                  - UF edge large - small
-                  - UF edge small - abs
-                  - UF edge abs - zero
-                  - UF edge abs - negative abs
-                  - U test cases in documentation
-                  - U infinity equals self
-                  - F infinity does not equal finite numbers
-                  - U NaN does not equal self
-                  - F NaN does not equal anything
-                  - F reflexivity, no matter what positive epsilon is used
-                  - U zero tolerance reflexivity
-                  - F zero tolerance does not equal anything other than self
-                  - U zero tolerance removes abs check
-                  - U zero signed/unsigned comparison
-                  - F negative tolerance matches nothing
-                  - F smoke large
-                  - F smoke small
-                  - F smoke abs
+                   Despite all this effort, this will not cover all use-cases. The only way to get
+                   perfect tolerance is to analyze the floating point operations you are doing in your
+                   own program, and calculate what the maximum tolerance, relative and absolute, should
+                   be for your specific run. This also differs based on what numbers you are running
+                   through your algorithm. We do however expect this to handle all use-cases for almost
+                   all developers. If you're relying on high precision in denormalized floats, you
+                   might have to implement a solution specific to your problem.
 
-               47 tests, 3 of which are for documentation and one is a demo test
+                Want we want to test:
+
+                    - some getting-up-to-speed test
+                        - pythagorean identity, pi
+
+                    - negative/positive number combinations of all below:
+                        - U near-inf
+                        - UF edge large - small
+                        - UF edge small - abs
+                        - UF edge abs - zero
+                        - UF edge abs - negative abs
+                        - U test cases in documentation
+                        - U infinity equals self
+                        - F infinity does not equal finite numbers
+                        - U NaN does not equal self
+                        - F NaN does not equal anything
+                        - F reflexivity, no matter what positive epsilon is used
+                        - U zero tolerance reflexivity
+                        - F zero tolerance does not equal anything other than self
+                        - U zero tolerance removes abs check
+                        - U zero signed/unsigned comparison
+                        - F negative tolerance matches nothing
+                        - F smoke large
+                        - F smoke small
+                        - F smoke abs
+
+                   at least 47 tests, 3 of which are for documentation and one is a demo test
 
             -}
             [ describe "doctests"
@@ -179,7 +199,6 @@ expectationTests =
                         else
                             Expect.notWithin -(abs epsilon) a b
                 ]
-              -- todo: are all epsilon abs'd?
             , describe "edges between comparison algorithms used internally in Expect.within"
                 [ describe "edge at Float.infinity"
                     [ test "Very large float equality" <|
@@ -221,10 +240,9 @@ expectationTests =
                     , test "plus minus float equality on minNormal edge" <|
                         \() -> Float.minAbsNormal |> Expect.within 2 -Float.minAbsNormal
                     ]
-                , describe "edge at Float.minAbsValue * 2^8, below which we only compare absolute values"
+                , describe "edge at Float.minAbsValue * 2^4, below which we only compare absolute values"
                     -- F edge small - abs
                     [ fuzz (intRange 1 (2 ^ 15)) "Plus-minus epsilon equality" <|
-                        -- Int argument to limit range of variable.
                         -- Intended to verify that comparison of numbers below Float.minNormal are less exact.
                         \mult ->
                             let
@@ -244,7 +262,7 @@ expectationTests =
                                     ]
                                     ( low, high )
                       -- U edge small - abs
-                    , fuzz (floatRange (Float.minAbsValue) (Float.minAbsValue * 2 ^ 8)) "absolute comparison for values below edge at Float.minAbsValue * 2^8" <|
+                    , fuzz (floatRange (Float.minAbsValue) (Float.minAbsValue * 2 ^ 4)) "absolute comparison for values below edge at Float.minAbsValue * 2^4" <|
                         \a ->
                             if abs a < Float.minAbsValue * 2 ^ 4 then
                                 -- absolute comparison
@@ -293,7 +311,6 @@ expectationTests =
                             \() -> Float.minAbsValue |> Expect.within Float.epsilon (-4 * Float.minAbsValue)
                         ]
                     ]
-                  -- TODO: everything below here
                 , fuzz float "Plus-minus epsilon equality for larger numbers" <|
                     -- intended to test the relative comparison
                     \a ->
@@ -309,16 +326,31 @@ expectationTests =
                                 a
                 , describe "Float.minNormal to Float.infinity"
                     -- F smoke large
-                    []
-                , describe "Float.minAbsValue * 2^8 to Float.minNormal"
+                    [ fuzz (floatRange Float.minAbsNormal (Float.maxAbsValue / 2)) "Compares multiplicatively within, large values" <|
+                        \f -> f |> Expect.within 1 (2 * f)
+                    , fuzz (floatRange Float.minAbsNormal (Float.maxAbsValue / 2)) "Compares multiplicatively notWithin, large values" <|
+                        \f -> f |> Expect.notWithin 0.999 (2 * f)
+                    ]
+                , describe "Float.minAbsValue * 2^4 to Float.minNormal"
                     -- F smoke small
-                    []
-                , describe "zero to positive/negative Float.minAbsValue * 2^8"
+                    -- Gap between 2/3 and 1/2 is due to the scaling of the comparison within this floatRange.
+                    [ fuzz (floatRange (Float.minAbsValue * (2 ^ 4) * 4) (Float.minAbsNormal / 4)) "Compares multiplicatively within, small values" <|
+                        \f -> f |> Expect.within 0.667 (2 * f)
+                    , fuzz (floatRange (Float.minAbsValue * (2 ^ 4) * 4) (Float.minAbsNormal / 4)) "Compares multiplicatively notWithin, small values" <|
+                        \f -> f |> Expect.notWithin 0.49 (2 * f)
+                    ]
+                , describe "zero to positive/negative Float.minAbsValue * 2^4"
                     -- F smoke abs
-                    []
+                    [ fuzz (floatRange (-Float.minAbsValue * (2 ^ 4) / 2) (Float.minAbsValue * (2 ^ 4) / 2)) "Compares multiplicatively within, near zero" <|
+                        \f -> f |> Expect.within 0.5000001 (2 * f)
+                    , fuzz (floatRange (-Float.minAbsValue * (2 ^ 4) / 2) (Float.minAbsValue * (2 ^ 4) / 2)) "Compares multiplicatively notWithin, near zero" <|
+                        \f ->
+                            if f == 0 then
+                                Expect.pass
+                            else
+                                f |> Expect.notWithin 0 (2 * f)
+                    ]
                 , describe "algebraic properties"
-                    -- F commutativity
-                    -- F reflexivity, no matter what positive epsilon is used
                     -- F within = not notWithin
                     [ fuzz4 float float float float "Within = not notWithin" <|
                         \epsilon a b delta ->
@@ -330,12 +362,14 @@ expectationTests =
                                     Expect.notWithin delta a b
                             in
                                 Expect.notEqual (succeeded isWithin) (succeeded isNotWithin)
+                      -- F commutativity
                     , fuzz3 float float float "within commutativity" <|
                         \epsilon a b ->
                             succeeded (Expect.within (abs epsilon) a b) |> Expect.equal (succeeded <| Expect.within (abs epsilon) b a)
                     , fuzz3 float float float "notWithin commutativity" <|
                         \epsilon a b ->
                             succeeded (Expect.notWithin (abs epsilon) a b) |> Expect.equal (succeeded <| Expect.notWithin (abs epsilon) b a)
+                      -- F reflexivity, no matter what positive epsilon is used
                     , fuzz2 float float "within reflexive" <|
                         \epsilon a ->
                             Expect.within (abs epsilon) a a
@@ -347,25 +381,11 @@ expectationTests =
                     ]
                 , describe "smoke tests"
                     [ test "large difference float equality" <|
-                        \() -> 2.0 ^ 1000 |> Expect.notWithin 1 -Float.minAbsNormal
+                        \() -> 2 ^ 1000 |> Expect.notWithin 1 -Float.minAbsNormal
                     ]
-                  {-
-                     , test "Plot" <|
-                         \() ->
-                             Expect.notEqual [] <|
-                                 List.map (\( a, b ) -> Debug.log (toString ( (succeeded <| (Expect.within 1 (1.2 ^ a) (1.2 ^ b))), 1.2 ^ a, 1.2 ^ b )) (succeeded <| (Expect.within 1 (1.2 ^ a) (-1.2 ^ b)))) <|
-                                     List.filter (\( a, b ) -> True) (cartesian (List.map toFloat (List.range -4800 -3500)) (List.map toFloat (List.range -4800 -3500)))
-                  -}
                 ]
             ]
         ]
-
-
-cartesian : List a -> List b -> List ( a, b )
-cartesian xs ys =
-    List.concatMap
-        (\x -> List.map (\y -> ( x, y )) ys)
-        xs
 
 
 regressions : Test
