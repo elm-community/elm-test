@@ -34,6 +34,8 @@ module Expect
 * [`atLeast`](#atLeast) `(arg2 >= arg1)`
 * [`true`](#true) `(arg == True)`
 * [`false`](#false) `(arg == False)`
+* [`within`](#within) `(float equality)`
+* [`notWithin`](#notWithin) `(float inequality)`
 
 ## Basic Expectations
 
@@ -317,10 +319,8 @@ withinCompare tolerance a b =
             True
         else if ((abs a < Float.minAbsValue * 2 ^ 4) && (abs b < Float.minAbsValue * 2 ^ 4)) || delta < Float.minAbsValue * 2 ^ 4 then
             -- This is extremely close to the smallest absolute value representable in a float. Ignore the sign; these are equal.
-            -- 2^24 * tolerance is chosen because it is roughly where the signed relative weighted tolerance case below would cut off this range.
             True
         else
-            -- if abs largeMag < Float.minAbsNormal then
             -- Very close to zero; use signed relative tolerance weighted so that values closer to zero have a higher tolerance.
             -- (floating point arithmetic loses precision below Float.minNormal)
             let
@@ -333,9 +333,6 @@ withinCompare tolerance a b =
                 highMagLimit =
                     smallMag + tolerance * (abs smallMag) * precisionLossCorrectionFactor
             in
-                -- Debug.log (toString ( "res", tolerance, (abs smallMag), precisionLossCorrectionFactor, "->", tolerance * (abs smallMag), (abs smallMag) * precisionLossCorrectionFactor, "=", tolerance * (abs smallMag) * precisionLossCorrectionFactor )) <|
-                -- Debug.log (toString ( "dog", a, b, tolerance, "corr", precisionLossCorrectionFactor, x, "d", delta )) <|
-                -- Debug.log (toString ( "calc", lowMagLimit, largeMag, highMagLimit )) <|
                 (lowMagLimit <= largeMag) && (largeMag <= highMagLimit)
 
 

@@ -10,7 +10,8 @@
         "Test",
         "Test.Runner",
         "Expect",
-        "Fuzz"
+        "Fuzz",
+        "Float"
     ],
     "dependencies": {
         "elm-community/lazy-list": "1.0.0 <= v < 2.0.0",

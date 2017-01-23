@@ -62,10 +62,6 @@ readmeExample =
         ]
 
 
-
--- TODO: floatRange!
-
-
 expectationTests : Test
 expectationTests =
     describe "Expectations"
