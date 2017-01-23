@@ -3,7 +3,6 @@ module Expect
         ( Expectation
         , pass
         , fail
-        , getFailure
         , equal
         , notEqual
         , atMost
@@ -51,11 +50,10 @@ module Expect
 
 ## Customizing
 
-@docs pass, fail, onFail, getFailure
+@docs pass, fail, onFail
 -}
 
 import Test.Expectation
-import Test.Message exposing (failureMessage)
 import Dict exposing (Dict)
 import Set exposing (Set)
 import String
@@ -533,34 +531,6 @@ pass =
 fail : String -> Expectation
 fail str =
     Test.Expectation.fail { description = str, reason = Test.Expectation.Custom }
-
-
-{-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
-
-If it is a [`fail`](#fail), return a record containing the failure message,
-along with the given inputs if it was a fuzz test. (If no inputs were involved,
-the record's `given` field will be `""`).
-
-For example, if a fuzz test generates random integers, this might return
-`{ message = "it was supposed to be positive", given = "-1" }`
-
-    getFailure (Expect.fail "this failed")
-    -- Just { message = "this failed", given = "" }
-
-    getFailure (Expect.pass)
-    -- Nothing
--}
-getFailure : Expectation -> Maybe { given : String, message : String }
-getFailure expectation =
-    case expectation of
-        Test.Expectation.Pass ->
-            Nothing
-
-        Test.Expectation.Fail record ->
-            Just
-                { given = record.given |> Maybe.withDefault ""
-                , message = failureMessage record
-                }
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.

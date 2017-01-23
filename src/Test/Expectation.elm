@@ -21,6 +21,7 @@ type Reason
         , extra : List String
         , missing : List String
         }
+    | TODO
 
 
 {-| Create a failure without specifying the given.
