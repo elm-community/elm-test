@@ -74,7 +74,7 @@ expectationTests =
                     \() ->
                         Ok 12 |> Expect.err
             ]
-        , describe "Expect.within" <|
+        , describe "Expect.within and Expect.notWithin" <|
             {-
                What you want to know before reading these tests:
                    There's a huge amount of small nuances in implementing and testing a general purpose
