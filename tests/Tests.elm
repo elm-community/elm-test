@@ -26,7 +26,7 @@ all =
 
 readmeExample : Test
 readmeExample =
-    describe "The String module"
+    describe "the String module"
         [ describe "String.reverse"
             [ test "has no effect on a palindrome" <|
                 \() ->
@@ -197,18 +197,18 @@ expectationTests =
                 ]
             , describe "edges between comparison algorithms used internally in Expect.within"
                 [ describe "edge at Float.infinity"
-                    [ test "Very large float equality" <|
+                    [ test "very large float equality" <|
                         -- U edge inf - large
                         \() ->
                             -- subtract smallest representable double from Float.maxValue
                             Float.maxAbsValue |> Expect.within 1 (Float.maxAbsValue - (8.98846567431 * 10 ^ 307))
-                    , test "Very large float equals Float.infinity with high enough tolerance" <|
+                    , test "very large float equals Float.infinity with high enough tolerance" <|
                         -- U edge inf - large
                         \() ->
                             Float.maxAbsValue |> Expect.within Float.epsilon Float.infinity
                     ]
                 , describe "edge at Float.minAbsNormal"
-                    [ test "Plus minus minNormal equality" <|
+                    [ test "plus minus minNormal equality" <|
                         -- this is right on the edge between relative and absolute comparison
                         -- it should be a fairly smooth transition
                         -- U edge large - small
@@ -286,28 +286,28 @@ expectationTests =
                         -- UF edge abs - zero
                         -- UF edge abs - negative abs
                         [ -- U zero signed/unsigned comparison
-                          fuzz float "Zero equality" <|
+                          fuzz float "zero equality" <|
                             \epsilon -> 0.0 |> Expect.within (abs epsilon) 0.0
-                        , fuzz float "Zero equality, signed" <|
+                        , fuzz float "zero equality, signed" <|
                             \epsilon -> 0.0 |> Expect.within (abs epsilon) -0.0
-                        , fuzz2 float (floatRange Float.minAbsNormal (2 ^ 44 * Float.minAbsNormal)) "Near-zero self equality" <|
+                        , fuzz2 float (floatRange Float.minAbsNormal (2 ^ 44 * Float.minAbsNormal)) "near-zero self equality" <|
                             -- F zero signed/unsigned comparison
                             -- intended to test absolute comparison (the near-zero case)
                             \epsilon a ->
                                 a |> Expect.within (abs epsilon) a
                           --
                           -- tests for comparison of floats small enough to be considered zero
-                        , test "Extremely small float equality" <|
+                        , test "extremely small float equality" <|
                             \() -> Float.minAbsValue |> Expect.within Float.epsilon Float.minAbsValue
-                        , test "Extremely small plus minus float equality" <|
+                        , test "extremely small plus minus float equality" <|
                             \() -> Float.minAbsValue |> Expect.within Float.epsilon -Float.minAbsValue
-                        , test "Extremely small float equality, abs tolerance" <|
+                        , test "extremely small float equality, abs tolerance" <|
                             \() -> Float.minAbsValue |> Expect.within Float.epsilon (4 * Float.minAbsValue)
-                        , test "Extremely small plus minus float equality, abs tolerance" <|
+                        , test "extremely small plus minus float equality, abs tolerance" <|
                             \() -> Float.minAbsValue |> Expect.within Float.epsilon (-4 * Float.minAbsValue)
                         ]
                     ]
-                , fuzz float "Plus-minus epsilon equality for larger numbers" <|
+                , fuzz float "plus minus epsilon equality for larger numbers" <|
                     -- intended to test the relative comparison
                     \a ->
                         -- 3 * minAbsNormal is slightly larger than the highest tolerance used
@@ -459,7 +459,7 @@ fuzzerTests =
 shrinkingTests : Test
 shrinkingTests =
     testShrinking <|
-        describe "Tests that fail intentionally to test shrinking"
+        describe "tests that fail intentionally to test shrinking"
             [ fuzz2 int int "Every pair of ints has a zero" <|
                 \i j ->
                     (i == 0)
@@ -506,7 +506,7 @@ shrinkingTests =
 
 manualFuzzerTests : Test
 manualFuzzerTests =
-    describe "Test Test.Runner.{fuzz, shrink}"
+    describe "Test.Runner.{fuzz, shrink}"
         [ fuzz randomSeedFuzzer "Claim there are no even numbers" <|
             \seed ->
                 let
@@ -549,7 +549,7 @@ manualFuzzerTests =
         , fuzz randomSeedFuzzer "No strings contain the letter e" <|
             \seed ->
                 let
-                    -- fuzzer is gauranteed to produce a string with the letter e
+                    -- fuzzer is guaranteed to produce a string with the letter e
                     fuzzer =
                         map2 (\pre suf -> pre ++ "e" ++ suf) string string
 
