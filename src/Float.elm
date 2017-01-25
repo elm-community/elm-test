@@ -52,9 +52,9 @@ nan =
 
 Values closer to zero are denormalized, which means that they are
 using some of the significant bits to emulate a slightly larger mantissa.
-They lose precision inversely proportional to the binary logarithm of the
-denormalized number; halving a denormalized number also halves the precision
-of that number.
+The number of significant binary digits is proportional to the binary
+logarithm of the denormalized number; halving a denormalized number also
+halves the precision of that number.
 -}
 minAbsNormal : Float
 minAbsNormal =
