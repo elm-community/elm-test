@@ -372,7 +372,7 @@ listShrinkHelp listOfTrees =
        We need to do two things. First, shrink individual values. Second, shorten the list.
        To shrink individual values, we create every list copy of the input list where any
        one value is replaced by a shrunken form.
-       To shorten the length of the list, slide windows of various lengths over it.
+       To shorten the length of the list, remove elements at various positions in the list.
        In all cases, recurse! The goal is to make a little forward progress and then recurse.
     -}
     let
@@ -398,26 +398,15 @@ listShrinkHelp listOfTrees =
                     (\i -> shrinkOne (List.take i listOfTrees) (List.drop i listOfTrees))
 
         shortened =
-            (if n > 6 then
-                Lazy.List.iterate (\n -> n // 2) n
-                    |> Lazy.List.takeWhile (\x -> x > 0)
-             else
-                Lazy.List.fromList (List.range 1 n)
-            )
-                |> Lazy.List.andThen (\len -> shorter len listOfTrees False)
+            List.range 0 (n - 1)
+                |> Lazy.List.fromList
+                |> Lazy.List.map (\index -> removeOne index listOfTrees)
                 |> Lazy.List.map listShrinkHelp
 
-        shorter windowSize aList recursing =
-            -- Tricky: take the whole list if we've recursed down here, but don't let a list shrink to itself
-            if windowSize > List.length aList || (windowSize == List.length aList && not recursing) then
-                Lazy.List.empty
-            else
-                case aList of
-                    [] ->
-                        Lazy.List.empty
-
-                    head :: tail ->
-                        Lazy.List.cons (List.take windowSize aList) (shorter windowSize tail True)
+        removeOne index list =
+            List.append
+                (List.take index list)
+                (List.drop (index + 1) list)
     in
         Lazy.List.append shortened shrunkenVals
             |> Lazy.List.cons (RoseTree.singleton [])
