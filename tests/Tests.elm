@@ -124,7 +124,7 @@ expectationTests =
                    at least 47 tests, 3 of which are for documentation and one is a demo test
 
             -}
-            [ describe "doctests"
+            [ describe "examples in documentation"
                 [ fuzz float "pythagorean identity" <|
                     -- U getting started-test
                     \x ->
