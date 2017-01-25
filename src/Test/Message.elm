@@ -30,6 +30,9 @@ failureMessage { given, description, reason } =
         TODO ->
             "TODO: " ++ description
 
+        EmptyList ->
+            description
+
         ListDiff e a ( i, itemE, itemA ) ->
             String.join ""
                 [ verticalBar description e a

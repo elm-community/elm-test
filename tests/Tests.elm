@@ -20,7 +20,7 @@ import Helpers exposing (..)
 all : Test
 all =
     Test.concat
-        [ readmeExample, regressions, todoTests, expectationTests, fuzzerTests ]
+        [ readmeExample, regressions, testTests, expectationTests, fuzzerTests ]
 
 
 readmeExample : Test
@@ -83,25 +83,35 @@ expectationTests =
                     \() ->
                         Ok 12 |> Expect.err
             ]
+        , describe "Expect.all"
+            [ expectToFail <|
+                test "fails with empty list" <|
+                    \_ -> "dummy subject" |> Expect.all []
+            ]
           -- , describe "Expect.somethingElse" [ ... ]
         ]
 
 
-todoTests : Test
-todoTests =
-    describe "Test.todo"
-        [ expectToFail <| todo "a TODO test fails"
-        , test "Passes are not TODO" <|
-            \_ ->
-                Expect.pass |> Test.Runner.isTodo |> Expect.false "was true"
-        , test "Simple failures are not TODO" <|
-            \_ ->
-                Expect.fail "reason" |> Test.Runner.isTodo |> Expect.false "was true"
-        , test "Failures with TODO reason are TODO" <|
-            \_ ->
-                Test.Expectation.fail { description = "", reason = Test.Expectation.TODO }
-                    |> Test.Runner.isTodo
-                    |> Expect.true "was false"
+testTests : Test
+testTests =
+    describe "functions that create tests"
+        [ describe "describe"
+            [ expectToFail <| describe "fails with empty list" []
+            ]
+        , describe "Test.todo"
+            [ expectToFail <| todo "a TODO test fails"
+            , test "Passes are not TODO" <|
+                \_ ->
+                    Expect.pass |> Test.Runner.isTodo |> Expect.false "was true"
+            , test "Simple failures are not TODO" <|
+                \_ ->
+                    Expect.fail "reason" |> Test.Runner.isTodo |> Expect.false "was true"
+            , test "Failures with TODO reason are TODO" <|
+                \_ ->
+                    Test.Expectation.fail { description = "", reason = Test.Expectation.TODO }
+                        |> Test.Runner.isTodo
+                        |> Expect.true "was false"
+            ]
         ]
 
 

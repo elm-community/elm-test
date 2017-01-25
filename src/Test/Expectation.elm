@@ -22,6 +22,7 @@ type Reason
         , missing : List String
         }
     | TODO
+    | EmptyList
 
 
 {-| Create a failure without specifying the given.

@@ -77,10 +77,23 @@ filter =
                         |> Expect.equal [ num ]
             ]
         ]
+
+Passing an empty list will result in a failing test, because you either made a
+mistake or are creating a placeholder.
 -}
 describe : String -> List Test -> Test
-describe desc =
-    Internal.Batch >> Internal.Labeled desc
+describe desc tests =
+    if List.isEmpty tests then
+        Internal.Test
+            (\_ _ ->
+                [ Test.Expectation.fail
+                    { reason = Test.Expectation.EmptyList
+                    , description = "You tried to describe " ++ desc ++ " with no tests!"
+                    }
+                ]
+            )
+    else
+        Internal.Labeled desc (Internal.Batch tests)
 
 
 {-| Return a [`Test`](#Test) that evaluates a single
