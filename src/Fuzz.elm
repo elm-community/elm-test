@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, conditional, maybe, intRange, list, array, frequency, frequencyOrCrash)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, conditional, maybe, intRange, list, array, frequency, frequencyOrCrash, invalid)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -22,7 +22,7 @@ Instead of using a tuple, consider using `fuzzN`.
 @docs tuple, tuple3, tuple4, tuple5
 
 ## Uncommon Fuzzers
-@docs custom, char, unit, order
+@docs custom, char, unit, order, invalid
 
 -}
 
@@ -33,7 +33,7 @@ import Lazy.List exposing (LazyList)
 import Shrink exposing (Shrinker)
 import RoseTree exposing (RoseTree(..))
 import Random.Pcg as Random exposing (Generator)
-import Fuzz.Internal as Internal exposing (Fuzz(..))
+import Fuzz.Internal as Internal exposing (Fuzz(..), invalidReason)
 
 
 {-| The representation of fuzzers is opaque. Conceptually, a `Fuzzer a`
@@ -296,6 +296,9 @@ maybe (Internal.Fuzzer baseFuzzer) =
                             (Random.oneIn 4)
                             genTree
 
+                InvalidFuzzer reason ->
+                    InvalidFuzzer reason
+
 
 {-| Given fuzzers for an error type and a success type, create a fuzzer for
 a result.
@@ -331,8 +334,11 @@ result (Internal.Fuzzer baseFuzzerError) (Internal.Fuzzer baseFuzzerValue) =
                             genTreeErr
                             genTreeVal
 
-                err ->
-                    Debug.crash "This shouldn't happen: Fuzz.result" err
+                ( a, b ) ->
+                    [ invalidReason a, invalidReason b ]
+                        |> List.filterMap identity
+                        |> String.join " "
+                        |> InvalidFuzzer
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a list of that type.
@@ -363,6 +369,9 @@ list (Internal.Fuzzer baseFuzzer) =
                             |> Random.andThen (\i -> (Random.list i genTree))
                             |> Random.map listShrinkHelp
                             |> Shrink
+
+                    InvalidFuzzer reason ->
+                        InvalidFuzzer reason
             )
 
 
@@ -445,8 +454,11 @@ tuple ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB ) =
                 ( Shrink genTreeA, Shrink genTreeB ) ->
                     Shrink <| Random.map2 tupleShrinkHelp genTreeA genTreeB
 
-                err ->
-                    Debug.crash "This shouldn't happen: Fuzz.tuple" err
+                ( a, b ) ->
+                    [ invalidReason a, invalidReason b ]
+                        |> List.filterMap identity
+                        |> String.join " "
+                        |> InvalidFuzzer
         )
 
 
@@ -487,8 +499,11 @@ tuple3 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzz
                 ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC ) ->
                     Shrink <| Random.map3 tupleShrinkHelp3 genTreeA genTreeB genTreeC
 
-                err ->
-                    Debug.crash "This shouldn't happen: Fuzz.tuple3" err
+                ( a, b, c ) ->
+                    [ invalidReason a, invalidReason b, invalidReason c ]
+                        |> List.filterMap identity
+                        |> String.join " "
+                        |> InvalidFuzzer
         )
 
 
@@ -526,8 +541,11 @@ tuple4 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzz
                 ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC, Shrink genTreeD ) ->
                     Shrink <| Random.map4 tupleShrinkHelp4 genTreeA genTreeB genTreeC genTreeD
 
-                err ->
-                    Debug.crash "This shouldn't happen: Fuzz.tuple4" err
+                ( a, b, c, d ) ->
+                    [ invalidReason a, invalidReason b, invalidReason c, invalidReason d ]
+                        |> List.filterMap identity
+                        |> String.join " "
+                        |> InvalidFuzzer
         )
 
 
@@ -569,8 +587,11 @@ tuple5 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzz
                 ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC, Shrink genTreeD, Shrink genTreeE ) ->
                     Shrink <| Random.map5 tupleShrinkHelp5 genTreeA genTreeB genTreeC genTreeD genTreeE
 
-                err ->
-                    Debug.crash "This shouldn't happen: Fuzz.tuple5" err
+                ( a, b, c, d, e ) ->
+                    [ invalidReason a, invalidReason b, invalidReason c, invalidReason d, invalidReason e ]
+                        |> List.filterMap identity
+                        |> String.join " "
+                        |> InvalidFuzzer
         )
 
 
@@ -629,6 +650,9 @@ map transform (Internal.Fuzzer baseFuzzer) =
 
                 Shrink genTree ->
                     Shrink <| Random.map (RoseTree.map transform) genTree
+
+                InvalidFuzzer reason ->
+                    InvalidFuzzer reason
         )
 
 
@@ -687,6 +711,9 @@ andThen transform (Internal.Fuzzer baseFuzzer) =
 
                 Shrink genTree ->
                     Shrink <| andThenRoseTrees transform genTree
+
+                InvalidFuzzer reason ->
+                    InvalidFuzzer reason
         )
 
 
@@ -824,3 +851,11 @@ okOrCrash result =
 
         Err str ->
             Debug.crash str
+
+
+{-| A fuzzer that is invalid for the provided reason. Any fuzzers built with it
+are also invalid. Any tests using an invalid fuzzer fail.
+-}
+invalid : String -> Fuzzer a
+invalid reason =
+    Internal.Fuzzer (\_ -> InvalidFuzzer reason)

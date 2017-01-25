@@ -28,6 +28,7 @@ type Reason
 type InvalidReason
     = EmptyList
     | NonpositiveFuzzCount
+    | InvalidFuzzer
     | BadDescription
 
 

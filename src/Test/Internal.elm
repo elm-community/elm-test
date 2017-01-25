@@ -50,7 +50,30 @@ filterHelp lastCheckPassed isKeepable test =
 
 
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest fuzzer untrimmedDesc getExpectation =
+fuzzTest ((Fuzz.Internal.Fuzzer baseFuzzer) as fuzzer) untrimmedDesc getExpectation =
+    let
+        desc =
+            String.trim untrimmedDesc
+    in
+        if desc == "" then
+            failNow
+                { description = "You must pass your fuzz tests a nonempty string!"
+                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+                }
+        else
+            case Fuzz.Internal.invalidReason (baseFuzzer True) of
+                Just reason ->
+                    failNow
+                        { description = reason
+                        , reason = Test.Expectation.Invalid Test.Expectation.InvalidFuzzer
+                        }
+
+                Nothing ->
+                    validatedFuzzTest fuzzer desc getExpectation
+
+
+validatedFuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
+validatedFuzzTest fuzzer desc getExpectation =
     {- Fuzz test algorithm with opt-in RoseTrees:
        Generate a single value by passing the fuzzer True (indicates skip shrinking)
        Run the test on that value. If it fails:
@@ -61,9 +84,6 @@ fuzzTest fuzzer untrimmedDesc getExpectation =
        Whether it passes or fails, do this n times
     -}
     let
-        desc =
-            String.trim untrimmedDesc
-
         getFailures failures currentSeed remainingRuns =
             let
                 genVal =
@@ -107,13 +127,7 @@ fuzzTest fuzzer untrimmedDesc getExpectation =
                         |> Dict.toList
                         |> List.map formatExpectation
     in
-        if desc == "" then
-            failNow
-                { description = "You must pass your fuzz tests a nonempty string!"
-                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-                }
-        else
-            Labeled desc (Test run)
+        Labeled desc (Test run)
 
 
 shrinkAndAdd : RoseTree a -> (a -> Expectation) -> Expectation -> Dict String Expectation -> Dict String Expectation
