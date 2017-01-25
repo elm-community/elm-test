@@ -1,7 +1,7 @@
 module Test.Message exposing (failureMessage)
 
 import String
-import Test.Expectation exposing (Reason(..))
+import Test.Expectation exposing (Reason(..), InvalidReason(..))
 
 
 verticalBar : String -> String -> String -> String
@@ -28,9 +28,15 @@ failureMessage { given, description, reason } =
             verticalBar description e a
 
         TODO ->
-            "TODO: " ++ description
+            description
 
-        EmptyList ->
+        Invalid BadDescription ->
+            if description == "" then
+                "The empty string is not a valid name."
+            else
+                "You used an invalid name: " ++ description
+
+        Invalid _ ->
             description
 
         ListDiff e a ( i, itemE, itemA ) ->

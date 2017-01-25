@@ -579,7 +579,7 @@ all : List (subject -> Expectation) -> subject -> Expectation
 all list query =
     if List.isEmpty list then
         Test.Expectation.fail
-            { reason = Test.Expectation.EmptyList
+            { reason = Test.Expectation.Invalid Test.Expectation.EmptyList
             , description = "Expect.all was given an empty list. You must make at least one expectation to have a valid test!"
             }
     else

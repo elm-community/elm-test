@@ -83,15 +83,16 @@ mistake or are creating a placeholder.
 -}
 describe : String -> List Test -> Test
 describe desc tests =
-    if List.isEmpty tests then
-        Internal.Test
-            (\_ _ ->
-                [ Test.Expectation.fail
-                    { reason = Test.Expectation.EmptyList
-                    , description = "You tried to describe " ++ desc ++ " with no tests!"
-                    }
-                ]
-            )
+    if desc == "" then
+        Internal.failNow
+            { description = "You must pass 'describe' a nonempty string!"
+            , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+            }
+    else if List.isEmpty tests then
+        Internal.failNow
+            { description = "You tried to describe '" ++ desc ++ "' but included no tests!"
+            , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
+            }
     else
         Internal.Labeled desc (Internal.Batch tests)
 
@@ -110,7 +111,13 @@ describe desc tests =
 -}
 test : String -> (() -> Expectation) -> Test
 test desc thunk =
-    Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
+    if desc == "" then
+        Internal.failNow
+            { description = "You must pass 'test' a nonempty string!"
+            , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+            }
+    else
+        Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
 
 
 {-| Returns a [`Test`](#Test) that is "TODO" (not yet implemented). These tests
@@ -134,15 +141,10 @@ that a TODO test is considered failing but a pending test often is not.
 -}
 todo : String -> Test
 todo desc =
-    Internal.Test
-        (\_ _ ->
-            [ Test.Expectation.Fail
-                { given = Nothing
-                , description = desc
-                , reason = Test.Expectation.TODO
-                }
-            ]
-        )
+    Internal.failNow
+        { description = desc
+        , reason = Test.Expectation.TODO
+        }
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
@@ -191,9 +193,15 @@ for example like this:
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzWith options fuzzer desc getTest =
     if options.runs < 1 then
-        test desc <|
-            \() ->
-                Expect.fail ("Fuzz test run count must be at least 1, not " ++ toString options.runs)
+        Internal.failNow
+            { description = "Fuzz test run count must be at least 1, not " ++ toString options.runs
+            , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
+            }
+    else if desc == "" then
+        Internal.failNow
+            { description = "You must pass 'test' a nonempty string!"
+            , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+            }
     else
         fuzzWithHelp options (fuzz fuzzer desc getTest)
 

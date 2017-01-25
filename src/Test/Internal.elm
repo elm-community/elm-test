@@ -1,4 +1,4 @@
-module Test.Internal exposing (Test(..), fuzzTest, filter)
+module Test.Internal exposing (Test(..), failNow, fuzzTest, filter)
 
 import Random.Pcg as Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
@@ -14,6 +14,14 @@ type Test
     = Test (Random.Seed -> Int -> List Expectation)
     | Labeled String Test
     | Batch (List Test)
+
+
+{-| Create a test that always fails for the given reason and description.
+-}
+failNow : { description : String, reason : Test.Expectation.Reason } -> Test
+failNow record =
+    Test
+        (\_ _ -> [ Test.Expectation.fail record ])
 
 
 filter : (String -> Bool) -> Test -> Test
@@ -96,7 +104,13 @@ fuzzTest fuzzer desc getExpectation =
                         |> Dict.toList
                         |> List.map formatExpectation
     in
-        Labeled desc (Test run)
+        if desc == "" then
+            failNow
+                { description = "You must pass your fuzz tests a nonempty string!"
+                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+                }
+        else
+            Labeled desc (Test run)
 
 
 shrinkAndAdd : RoseTree a -> (a -> Expectation) -> Expectation -> Dict String Expectation -> Dict String Expectation

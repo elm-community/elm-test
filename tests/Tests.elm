@@ -97,6 +97,17 @@ testTests =
     describe "functions that create tests"
         [ describe "describe"
             [ expectToFail <| describe "fails with empty list" []
+            , expectToFail <| describe "" [ test "describe with empty description fail" <| \_ -> Expect.pass ]
+            ]
+        , describe "test"
+            [ expectToFail <| test "" <| \_ -> Expect.pass
+            ]
+        , describe "fuzz"
+            [ expectToFail <| fuzz Fuzz.bool "" <| \_ -> Expect.pass
+            ]
+        , describe "fuzzWith"
+            [ expectToFail <| fuzzWith { runs = 0 } Fuzz.bool "nonpositive" <| \_ -> Expect.pass
+            , expectToFail <| fuzzWith { runs = 1 } Fuzz.bool "" <| \_ -> Expect.pass
             ]
         , describe "Test.todo"
             [ expectToFail <| todo "a TODO test fails"
