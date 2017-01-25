@@ -41,6 +41,11 @@ filterHelp lastCheckPassed isKeepable test =
                 |> Batch
 
 
+type ShrinkingResult a
+    = Passes
+    | ShrinksTo a
+
+
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzTest fuzzer desc getExpectation =
     {- Fuzz test algorithm with opt-in RoseTrees:
@@ -53,40 +58,54 @@ fuzzTest fuzzer desc getExpectation =
        Whether it passes or fails, do this n times
     -}
     let
-        getFailures failures currentSeed remainingRuns =
+        getFailures failures currentSeed remainingRuns results =
             let
                 genVal =
                     unpackGenVal fuzzer
 
                 ( value, nextSeed ) =
                     Random.step genVal currentSeed
-
-                newFailures =
-                    case getExpectation value of
-                        Pass ->
-                            failures
-
-                        failedExpectation ->
-                            let
-                                genTree =
-                                    unpackGenTree fuzzer
-
-                                ( rosetree, nextSeedAgain ) =
-                                    Random.step genTree currentSeed
-                            in
-                                shrinkAndAdd rosetree getExpectation failedExpectation failures
             in
-                if remainingRuns == 1 then
-                    newFailures
-                else
-                    getFailures newFailures nextSeed (remainingRuns - 1)
+                case Dict.get (toString value) results of
+                    Just _ ->
+                        -- we can skip this, already have the result in `failures`
+                        failures
+
+                    Nothing ->
+                        let
+                            ( failures_, results_ ) =
+                                case getExpectation value of
+                                    Pass ->
+                                        ( failures
+                                        , Dict.insert (toString value) Passes results
+                                        )
+
+                                    failedExpectation ->
+                                        let
+                                            genTree =
+                                                unpackGenTree fuzzer
+
+                                            ( rosetree, nextSeed_ ) =
+                                                Random.step genTree currentSeed
+
+                                            ( failures__, results__, minimalValue ) =
+                                                shrinkAndAdd rosetree getExpectation failedExpectation failures results
+                                        in
+                                            ( failures__
+                                            , Dict.insert (toString value) (ShrinksTo minimalValue) results__
+                                            )
+                        in
+                            if remainingRuns == 1 then
+                                failures_
+                            else
+                                getFailures failures_ nextSeed (remainingRuns - 1) results_
 
         run seed runs =
             let
                 -- Use a Dict so we don't report duplicate inputs.
                 failures : Dict String Expectation
                 failures =
-                    getFailures Dict.empty seed runs
+                    getFailures Dict.empty seed runs Dict.empty
             in
                 -- Make sure if we passed, we don't do any more work.
                 if Dict.isEmpty failures then
@@ -99,28 +118,72 @@ fuzzTest fuzzer desc getExpectation =
         Labeled desc (Test run)
 
 
-shrinkAndAdd : RoseTree a -> (a -> Expectation) -> Expectation -> Dict String Expectation -> Dict String Expectation
-shrinkAndAdd rootTree getExpectation rootsExpectation dict =
+shrinkAndAdd :
+    RoseTree a
+    -> (a -> Expectation)
+    -> Expectation
+    -> Dict String Expectation
+    -> Dict String (ShrinkingResult a)
+    -> ( Dict String Expectation, Dict String (ShrinkingResult a), a )
+shrinkAndAdd rootTree getExpectation rootsExpectation failures results =
     -- Knowing that the root already failed, adds the shrunken failure to the dictionary
     let
-        shrink oldExpectation (Rose root branches) =
-            case Lazy.List.headAndTail branches of
-                Just ( (Rose branch _) as rosetree, moreLazyRoseTrees ) ->
-                    -- either way, recurse with the most recent failing expectation, and failing input with its list of shrunken values
-                    case getExpectation branch of
-                        Pass ->
-                            shrink oldExpectation (Rose root moreLazyRoseTrees)
+        shrink oldExpectation (Rose failingValue branches) results =
+            case Dict.get (toString failingValue) results of
+                Just result ->
+                    case result of
+                        Passes ->
+                            -- can't happen
+                            ( failingValue, oldExpectation, results )
 
-                        newExpectation ->
-                            shrink newExpectation rosetree
+                        ShrinksTo minimalValue ->
+                            ( minimalValue, oldExpectation, results )
 
                 Nothing ->
-                    ( root, oldExpectation )
+                    case Lazy.List.headAndTail branches of
+                        Just ( (Rose possiblyFailingValue _) as rosetree, moreLazyRoseTrees ) ->
+                            -- either way, recurse with the most recent failing expectation, and failing input with its list of shrunken values
+                            case Dict.get (toString possiblyFailingValue) results of
+                                Just result ->
+                                    case result of
+                                        Passes ->
+                                            shrink oldExpectation (Rose failingValue moreLazyRoseTrees) results
 
-        ( result, finalExpectation ) =
-            shrink rootsExpectation rootTree
+                                        ShrinksTo minimalValue ->
+                                            ( minimalValue, oldExpectation, results )
+
+                                Nothing ->
+                                    case getExpectation possiblyFailingValue of
+                                        Pass ->
+                                            shrink oldExpectation
+                                                (Rose failingValue moreLazyRoseTrees)
+                                                (Dict.insert (toString possiblyFailingValue) Passes results)
+
+                                        newExpectation ->
+                                            let
+                                                ( minimalValue, finalExpectation, results_ ) =
+                                                    shrink newExpectation rosetree results
+                                            in
+                                                ( minimalValue
+                                                , finalExpectation
+                                                , results
+                                                    |> Dict.insert (toString possiblyFailingValue) (ShrinksTo minimalValue)
+                                                    |> Dict.insert (toString failingValue) (ShrinksTo minimalValue)
+                                                )
+
+                        Nothing ->
+                            ( failingValue, oldExpectation, results )
+
+        (Rose failingValue _) =
+            rootTree
+
+        ( minimalValue, finalExpectation, results_ ) =
+            shrink rootsExpectation rootTree results
     in
-        Dict.insert (toString result) finalExpectation dict
+        ( Dict.insert (toString minimalValue) finalExpectation failures
+        , Dict.insert (toString failingValue) (ShrinksTo minimalValue) results
+        , minimalValue
+        )
 
 
 formatExpectation : ( String, Expectation ) -> Expectation
