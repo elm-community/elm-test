@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, conditional, maybe, intRange, list, array, frequency, frequencyOrCrash, invalid)
+module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, map, map2, map3, map4, map5, andMap, andThen, conditional, maybe, intRange, list, array, frequency, invalid)
 
 {-| This is a library of *fuzzers* you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -15,7 +15,7 @@ reproduces a bug.
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
 ## Working with Fuzzers
-@docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, frequency, frequencyOrCrash, conditional
+@docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, frequency, conditional
 
 ## Tuple Fuzzers
 Instead of using a tuple, consider using `fuzzN`.
@@ -170,14 +170,17 @@ the ints x or bigger.
 -}
 intRange : Int -> Int -> Fuzzer Int
 intRange lo hi =
-    custom
-        (Random.frequency
-            [ ( 8, Random.int lo hi )
-            , ( 1, Random.constant lo )
-            , ( 1, Random.constant hi )
-            ]
-        )
-        (Shrink.keepIf (\i -> i >= lo && i <= hi) Shrink.int)
+    if hi < lo then
+        invalid <| "Fuzz.intRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
+    else
+        custom
+            (Random.frequency
+                [ ( 8, Random.int lo hi )
+                , ( 1, Random.constant lo )
+                , ( 1, Random.constant hi )
+                ]
+            )
+            (Shrink.keepIf (\i -> i >= lo && i <= hi) Shrink.int)
 
 
 {-| A fuzzer for float values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
@@ -206,14 +209,17 @@ value, inclusive. Shrunken values will also be within the range.
 -}
 floatRange : Float -> Float -> Fuzzer Float
 floatRange lo hi =
-    custom
-        (Random.frequency
-            [ ( 8, Random.float lo hi )
-            , ( 1, Random.constant lo )
-            , ( 1, Random.constant hi )
-            ]
-        )
-        (Shrink.keepIf (\i -> i >= lo && i <= hi) Shrink.float)
+    if hi < lo then
+        invalid <| "Fuzz.floatRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
+    else
+        custom
+            (Random.frequency
+                [ ( 8, Random.float lo hi )
+                , ( 1, Random.constant lo )
+                , ( 1, Random.constant hi )
+                ]
+            )
+            (Shrink.keepIf (\i -> i >= lo && i <= hi) Shrink.float)
 
 
 {-| A fuzzer for percentage values. Generates random floats between `0.0` and
@@ -808,49 +814,27 @@ This returns a `Result` because it can fail in a few ways:
 Any of these will lead to a result of `Err`, with a `String` explaining what
 went wrong.
 -}
-frequency : List ( Float, Fuzzer a ) -> Result String (Fuzzer a)
+frequency : List ( Float, Fuzzer a ) -> Fuzzer a
 frequency list =
     if List.isEmpty list then
-        Err "You must provide at least one frequency pair."
+        invalid "You must provide at least one frequency pair."
     else if List.any (\( weight, _ ) -> weight < 0) list then
-        Err "No frequency weights can be less than 0."
+        invalid "No frequency weights can be less than 0."
     else if List.sum (List.map Tuple.first list) <= 0 then
-        Err "Frequency weights must sum to more than 0."
+        invalid "Frequency weights must sum to more than 0."
     else
-        Ok <|
-            Internal.Fuzzer <|
-                \noShrink ->
-                    if noShrink then
-                        list
-                            |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenVal fuzzer ))
-                            |> Random.frequency
-                            |> Gen
-                    else
-                        list
-                            |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
-                            |> Random.frequency
-                            |> Shrink
-
-
-{-| Calls `frequency` and handles `Err` results by crashing with the given
-error message.
-
-This is useful in tests, where a crash will simply cause the test run to fail.
-There is no danger to a production system there.
--}
-frequencyOrCrash : List ( Float, Fuzzer a ) -> Fuzzer a
-frequencyOrCrash =
-    frequency >> okOrCrash
-
-
-okOrCrash : Result String a -> a
-okOrCrash result =
-    case result of
-        Ok a ->
-            a
-
-        Err str ->
-            Debug.crash str
+        Internal.Fuzzer <|
+            \noShrink ->
+                if noShrink then
+                    list
+                        |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenVal fuzzer ))
+                        |> Random.frequency
+                        |> Gen
+                else
+                    list
+                        |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
+                        |> Random.frequency
+                        |> Shrink
 
 
 {-| A fuzzer that is invalid for the provided reason. Any fuzzers built with it
