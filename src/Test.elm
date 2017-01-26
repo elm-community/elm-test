@@ -82,19 +82,23 @@ Passing an empty list will result in a failing test, because you either made a
 mistake or are creating a placeholder.
 -}
 describe : String -> List Test -> Test
-describe desc tests =
-    if desc == "" then
-        Internal.failNow
-            { description = "You must pass 'describe' a nonempty string!"
-            , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-            }
-    else if List.isEmpty tests then
-        Internal.failNow
-            { description = "You tried to describe '" ++ desc ++ "' but included no tests!"
-            , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
-            }
-    else
-        Internal.Labeled desc (Internal.Batch tests)
+describe untrimmedDesc tests =
+    let
+        desc =
+            String.trim untrimmedDesc
+    in
+        if desc == "" then
+            Internal.failNow
+                { description = "You must pass 'describe' a nonempty string!"
+                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+                }
+        else if List.isEmpty tests then
+            Internal.failNow
+                { description = "You tried to describe '" ++ desc ++ "' but included no tests!"
+                , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
+                }
+        else
+            Internal.Labeled desc (Internal.Batch tests)
 
 
 {-| Return a [`Test`](#Test) that evaluates a single
@@ -110,14 +114,18 @@ describe desc tests =
                 |> Expect.equal 0
 -}
 test : String -> (() -> Expectation) -> Test
-test desc thunk =
-    if desc == "" then
-        Internal.failNow
-            { description = "You must pass 'test' a nonempty string!"
-            , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-            }
-    else
-        Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
+test untrimmedDesc thunk =
+    let
+        desc =
+            String.trim untrimmedDesc
+    in
+        if desc == "" then
+            Internal.failNow
+                { description = "You must pass 'test' a nonempty string!"
+                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+                }
+        else
+            Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
 
 
 {-| Returns a [`Test`](#Test) that is "TODO" (not yet implemented). These tests
@@ -191,19 +199,23 @@ for example like this:
                     |> Expect.equal (List.member target nums)
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzWith options fuzzer desc getTest =
-    if options.runs < 1 then
-        Internal.failNow
-            { description = "Fuzz test run count must be at least 1, not " ++ toString options.runs
-            , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
-            }
-    else if desc == "" then
-        Internal.failNow
-            { description = "You must pass 'test' a nonempty string!"
-            , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-            }
-    else
-        fuzzWithHelp options (fuzz fuzzer desc getTest)
+fuzzWith options fuzzer untrimmedDesc getTest =
+    let
+        desc =
+            String.trim untrimmedDesc
+    in
+        if options.runs < 1 then
+            Internal.failNow
+                { description = "Fuzz test run count must be at least 1, not " ++ toString options.runs
+                , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
+                }
+        else if desc == "" then
+            Internal.failNow
+                { description = "You must pass 'test' a nonempty string!"
+                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+                }
+        else
+            fuzzWithHelp options (fuzz fuzzer desc getTest)
 
 
 fuzzWithHelp : FuzzOptions -> Test -> Test

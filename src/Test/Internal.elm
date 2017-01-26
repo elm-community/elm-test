@@ -50,7 +50,7 @@ filterHelp lastCheckPassed isKeepable test =
 
 
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest fuzzer desc getExpectation =
+fuzzTest fuzzer untrimmedDesc getExpectation =
     {- Fuzz test algorithm with opt-in RoseTrees:
        Generate a single value by passing the fuzzer True (indicates skip shrinking)
        Run the test on that value. If it fails:
@@ -61,6 +61,9 @@ fuzzTest fuzzer desc getExpectation =
        Whether it passes or fails, do this n times
     -}
     let
+        desc =
+            String.trim untrimmedDesc
+
         getFailures failures currentSeed remainingRuns =
             let
                 genVal =
