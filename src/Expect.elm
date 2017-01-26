@@ -3,7 +3,6 @@ module Expect
         ( Expectation
         , pass
         , fail
-        , getFailure
         , equal
         , notEqual
         , atMost
@@ -55,11 +54,10 @@ module Expect
 
 ## Customizing
 
-@docs pass, fail, onFail, getFailure
+@docs pass, fail, onFail
 -}
 
 import Test.Expectation
-import Test.Message exposing (failureMessage)
 import Dict exposing (Dict)
 import Set exposing (Set)
 import String
@@ -421,11 +419,10 @@ err : Result a b -> Expectation
 err result =
     case result of
         Ok _ ->
-            { given = ""
-            , description = "Expect.err"
+            { description = "Expect.err"
             , reason = Test.Expectation.Comparison "Err _" (toString result)
             }
-                |> Test.Expectation.Fail
+                |> Test.Expectation.fail
 
         Err _ ->
             pass
@@ -483,9 +480,8 @@ equalLists expected actual =
                                         (toString actual)
                                         ( index, toString e, toString a )
                             in
-                                Test.Expectation.Fail
-                                    { given = ""
-                                    , description = "Expect.equalLists"
+                                Test.Expectation.fail
+                                    { description = "Expect.equalLists"
                                     , reason = reason
                                     }
                         )
@@ -635,32 +631,7 @@ pass =
 -}
 fail : String -> Expectation
 fail str =
-    Test.Expectation.Fail { given = "", description = str, reason = Test.Expectation.Custom }
-
-
-{-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
-
-If it is a [`fail`](#fail), return a record containing the failure message,
-along with the given inputs if it was a fuzz test. (If no inputs were involved,
-the record's `given` field will be `""`).
-
-For example, if a fuzz test generates random integers, this might return
-`{ message = "it was supposed to be positive", given = "-1" }`
-
-    getFailure (Expect.fail "this failed")
-    -- Just { message = "this failed", given = "" }
-
-    getFailure (Expect.pass)
-    -- Nothing
--}
-getFailure : Expectation -> Maybe { given : String, message : String }
-getFailure expectation =
-    case expectation of
-        Test.Expectation.Pass ->
-            Nothing
-
-        Test.Expectation.Fail record ->
-            Just { given = record.given, message = failureMessage record }
+    Test.Expectation.fail { description = str, reason = Test.Expectation.Custom }
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
@@ -708,7 +679,10 @@ which argument is which:
 all : List (subject -> Expectation) -> subject -> Expectation
 all list query =
     if List.isEmpty list then
-        fail "Expect.all received an empty list. I assume this was due to a mistake somewhere, so I'm failing this test!"
+        Test.Expectation.fail
+            { reason = Test.Expectation.EmptyList
+            , description = "Expect.all was given an empty list. You must make at least one expectation to have a valid test!"
+            }
     else
         allHelp list query
 
@@ -734,17 +708,15 @@ allHelp list query =
 
 reportFailure : String -> String -> String -> Expectation
 reportFailure comparison expected actual =
-    { given = ""
-    , description = comparison
+    { description = comparison
     , reason = Test.Expectation.Comparison (toString expected) (toString actual)
     }
-        |> Test.Expectation.Fail
+        |> Test.Expectation.fail
 
 
 reportCollectionFailure : String -> a -> b -> List c -> List d -> Expectation
 reportCollectionFailure comparison expected actual missingKeys extraKeys =
-    { given = ""
-    , description = comparison
+    { description = comparison
     , reason =
         { expected = toString expected
         , actual = toString actual
@@ -753,7 +725,7 @@ reportCollectionFailure comparison expected actual missingKeys extraKeys =
         }
             |> Test.Expectation.CollectionDiff
     }
-        |> Test.Expectation.Fail
+        |> Test.Expectation.fail
 
 
 {-| String arg is label, e.g. "Expect.equal".
@@ -773,8 +745,7 @@ testWith makeReason label runTest expected actual =
     if runTest actual expected then
         pass
     else
-        { given = ""
-        , description = label
+        { description = label
         , reason = makeReason (toString expected) (toString actual)
         }
-            |> Test.Expectation.Fail
+            |> Test.Expectation.fail

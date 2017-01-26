@@ -45,17 +45,19 @@ toOutputHelp labels runner summary =
 
 fromExpectation : Expectation -> Summary -> Summary
 fromExpectation expectation summary =
-    case Expect.getFailure expectation of
+    case Test.Runner.getFailure expectation of
         Nothing ->
             { summary | passed = summary.passed + 1 }
 
         Just { given, message } ->
             let
                 prefix =
-                    if String.isEmpty given then
-                        ""
-                    else
-                        "Given " ++ given ++ "\n\n"
+                    case given of
+                        Nothing ->
+                            ""
+
+                        Just g ->
+                            "Given " ++ g ++ "\n\n"
 
                 newOutput =
                     "\n\n" ++ (prefix ++ indentLines message) ++ "\n"

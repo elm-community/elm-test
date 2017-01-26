@@ -1,4 +1,4 @@
-module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
 {-| A module containing functions for creating and managing tests.
 
@@ -6,7 +6,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, f
 
 ## Organizing Tests
 
-@docs describe, concat, filter
+@docs describe, concat, filter, todo
 
 ## Fuzz Testing
 
@@ -14,6 +14,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, fuzz, f
 -}
 
 import Test.Internal as Internal
+import Test.Expectation
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
 
@@ -69,17 +70,30 @@ filter =
             [ test "has no effect on an empty list" <|
                 \() ->
                     List.reverse []
-                        |> Expect.toEqual []
+                        |> Expect.equal []
             , fuzz int "has no effect on a one-item list" <|
                 \num ->
                      List.reverse [ num ]
-                        |> Expect.toEqual [ num ]
+                        |> Expect.equal [ num ]
             ]
         ]
+
+Passing an empty list will result in a failing test, because you either made a
+mistake or are creating a placeholder.
 -}
 describe : String -> List Test -> Test
-describe desc =
-    Internal.Batch >> Internal.Labeled desc
+describe desc tests =
+    if List.isEmpty tests then
+        Internal.Test
+            (\_ _ ->
+                [ Test.Expectation.fail
+                    { reason = Test.Expectation.EmptyList
+                    , description = "You tried to describe " ++ desc ++ " with no tests!"
+                    }
+                ]
+            )
+    else
+        Internal.Labeled desc (Internal.Batch tests)
 
 
 {-| Return a [`Test`](#Test) that evaluates a single
@@ -92,11 +106,43 @@ describe desc =
     test "the empty list has 0 length" <|
         \() ->
             List.length []
-                |> Expect.toEqual 0
+                |> Expect.equal 0
 -}
 test : String -> (() -> Expectation) -> Test
 test desc thunk =
     Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
+
+
+{-| Returns a [`Test`](#Test) that is "TODO" (not yet implemented). These tests
+always fail, but test runners will only include them in their output if there
+are no other failures.
+
+These tests aren't meant to be committed to version control. Instead, use them
+when you're brainstorming lots of tests you'd like to write, but you can't
+implement them all at once. When you replace `todo` with a real test, you'll be
+able to see if it fails without clutter from tests still not implemented. But,
+unlike leaving yourself comments, you'll be prompted to implement these tests
+because your suite will fail.
+
+    describe "a new thing"
+        [ todo "does what is expected in the common case"
+        , todo "correctly handles an edge case I just thought of"
+        ]
+
+This functionality is similar to "pending" tests in other frameworks, except
+that a TODO test is considered failing but a pending test often is not.
+-}
+todo : String -> Test
+todo desc =
+    Internal.Test
+        (\_ _ ->
+            [ Test.Expectation.Fail
+                { given = Nothing
+                , description = desc
+                , reason = Test.Expectation.TODO
+                }
+            ]
+        )
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
@@ -127,7 +173,7 @@ type alias FuzzOptions =
 {-| Run a [`fuzz`](#fuzz) test with the given [`FuzzOptions`](#FuzzOptions).
 
 Note that there is no `fuzzWith2`, but you can always pass more fuzz values in
-using [`Fuzz.tuple`](../Fuzz#tuple), [`Fuzz.tuple3`](../Fuzz#tuple3),
+using [`Fuzz.tuple`](Fuzz#tuple), [`Fuzz.tuple3`](Fuzz#tuple3),
 for example like this:
 
     import Test exposing (fuzzWith)
@@ -140,7 +186,7 @@ for example like this:
         "List.reverse never influences List.member" <|
             \(nums, target) ->
                 List.member target (List.reverse nums)
-                    |> Expect.toEqual (List.member target nums)
+                    |> Expect.equal (List.member target nums)
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzWith options fuzzer desc getTest =
@@ -201,7 +247,7 @@ fuzz =
 
 {-| Run a [fuzz test](#fuzz) using two random inputs.
 
-This is a convenience function that lets you skip calling [`Fuzz.tuple`](../Fuzz#tuple).
+This is a convenience function that lets you skip calling [`Fuzz.tuple`](Fuzz#tuple).
 
 See [`fuzzWith`](#fuzzWith) for an example of writing this in tuple style.
 
@@ -212,7 +258,7 @@ See [`fuzzWith`](#fuzzWith) for an example of writing this in tuple style.
     fuzz2 (list int) int "List.reverse never influences List.member" <|
         \nums target ->
             List.member target (List.reverse nums)
-                |> Expect.toEqual (List.member target nums)
+                |> Expect.equal (List.member target nums)
 -}
 fuzz2 :
     Fuzzer a
@@ -230,7 +276,7 @@ fuzz2 fuzzA fuzzB desc =
 
 {-| Run a [fuzz test](#fuzz) using three random inputs.
 
-This is a convenience function that lets you skip calling [`Fuzz.tuple3`](../Fuzz#tuple3).
+This is a convenience function that lets you skip calling [`Fuzz.tuple3`](Fuzz#tuple3).
 -}
 fuzz3 :
     Fuzzer a
@@ -249,7 +295,7 @@ fuzz3 fuzzA fuzzB fuzzC desc =
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
 
-This is a convenience function that lets you skip calling [`Fuzz.tuple4`](../Fuzz#tuple4).
+This is a convenience function that lets you skip calling [`Fuzz.tuple4`](Fuzz#tuple4).
 -}
 fuzz4 :
     Fuzzer a
@@ -269,7 +315,7 @@ fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
 
 {-| Run a [fuzz test](#fuzz) using five random inputs.
 
-This is a convenience function that lets you skip calling [`Fuzz.tuple5`](../Fuzz#tuple5).
+This is a convenience function that lets you skip calling [`Fuzz.tuple5`](Fuzz#tuple5).
 -}
 fuzz5 :
     Fuzzer a
