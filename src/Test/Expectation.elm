@@ -1,4 +1,4 @@
-module Test.Expectation exposing (Expectation(..), Reason(..), fail, withGiven)
+module Test.Expectation exposing (Expectation(..), Reason(..), InvalidReason(..), fail, withGiven)
 
 
 type Expectation
@@ -22,7 +22,13 @@ type Reason
         , missing : List String
         }
     | TODO
-    | EmptyList
+    | Invalid InvalidReason
+
+
+type InvalidReason
+    = EmptyList
+    | NonpositiveFuzzCount
+    | BadDescription
 
 
 {-| Create a failure without specifying the given.
