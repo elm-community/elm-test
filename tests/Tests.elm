@@ -93,23 +93,22 @@ testTests =
     describe "functions that create tests"
         [ describe "describe"
             [ expectToFail <| describe "fails with empty list" []
-            , expectToFail <| describe "" [ test "describe with empty description fail" <| \_ -> Expect.pass ]
+            , expectToFail <| describe "" [ test "describe with empty description fail" <| passingTest ]
             ]
         , describe "test"
-            [ expectToFail <| test "" <| \_ -> Expect.pass
+            [ expectToFail <| test "" passingTest
             ]
         , describe "fuzz"
-            [ expectToFail <| fuzz Fuzz.bool "" <| \_ -> Expect.pass
+            [ expectToFail <| fuzz Fuzz.bool "" passingTest
             ]
         , describe "fuzzWith"
-            [ expectToFail <| fuzzWith { runs = 0 } Fuzz.bool "nonpositive" <| \_ -> Expect.pass
-            , expectToFail <| fuzzWith { runs = 1 } Fuzz.bool "" <| \_ -> Expect.pass
+            [ expectToFail <| fuzzWith { runs = 0 } Fuzz.bool "nonpositive" passingTest
+            , expectToFail <| fuzzWith { runs = 1 } Fuzz.bool "" passingTest
             ]
         , describe "Test.todo"
             [ expectToFail <| todo "a TODO test fails"
-            , test "Passes are not TODO" <|
-                \_ ->
-                    Expect.pass |> Test.Runner.isTodo |> Expect.false "was true"
+            , test "Passes are not TODO"
+                (\_ -> Expect.pass |> Test.Runner.isTodo |> Expect.false "was true")
             , test "Simple failures are not TODO" <|
                 \_ ->
                     Expect.fail "reason" |> Test.Runner.isTodo |> Expect.false "was true"

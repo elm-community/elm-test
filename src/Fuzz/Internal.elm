@@ -1,4 +1,4 @@
-module Fuzz.Internal exposing (Fuzzer(Fuzzer), Fuzz(..), unpackGenVal, unpackGenTree)
+module Fuzz.Internal exposing (Fuzzer(Fuzzer), Fuzz(..), unpackGenVal, unpackGenTree, invalidReason)
 
 import RoseTree exposing (RoseTree)
 import Random.Pcg exposing (Generator)
@@ -26,9 +26,17 @@ import Random.Pcg exposing (Generator)
    These two optimizations make the Fuzzer code rather hard to understand, but
    allow it to offer a full mapping API, be fast for passing tests, and provide
    shrunken values for failing tests.
+
+   Much later it was decided that fuzzers should carry the possibility of being
+   invalid. An invalid fuzzer fails all tests. All fuzzers derived from one are
+   also invalid.
 -}
 
 
+{-| Passing True to any fuzzer should never return Shrink. Passing False should
+never return a Gen. If a fuzzer returns InvalidFuzzer for one bool, it must do
+so for the other.
+-}
 type Fuzzer a
     = Fuzzer (Bool -> Fuzz a)
 
@@ -36,6 +44,13 @@ type Fuzzer a
 type Fuzz a
     = Gen (Generator a)
     | Shrink (Generator (RoseTree a))
+    | InvalidFuzzer String
+
+
+
+{- These unpack functions are only safe to use once you know that the Fuzzer is
+   not invalid.
+-}
 
 
 unpackGenVal : Fuzzer a -> Generator a
@@ -56,3 +71,13 @@ unpackGenTree (Fuzzer g) =
 
         err ->
             Debug.crash "This shouldn't happen: Fuzz.Internal.unpackGenTree" err
+
+
+invalidReason : Fuzz a -> Maybe String
+invalidReason fuzz =
+    case fuzz of
+        InvalidFuzzer reason ->
+            Just reason
+
+        _ ->
+            Nothing

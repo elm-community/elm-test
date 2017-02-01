@@ -40,8 +40,8 @@ fuzzerTests =
             "intRange"
             (Expect.greaterThan 0)
         , fuzz
-            (frequencyOrCrash [ ( 1, intRange 1 6 ), ( 1, intRange 1 20 ) ])
-            "Fuzz.frequency(OrCrash)"
+            (frequency [ ( 1, intRange 1 6 ), ( 1, intRange 1 20 ) ])
+            "Fuzz.frequency"
             (Expect.greaterThan 0)
         , fuzz (result string int) "Fuzz.result" <| \r -> Expect.pass
         , fuzz (andThen (\i -> intRange 0 (2 ^ i)) (intRange 1 8))
@@ -74,7 +74,7 @@ fuzzerTests =
                                 , tuple3
                                     ( percentage
                                     , map2 (+) int int
-                                    , frequencyOrCrash [ ( 1, constant True ), ( 3, constant False ) ]
+                                    , frequency [ ( 1, constant True ), ( 3, constant False ) ]
                                     )
                                 , tuple3 ( intRange 0 100, floatRange -51 pi, map abs int )
                                 )
