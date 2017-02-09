@@ -805,14 +805,15 @@ you could do this:
         , ( 3, Fuzz.intRange 1 100 )
         ]
 
-This returns a `Result` because it can fail in a few ways:
+There are a few circumstances in which this function will return an invalid
+fuzzer, which causes it to fail any test that uses it:
 
 * If you provide an empy list of frequencies
 * If any of the weights are less than 0
 * If the weights sum to 0
 
-Any of these will lead to a result of `Err`, with a `String` explaining what
-went wrong.
+Also avoid recursively using this fuzzer in its arguments. There are better ways
+to do whatever you're trying to do (open an issue if you can't figure them out).
 -}
 frequency : List ( Float, Fuzzer a ) -> Fuzzer a
 frequency list =
