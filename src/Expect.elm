@@ -60,7 +60,6 @@ module Expect
 import Test.Expectation
 import Dict exposing (Dict)
 import Set exposing (Set)
-import String
 import Float
 
 
