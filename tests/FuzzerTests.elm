@@ -1,15 +1,12 @@
 module FuzzerTests exposing (fuzzerTests)
 
 import Test exposing (..)
-import Test.Expectation exposing (Expectation(..))
 import Test.Runner
 import Fuzz exposing (..)
 import Expect
 import Fuzz.Internal
 import RoseTree
 import Random.Pcg as Random
-import Shrink
-import Lazy.List as LL
 import Helpers exposing (..)
 
 
