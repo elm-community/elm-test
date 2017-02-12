@@ -177,7 +177,7 @@ isTodo expectation =
             reason == Test.Expectation.TODO
 
 
-{-| A standard way to format descriptiona and test labels, to keep things
+{-| A standard way to format descriptions and test labels, to keep things
 consistent across test runner implementations.
 
 The HTML, Node, String, and Log runners all use this.
