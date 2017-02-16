@@ -660,7 +660,7 @@ will always return a failed expectation no matter what else it is passed.
     -- Passes because (0 > -2) is True and (0 < 5) is also True
 Failures resemble code written in pipeline style, so you can tell
 which argument is which:
-    -- Fails because (0 > -10) is False
+    -- Fails because (0 < -10) is False
     List.length []
         |> Expect.all
             [ Expect.greaterThan -2
