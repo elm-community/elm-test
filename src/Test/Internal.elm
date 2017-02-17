@@ -73,7 +73,7 @@ fuzzTest fuzzer desc getExpectation =
 
                     Nothing ->
                         let
-                            ( failures_, results_ ) =
+                            ( newFailures, newResults ) =
                                 case getExpectation value of
                                     Pass ->
                                         ( failures
@@ -88,18 +88,18 @@ fuzzTest fuzzer desc getExpectation =
                                             ( rosetree, nextSeed_ ) =
                                                 Random.step genTree currentSeed
 
-                                            ( failures__, results__, minimalValue ) =
+                                            ( failuresFromShrinking, resultsFromShrinking, minimalValue ) =
                                                 shrinkAndAdd rosetree getExpectation failedExpectation failures results
                                         in
-                                            ( failures__
-                                            , results__
+                                            ( failuresFromShrinking
+                                            , resultsFromShrinking
                                               -- we don't have to insert value->minimalValue, shrinkAndAdd does that
                                             )
                         in
                             if remainingRuns == 1 then
-                                failures_
+                                newFailures
                             else
-                                getFailures failures_ nextSeed (remainingRuns - 1) results_
+                                getFailures newFailures nextSeed (remainingRuns - 1) newResults
 
         run seed runs =
             let
@@ -151,12 +151,12 @@ shrinkAndAdd rootTree getExpectation rootsExpectation failures results =
 
                                 newExpectation ->
                                     let
-                                        ( minimalValue, finalExpectation, results_ ) =
+                                        ( minimalValue, finalExpectation, newResults ) =
                                             shrink newExpectation rosetree results
                                     in
                                         ( minimalValue
                                         , finalExpectation
-                                        , results
+                                        , newResults
                                             |> Dict.insert (toString possiblyFailingValue) (ShrinksTo minimalValue)
                                             |> Dict.insert (toString failingValue) (ShrinksTo minimalValue)
                                         )
@@ -171,11 +171,11 @@ shrinkAndAdd rootTree getExpectation rootsExpectation failures results =
         (Rose failingValue _) =
             rootTree
 
-        ( minimalValue, finalExpectation, results_ ) =
+        ( minimalValue, finalExpectation, newResults ) =
             shrink rootsExpectation rootTree results
     in
         ( Dict.insert (toString minimalValue) finalExpectation failures
-        , Dict.insert (toString failingValue) (ShrinksTo minimalValue) results
+        , Dict.insert (toString failingValue) (ShrinksTo minimalValue) newResults
         , minimalValue
         )
 
