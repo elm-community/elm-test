@@ -2,11 +2,6 @@ module Test.Internal exposing (Test(..), failNow, filter)
 
 import Random.Pcg as Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
-import Dict exposing (Dict)
-import Fuzz exposing (Fuzzer)
-import Fuzz.Internal exposing (unpackGenVal, unpackGenTree)
-import RoseTree exposing (RoseTree(..))
-import Lazy.List
 
 
 type Test
