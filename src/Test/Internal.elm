@@ -48,19 +48,6 @@ filterHelp lastCheckPassed isKeepable test =
                 |> Batch
 
 
-type ShrinkingResult a
-    = Passes
-    | ShrinksTo a
-
-
-type alias ResultCache a =
-    Dict String (ShrinkingResult a)
-
-
-type alias Failures =
-    Dict String Expectation
-
-
 {-| Reject always-failing tests because of bad names or invalid fuzzers.
 -}
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
@@ -87,13 +74,13 @@ fuzzTest ((Fuzz.Internal.Fuzzer baseFuzzer) as fuzzer) untrimmedDesc getExpectat
                     validatedFuzzTest fuzzer desc getExpectation
 
 
+{-| Knowing that the fuzz test isn't obviously invalid, run the test and package up the results.
+-}
 validatedFuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
 validatedFuzzTest fuzzer desc getExpectation =
     let
         run seed runs =
             let
-                -- Use a Dict so we don't report duplicate inputs.
-                failures : Failures
                 failures =
                     getFailures fuzzer getExpectation seed runs
             in
@@ -108,17 +95,18 @@ validatedFuzzTest fuzzer desc getExpectation =
         Labeled desc (Test run)
 
 
-
-{-
-   (\seed runs ->
-       getFailures Dict.empty seed runs Dict.empty
-
-   )
-       |> Test |> Labeled desc
--}
+type ShrinkingResult a
+    = Passes
+    | ShrinksTo a
 
 
-getFailures : Fuzzer a -> (a -> Expectation) -> Random.Seed -> Int -> Failures
+type alias State a =
+    { failures : Dict String Expectation
+    , results : Dict String (ShrinkingResult a)
+    }
+
+
+getFailures : Fuzzer a -> (a -> Expectation) -> Random.Seed -> Int -> Dict String Expectation
 getFailures fuzzer getExpectation initialSeed totalRuns =
     {- Fuzz test algorithm with memoization and opt-in RoseTrees:
        Generate a single value from the fuzzer's genVal random generator
@@ -134,27 +122,30 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
         genVal =
             unpackGenVal fuzzer
 
-        helper currentSeed remainingRuns results failures =
+        initialState =
+            State Dict.empty Dict.empty
+
+        helper currentSeed remainingRuns state =
             let
                 ( value, nextSeed ) =
                     Random.step genVal currentSeed
             in
-                case Dict.get (toString value) results of
+                case Dict.get (toString value) state.results of
                     Just _ ->
                         -- we can skip this, already have the result in `failures`
-                        failures
+                        state.failures
 
                     Nothing ->
                         let
-                            ( newFailures, newResults ) =
-                                findNewFailure fuzzer getExpectation failures results currentSeed value
+                            newState =
+                                findNewFailure fuzzer getExpectation state currentSeed value
                         in
                             if remainingRuns == 1 then
-                                newFailures
+                                newState.failures
                             else
-                                helper nextSeed (remainingRuns - 1) newResults newFailures
+                                helper nextSeed (remainingRuns - 1) newState
     in
-        helper initialSeed totalRuns Dict.empty Dict.empty
+        helper initialSeed totalRuns initialState
 
 
 {-| Knowing that a value in not in the cache, determine if it causes the test to pass or fail.
@@ -162,44 +153,37 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
 findNewFailure :
     Fuzzer a
     -> (a -> Expectation)
-    -> Failures
-    -> ResultCache a
+    -> State a
     -> Random.Seed
     -> a
-    -> ( Failures, ResultCache a )
-findNewFailure fuzzer getExpectation failures results currentSeed value =
+    -> State a
+findNewFailure fuzzer getExpectation state currentSeed value =
     case getExpectation value of
         Pass ->
-            ( failures, Dict.insert (toString value) Passes results )
+            { state | results = Dict.insert (toString value) Passes state.results }
 
         failedExpectation ->
             let
                 genTree =
                     unpackGenTree fuzzer
 
-                ( rosetree, nextSeed_ ) =
+                ( rosetree, nextSeed ) =
+                    -- nextSeed is not used here because caller function has currentSeed
                     Random.step genTree currentSeed
-
-                ( failuresFromShrinking, resultsFromShrinking, minimalValue ) =
-                    shrinkAndAdd rosetree getExpectation failedExpectation failures results
             in
-                ( failuresFromShrinking
-                , resultsFromShrinking
-                  -- we don't have to insert value->minimalValue, shrinkAndAdd does that
-                )
+                shrinkAndAdd rosetree getExpectation failedExpectation state
 
 
 {-| Knowing that the rosetree's root already failed, but that it's not in the results cache, finds the shrunken failure.
-Returns the updated failures dictionary, the updated results cache dictionary, and the shrunken failure itself.
+Returns the updated state (failures dictionary and results cache dictionary).
 -}
 shrinkAndAdd :
     RoseTree a
     -> (a -> Expectation)
     -> Expectation
-    -> Failures
-    -> ResultCache a
-    -> ( Failures, ResultCache a, a )
-shrinkAndAdd rootTree getExpectation rootsExpectation failures results =
+    -> State a
+    -> State a
+shrinkAndAdd rootTree getExpectation rootsExpectation { failures, results } =
     let
         shrink oldExpectation (Rose failingValue branches) results =
             case Lazy.List.headAndTail branches of
@@ -246,10 +230,9 @@ shrinkAndAdd rootTree getExpectation rootsExpectation failures results =
         ( minimalValue, finalExpectation, newResults ) =
             shrink rootsExpectation rootTree results
     in
-        ( Dict.insert (toString minimalValue) finalExpectation failures
-        , Dict.insert (toString failingValue) (ShrinksTo minimalValue) newResults
-        , minimalValue
-        )
+        { failures = Dict.insert (toString minimalValue) finalExpectation failures
+        , results = Dict.insert (toString failingValue) (ShrinksTo minimalValue) newResults
+        }
 
 
 formatExpectation : ( String, Expectation ) -> Expectation
