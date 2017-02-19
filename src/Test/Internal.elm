@@ -53,6 +53,16 @@ type ShrinkingResult a
     | ShrinksTo a
 
 
+type alias ResultCache a =
+    Dict String (ShrinkingResult a)
+
+
+type alias Failures =
+    Dict String Expectation
+
+
+{-| Reject always-failing tests because of bad names or invalid fuzzers.
+-}
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzTest ((Fuzz.Internal.Fuzzer baseFuzzer) as fuzzer) untrimmedDesc getExpectation =
     let
@@ -73,70 +83,19 @@ fuzzTest ((Fuzz.Internal.Fuzzer baseFuzzer) as fuzzer) untrimmedDesc getExpectat
                         }
 
                 Nothing ->
+                    -- Preliminary checks passed; run the fuzz test
                     validatedFuzzTest fuzzer desc getExpectation
 
 
 validatedFuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
 validatedFuzzTest fuzzer desc getExpectation =
-    {- Fuzz test algorithm with opt-in RoseTrees:
-       Generate a single value by passing the fuzzer True (indicates skip shrinking)
-       Run the test on that value. If it fails:
-           Generate the rosetree by passing the fuzzer False *and the same random seed*
-           Find the new failure by looking at the children for any shrunken values:
-               If a shrunken value causes a failure, recurse on its children
-               If no shrunken value replicates the failure, use the root
-       Whether it passes or fails, do this n times
-    -}
     let
-        getFailures failures currentSeed remainingRuns results =
-            let
-                genVal =
-                    unpackGenVal fuzzer
-
-                ( value, nextSeed ) =
-                    Random.step genVal currentSeed
-            in
-                case Dict.get (toString value) results of
-                    Just _ ->
-                        -- we can skip this, already have the result in `failures`
-                        failures
-
-                    Nothing ->
-                        let
-                            ( newFailures, newResults ) =
-                                case getExpectation value of
-                                    Pass ->
-                                        ( failures
-                                        , Dict.insert (toString value) Passes results
-                                        )
-
-                                    failedExpectation ->
-                                        let
-                                            genTree =
-                                                unpackGenTree fuzzer
-
-                                            ( rosetree, nextSeed_ ) =
-                                                Random.step genTree currentSeed
-
-                                            ( failuresFromShrinking, resultsFromShrinking, minimalValue ) =
-                                                shrinkAndAdd rosetree getExpectation failedExpectation failures results
-                                        in
-                                            ( failuresFromShrinking
-                                            , resultsFromShrinking
-                                              -- we don't have to insert value->minimalValue, shrinkAndAdd does that
-                                            )
-                        in
-                            if remainingRuns == 1 then
-                                newFailures
-                            else
-                                getFailures newFailures nextSeed (remainingRuns - 1) newResults
-
         run seed runs =
             let
                 -- Use a Dict so we don't report duplicate inputs.
-                failures : Dict String Expectation
+                failures : Failures
                 failures =
-                    getFailures Dict.empty seed runs Dict.empty
+                    getFailures fuzzer getExpectation seed runs
             in
                 -- Make sure if we passed, we don't do any more work.
                 if Dict.isEmpty failures then
@@ -149,15 +108,98 @@ validatedFuzzTest fuzzer desc getExpectation =
         Labeled desc (Test run)
 
 
+
+{-
+   (\seed runs ->
+       getFailures Dict.empty seed runs Dict.empty
+
+   )
+       |> Test |> Labeled desc
+-}
+
+
+getFailures : Fuzzer a -> (a -> Expectation) -> Random.Seed -> Int -> Failures
+getFailures fuzzer getExpectation initialSeed totalRuns =
+    {- Fuzz test algorithm with memoization and opt-in RoseTrees:
+       Generate a single value from the fuzzer's genVal random generator
+       Determine if the value is memoized. If so, skip. Otherwise continue.
+       Run the test on that value. If it fails:
+           Generate the rosetree by passing the fuzzer False *and the same random seed*
+           Find the new failure by looking at the children for any shrunken values:
+               If a shrunken value causes a failure, recurse on its children
+               If no shrunken value replicates the failure, use the root
+       Whether it passes or fails, do this n times
+    -}
+    let
+        genVal =
+            unpackGenVal fuzzer
+
+        helper currentSeed remainingRuns results failures =
+            let
+                ( value, nextSeed ) =
+                    Random.step genVal currentSeed
+            in
+                case Dict.get (toString value) results of
+                    Just _ ->
+                        -- we can skip this, already have the result in `failures`
+                        failures
+
+                    Nothing ->
+                        let
+                            ( newFailures, newResults ) =
+                                findNewFailure fuzzer getExpectation failures results currentSeed value
+                        in
+                            if remainingRuns == 1 then
+                                newFailures
+                            else
+                                helper nextSeed (remainingRuns - 1) newResults newFailures
+    in
+        helper initialSeed totalRuns Dict.empty Dict.empty
+
+
+{-| Knowing that a value in not in the cache, determine if it causes the test to pass or fail.
+-}
+findNewFailure :
+    Fuzzer a
+    -> (a -> Expectation)
+    -> Failures
+    -> ResultCache a
+    -> Random.Seed
+    -> a
+    -> ( Failures, ResultCache a )
+findNewFailure fuzzer getExpectation failures results currentSeed value =
+    case getExpectation value of
+        Pass ->
+            ( failures, Dict.insert (toString value) Passes results )
+
+        failedExpectation ->
+            let
+                genTree =
+                    unpackGenTree fuzzer
+
+                ( rosetree, nextSeed_ ) =
+                    Random.step genTree currentSeed
+
+                ( failuresFromShrinking, resultsFromShrinking, minimalValue ) =
+                    shrinkAndAdd rosetree getExpectation failedExpectation failures results
+            in
+                ( failuresFromShrinking
+                , resultsFromShrinking
+                  -- we don't have to insert value->minimalValue, shrinkAndAdd does that
+                )
+
+
+{-| Knowing that the rosetree's root already failed, but that it's not in the results cache, finds the shrunken failure.
+Returns the updated failures dictionary, the updated results cache dictionary, and the shrunken failure itself.
+-}
 shrinkAndAdd :
     RoseTree a
     -> (a -> Expectation)
     -> Expectation
-    -> Dict String Expectation
-    -> Dict String (ShrinkingResult a)
-    -> ( Dict String Expectation, Dict String (ShrinkingResult a), a )
+    -> Failures
+    -> ResultCache a
+    -> ( Failures, ResultCache a, a )
 shrinkAndAdd rootTree getExpectation rootsExpectation failures results =
-    -- Knowing that the root already failed, adds the shrunken failure to the dictionary
     let
         shrink oldExpectation (Rose failingValue branches) results =
             case Lazy.List.headAndTail branches of
@@ -213,8 +255,3 @@ shrinkAndAdd rootTree getExpectation rootsExpectation failures results =
 formatExpectation : ( String, Expectation ) -> Expectation
 formatExpectation ( given, expectation ) =
     Test.Expectation.withGiven given expectation
-
-
-isFail : Expectation -> Bool
-isFail =
-    (/=) Pass
