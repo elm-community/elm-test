@@ -15,6 +15,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, f
 
 import Test.Internal as Internal
 import Test.Expectation
+import Test.Fuzz
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
 
@@ -262,7 +263,7 @@ fuzz :
     -> (a -> Expectation)
     -> Test
 fuzz =
-    Internal.fuzzTest
+    Test.Fuzz.fuzzTest
 
 
 {-| Run a [fuzz test](#fuzz) using two random inputs.
