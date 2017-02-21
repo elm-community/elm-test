@@ -85,6 +85,19 @@ regressions =
             \positiveInt ->
                 positiveInt
                     |> Expect.greaterThan 0
+        , fuzz
+            (intRange 1 20)
+            "fuzz tests run 100 times"
+            (Expect.notEqual 5)
+            |> expectToFail
+          {- If fuzz tests actually run 100 times, then asserting that no number
+             in 1..20 equals 5 is virtually guaranteed to fail. If they only run
+             once, or stop after a duplicate due to #127, then it's fairly
+             likely that the 5 won't turn up. The test will pass when it's
+             expected to fail. It's still posible the 5 comes up first, so this
+             test sometimes passes when it should fail. But unless you run it
+             millions of times, it won't fail when it should pass.
+          -}
         ]
 
 
