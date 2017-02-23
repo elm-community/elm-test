@@ -6,6 +6,8 @@ import Test.Runner
 import Fuzz exposing (..)
 import Dict
 import Set
+import Random.Pcg as Random
+import Shrink
 import Expect
 import Helpers exposing (..)
 import ExpectWithinTests exposing (testExpectWithin)
@@ -86,12 +88,12 @@ regressions =
                 positiveInt
                     |> Expect.greaterThan 0
         , fuzz
-            (intRange 1 20)
+            (custom (Random.int 1 8) Shrink.noShrink)
             "fuzz tests run 100 times"
             (Expect.notEqual 5)
             |> expectToFail
           {- If fuzz tests actually run 100 times, then asserting that no number
-             in 1..20 equals 5 is virtually guaranteed to fail. If they only run
+             in 1..8 equals 5 is virtually guaranteed to fail. If they only run
              once, or stop after a duplicate due to #127, then it's fairly
              likely that the 5 won't turn up. The test will pass when it's
              expected to fail. It's still posible the 5 comes up first, so this
