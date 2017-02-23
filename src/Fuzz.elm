@@ -644,7 +644,7 @@ constant x =
         )
 
 
-{-| Map a function over a fuzzer. This applies to both the generated and the shruken values.
+{-| Map a function over a fuzzer. This applies to both the generated and the shrunken values.
 -}
 map : (a -> b) -> Fuzzer a -> Fuzzer b
 map transform (Internal.Fuzzer baseFuzzer) =
@@ -692,7 +692,7 @@ map5 transform fuzzA fuzzB fuzzC fuzzD fuzzE =
 
 {-| Map over many fuzzers. This can act as mapN for N > 5.
 
-The argument order is meant to accomodate chaining:
+The argument order is meant to accommodate chaining:
 
     map f aFuzzer
         |> andMap anotherFuzzer
@@ -808,7 +808,7 @@ you could do this:
 There are a few circumstances in which this function will return an invalid
 fuzzer, which causes it to fail any test that uses it:
 
-* If you provide an empy list of frequencies
+* If you provide an empty list of frequencies
 * If any of the weights are less than 0
 * If the weights sum to 0
 

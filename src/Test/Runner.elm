@@ -140,7 +140,7 @@ distributeSeeds runs test ( startingSeed, runners ) =
 
 If it is a [`fail`](#fail), return a record containing the failure message,
 along with the given inputs if it was a fuzz test. (If no inputs were involved,
-the record's `given` field will be `Nothign`).
+the record's `given` field will be `Nothing`).
 
 For example, if a fuzz test generates random integers, this might return
 `{ message = "it was supposed to be positive", given = "-1" }`
