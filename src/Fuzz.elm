@@ -812,8 +812,22 @@ fuzzer, which causes it to fail any test that uses it:
 * If any of the weights are less than 0
 * If the weights sum to 0
 
-Also avoid recursively using this fuzzer in its arguments. There are better ways
-to do whatever you're trying to do (open an issue if you can't figure them out).
+Be careful recursively using this fuzzer in its arguments. Often using `map`
+is a better way to do what you want. If you are fuzzing a tree-like data
+structure, you should include a depth limit so to avoid infinite recursion, like
+so:
+
+    type Tree = Leaf | Branch Tree Tree
+
+    tree : Int -> Fuzzer Tree
+    tree i =
+        if i <= 0 then
+            Fuzz.constant Leaf
+        else
+            Fuzz.frequency
+                [(1, Fuzz.constant Leaf)
+                ,(2, Fuzz.map2 Branch (tree (i-1)) (tree (i-1)) )
+                ]
 -}
 frequency : List ( Float, Fuzzer a ) -> Fuzzer a
 frequency list =
