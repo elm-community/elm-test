@@ -143,7 +143,7 @@ manualFuzzerTests =
         [ fuzz randomSeedFuzzer "Claim there are no even numbers" <|
             \seed ->
                 let
-                    -- fuzzer is gauranteed to produce an even number
+                    -- fuzzer is guaranteed to produce an even number
                     fuzzer =
                         Fuzz.intRange 2 10000
                             |> Fuzz.map
