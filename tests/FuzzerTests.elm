@@ -134,6 +134,9 @@ shrinkingTests =
                                     True
                     in
                         checkPair aList |> Expect.true "[1,0]|[0,-1]"
+            , fuzz (intRange 1 8 |> andThen (\i -> intRange 0 (2 ^ i))) "Fuzz.andThen shrinks a number" <|
+                \i ->
+                    i <= 2 |> Expect.true "3"
             ]
 
 
