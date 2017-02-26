@@ -44,7 +44,7 @@ filterHelp lastCheckPassed isKeepable test =
                 |> Batch
 
 
-duplicatedName : List Test -> Result String ()
+duplicatedName : List Test -> Result String (Set String)
 duplicatedName tests =
     let
         name : Test -> Maybe String
@@ -73,4 +73,4 @@ duplicatedName tests =
                             else
                                 helper (Set.insert aName set) ts
     in
-        helper Set.empty tests |> Result.map (always ())
+        helper Set.empty tests

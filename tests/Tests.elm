@@ -123,4 +123,13 @@ testTests =
                 [ test "foo" passingTest
                 , test "foo" passingTest
                 ]
+        , expectToFail <|
+            describe "a describe with the same name as a child test fails"
+                [ test "a describe with the same name as a child test fails" passingTest
+                ]
+        , expectToFail <|
+            describe "a describe with the same name as a child describe fails"
+                [ describe "a describe with the same name as a child describe fails"
+                    [ test "a test" passingTest ]
+                ]
         ]

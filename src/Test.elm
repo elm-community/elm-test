@@ -13,6 +13,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, f
 @docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, FuzzOptions
 -}
 
+import Set
 import Test.Internal as Internal
 import Test.Expectation
 import Test.Fuzz
@@ -106,8 +107,14 @@ describe untrimmedDesc tests =
                         , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
                         }
 
-                Ok _ ->
-                    Internal.Labeled desc (Internal.Batch tests)
+                Ok childrenNames ->
+                    if Set.member desc childrenNames then
+                        Internal.failNow
+                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Do some renaming so that tests have distinct names."
+                            , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                            }
+                    else
+                        Internal.Labeled desc (Internal.Batch tests)
 
 
 {-| Return a [`Test`](#Test) that evaluates a single
