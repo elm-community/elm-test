@@ -99,7 +99,15 @@ describe untrimmedDesc tests =
                 , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
                 }
         else
-            Internal.Labeled desc (Internal.Batch tests)
+            case Internal.duplicatedName tests of
+                Err duped ->
+                    Internal.failNow
+                        { description = "The tests '" ++ desc ++ "' contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
+                        , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                        }
+
+                Ok _ ->
+                    Internal.Labeled desc (Internal.Batch tests)
 
 
 {-| Return a [`Test`](#Test) that evaluates a single

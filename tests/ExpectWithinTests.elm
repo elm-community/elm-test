@@ -106,11 +106,11 @@ testExpectWithin =
                     Float.nan |> Expect.notWithin (abs epsilon) Float.nan
             ]
         , describe "zero tolerance"
-            [ fuzz float "self-equality with zero tolerance" <|
+            [ fuzz float "a float is within 0 of itself" <|
                 -- U zero epsilon equals self
                 \a ->
                     a |> Expect.within 0 a
-            , fuzz2 float float "self-equality with zero tolerance" <|
+            , fuzz2 float float "floats are within 0 iff they are equal" <|
                 -- F zero epsilon does not equal anything other than self
                 \a b ->
                     if a == b then

@@ -30,6 +30,7 @@ type InvalidReason
     | NonpositiveFuzzCount
     | InvalidFuzzer
     | BadDescription
+    | DuplicatedName
 
 
 {-| Create a failure without specifying the given.

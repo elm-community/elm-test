@@ -1,7 +1,8 @@
-module Test.Internal exposing (Test(..), failNow, filter)
+module Test.Internal exposing (Test(..), failNow, filter, duplicatedName)
 
 import Random.Pcg as Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
+import Set exposing (Set)
 
 
 type Test
@@ -41,3 +42,35 @@ filterHelp lastCheckPassed isKeepable test =
             tests
                 |> List.map (filterHelp lastCheckPassed isKeepable)
                 |> Batch
+
+
+duplicatedName : List Test -> Result String ()
+duplicatedName tests =
+    let
+        name : Test -> Maybe String
+        name test =
+            case test of
+                Labeled str _ ->
+                    Just str
+
+                _ ->
+                    Nothing
+
+        helper : Set String -> List Test -> Result String (Set String)
+        helper set tests =
+            case tests of
+                [] ->
+                    Ok set
+
+                t :: ts ->
+                    case name t of
+                        Nothing ->
+                            helper set ts
+
+                        Just aName ->
+                            if Set.member aName set then
+                                Err aName
+                            else
+                                helper (Set.insert aName set) ts
+    in
+        helper Set.empty tests |> Result.map (always ())

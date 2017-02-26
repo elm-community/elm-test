@@ -118,4 +118,9 @@ testTests =
                         |> Test.Runner.isTodo
                         |> Expect.true "was false"
             ]
+        , expectToFail <|
+            describe "a describe with two identically named children fails"
+                [ test "foo" passingTest
+                , test "foo" passingTest
+                ]
         ]
