@@ -47,30 +47,27 @@ filterHelp lastCheckPassed isKeepable test =
 duplicatedName : List Test -> Result String (Set String)
 duplicatedName tests =
     let
-        name : Test -> Maybe String
-        name test =
+        names : Test -> List String
+        names test =
             case test of
                 Labeled str _ ->
-                    Just str
+                    [ str ]
 
-                _ ->
-                    Nothing
+                Batch subtests ->
+                    List.concatMap names subtests
 
-        helper : Set String -> List Test -> Result String (Set String)
-        helper set tests =
-            case tests of
-                [] ->
-                    Ok set
+                Test _ ->
+                    []
 
-                t :: ts ->
-                    case name t of
-                        Nothing ->
-                            helper set ts
-
-                        Just aName ->
-                            if Set.member aName set then
-                                Err aName
-                            else
-                                helper (Set.insert aName set) ts
+        insertOrFail : String -> Result String (Set String) -> Result String (Set String)
+        insertOrFail newName =
+            Result.andThen
+                (\oldNames ->
+                    if Set.member newName oldNames then
+                        Err newName
+                    else
+                        Ok <| Set.insert newName oldNames
+                )
     in
-        helper Set.empty tests
+        List.concatMap names tests
+            |> List.foldl insertOrFail (Ok Set.empty)

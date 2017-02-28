@@ -35,8 +35,16 @@ type alias Test =
     concat [ testDecoder, testSorting ]
 -}
 concat : List Test -> Test
-concat =
-    Internal.Batch
+concat tests =
+    case Internal.duplicatedName tests of
+        Err duped ->
+            Internal.failNow
+                { description = "A test group contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
+                , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                }
+
+        Ok _ ->
+            Internal.Batch tests
 
 
 {-| Remove any test unless its description satisfies the given predicate
