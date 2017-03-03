@@ -13,6 +13,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, f
 @docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, FuzzOptions
 -}
 
+import Set
 import Test.Internal as Internal
 import Test.Expectation
 import Test.Fuzz
@@ -34,8 +35,16 @@ type alias Test =
     concat [ testDecoder, testSorting ]
 -}
 concat : List Test -> Test
-concat =
-    Internal.Batch
+concat tests =
+    case Internal.duplicatedName tests of
+        Err duped ->
+            Internal.failNow
+                { description = "A test group contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
+                , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                }
+
+        Ok _ ->
+            Internal.Batch tests
 
 
 {-| Remove any test unless its description satisfies the given predicate
@@ -99,7 +108,21 @@ describe untrimmedDesc tests =
                 , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
                 }
         else
-            Internal.Labeled desc (Internal.Batch tests)
+            case Internal.duplicatedName tests of
+                Err duped ->
+                    Internal.failNow
+                        { description = "The tests '" ++ desc ++ "' contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
+                        , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                        }
+
+                Ok childrenNames ->
+                    if Set.member desc childrenNames then
+                        Internal.failNow
+                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Do some renaming so that tests have distinct names."
+                            , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                            }
+                    else
+                        Internal.Labeled desc (Internal.Batch tests)
 
 
 {-| Return a [`Test`](#Test) that evaluates a single

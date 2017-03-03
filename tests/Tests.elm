@@ -118,4 +118,52 @@ testTests =
                         |> Test.Runner.isTodo
                         |> Expect.true "was false"
             ]
+        , identicalNamesAreRejectedTests
+        ]
+
+
+identicalNamesAreRejectedTests : Test
+identicalNamesAreRejectedTests =
+    describe "Identically-named sibling and parent/child tests fail"
+        [ expectToFail <|
+            describe "a describe with two identically named children fails"
+                [ test "foo" passingTest
+                , test "foo" passingTest
+                ]
+        , expectToFail <|
+            describe "a describe with the same name as a child test fails"
+                [ test "a describe with the same name as a child test fails" passingTest
+                ]
+        , expectToFail <|
+            describe "a describe with the same name as a child describe fails"
+                [ describe "a describe with the same name as a child describe fails"
+                    [ test "a test" passingTest ]
+                ]
+        , expectToFail <|
+            Test.concat
+                [ describe "a describe with the same name as a sibling describe fails"
+                    [ test "a test" passingTest ]
+                , describe "a describe with the same name as a sibling describe fails"
+                    [ test "another test" passingTest ]
+                ]
+        , expectToFail <|
+            Test.concat
+                [ Test.concat
+                    [ describe "a describe with the same name as a de facto sibling describe fails"
+                        [ test "a test" passingTest ]
+                    ]
+                , describe "a describe with the same name as a de facto sibling describe fails"
+                    [ test "another test" passingTest ]
+                ]
+        , expectToFail <|
+            Test.concat
+                [ Test.concat
+                    [ describe "a describe with the same name as a de facto sibling describe fails"
+                        [ test "a test" passingTest ]
+                    ]
+                , Test.concat
+                    [ describe "a describe with the same name as a de facto sibling describe fails"
+                        [ test "another test" passingTest ]
+                    ]
+                ]
         ]
