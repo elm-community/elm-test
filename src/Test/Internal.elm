@@ -45,7 +45,7 @@ filterHelp lastCheckPassed isKeepable test =
 
 
 duplicatedName : List Test -> Result String (Set String)
-duplicatedName tests =
+duplicatedName =
     let
         names : Test -> List String
         names test =
@@ -69,5 +69,5 @@ duplicatedName tests =
                         Ok <| Set.insert newName oldNames
                 )
     in
-        List.concatMap names tests
-            |> List.foldl insertOrFail (Ok Set.empty)
+        List.concatMap names
+            >> List.foldl insertOrFail (Ok Set.empty)
