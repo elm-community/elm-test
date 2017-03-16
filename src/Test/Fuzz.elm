@@ -91,21 +91,20 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
             let
                 ( value, nextSeed ) =
                     Random.step genVal currentSeed
-            in
-                case Dict.get (toString value) state.results of
-                    Just _ ->
-                        -- we can skip this, already have the result in `failures`
-                        state.failures
 
-                    Nothing ->
-                        let
-                            newState =
-                                findNewFailure fuzzer getExpectation state currentSeed value
-                        in
-                            if remainingRuns == 1 then
-                                newState.failures
-                            else
-                                helper nextSeed (remainingRuns - 1) newState
+                newState =
+                    case Dict.get (toString value) state.results of
+                        Just _ ->
+                            -- we can skip this, already have the result in `state`
+                            state
+
+                        Nothing ->
+                            findNewFailure fuzzer getExpectation state currentSeed value
+            in
+                if remainingRuns == 1 then
+                    newState.failures
+                else
+                    helper nextSeed (remainingRuns - 1) newState
     in
         helper initialSeed totalRuns initialState
 
