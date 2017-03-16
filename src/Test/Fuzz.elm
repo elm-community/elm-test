@@ -57,14 +57,8 @@ validatedFuzzTest fuzzer desc getExpectation =
         Labeled desc (Test run)
 
 
-type ShrinkingResult a
-    = Passes
-    | ShrinksTo a
-
-
-type alias State a =
+type alias State =
     { failures : Dict String Expectation
-    , results : Dict String (ShrinkingResult a)
     }
 
 
@@ -85,27 +79,21 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
             unpackGenVal fuzzer
 
         initialState =
-            State Dict.empty Dict.empty
+            State Dict.empty
 
         helper currentSeed remainingRuns state =
             let
                 ( value, nextSeed ) =
                     Random.step genVal currentSeed
             in
-                case Dict.get (toString value) state.results of
-                    Just _ ->
-                        -- we can skip this, already have the result in `failures`
-                        state.failures
-
-                    Nothing ->
-                        let
-                            newState =
-                                findNewFailure fuzzer getExpectation state currentSeed value
-                        in
-                            if remainingRuns == 1 then
-                                newState.failures
-                            else
-                                helper nextSeed (remainingRuns - 1) newState
+                let
+                    newState =
+                        findNewFailure fuzzer getExpectation state currentSeed value
+                in
+                    if remainingRuns == 1 then
+                        newState.failures
+                    else
+                        helper nextSeed (remainingRuns - 1) newState
     in
         helper initialSeed totalRuns initialState
 
@@ -115,14 +103,14 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
 findNewFailure :
     Fuzzer a
     -> (a -> Expectation)
-    -> State a
+    -> State
     -> Random.Seed
     -> a
-    -> State a
+    -> State
 findNewFailure fuzzer getExpectation state currentSeed value =
     case getExpectation value of
         Pass ->
-            { state | results = Dict.insert (toString value) Passes state.results }
+            state
 
         failedExpectation ->
             let
@@ -136,64 +124,46 @@ findNewFailure fuzzer getExpectation state currentSeed value =
                 shrinkAndAdd rosetree getExpectation failedExpectation state
 
 
-{-| Knowing that the rosetree's root already failed, but that it's not in the results cache, finds the shrunken failure.
-Returns the updated state (failures dictionary and results cache dictionary).
+{-| Knowing that the rosetree's root already failed, finds the shrunken failure.
+Returns the updated failures dictionary.
 -}
 shrinkAndAdd :
     RoseTree a
     -> (a -> Expectation)
     -> Expectation
-    -> State a
-    -> State a
-shrinkAndAdd rootTree getExpectation rootsExpectation { failures, results } =
+    -> State
+    -> State
+shrinkAndAdd rootTree getExpectation rootsExpectation { failures } =
     let
-        shrink oldExpectation (Rose failingValue branches) results =
+        -- needs annotation
+        shrink oldExpectation (Rose failingValue branches) =
             case Lazy.List.headAndTail branches of
                 Just ( (Rose possiblyFailingValue _) as rosetree, moreLazyRoseTrees ) ->
                     -- either way, recurse with the most recent failing expectation, and failing input with its list of shrunken values
-                    case Dict.get (toString possiblyFailingValue) results of
-                        Just result ->
-                            case result of
-                                Passes ->
-                                    shrink oldExpectation (Rose failingValue moreLazyRoseTrees) results
+                    case getExpectation possiblyFailingValue of
+                        Pass ->
+                            shrink oldExpectation
+                                (Rose failingValue moreLazyRoseTrees)
 
-                                ShrinksTo minimalValue ->
-                                    ( minimalValue, oldExpectation, results )
-
-                        Nothing ->
-                            case getExpectation possiblyFailingValue of
-                                Pass ->
-                                    shrink oldExpectation
-                                        (Rose failingValue moreLazyRoseTrees)
-                                        (Dict.insert (toString possiblyFailingValue) Passes results)
-
-                                newExpectation ->
-                                    let
-                                        ( minimalValue, finalExpectation, newResults ) =
-                                            shrink newExpectation rosetree results
-                                    in
-                                        ( minimalValue
-                                        , finalExpectation
-                                        , newResults
-                                            |> Dict.insert (toString possiblyFailingValue) (ShrinksTo minimalValue)
-                                            |> Dict.insert (toString failingValue) (ShrinksTo minimalValue)
-                                        )
+                        newExpectation ->
+                            let
+                                ( minimalValue, finalExpectation ) =
+                                    shrink newExpectation rosetree
+                            in
+                                ( minimalValue
+                                , finalExpectation
+                                )
 
                 Nothing ->
-                    ( failingValue
-                    , oldExpectation
-                    , Dict.insert (toString failingValue) (ShrinksTo failingValue) results
-                      -- minimal value!
-                    )
+                    ( failingValue, oldExpectation )
 
         (Rose failingValue _) =
             rootTree
 
-        ( minimalValue, finalExpectation, newResults ) =
-            shrink rootsExpectation rootTree results
+        ( minimalValue, finalExpectation ) =
+            shrink rootsExpectation rootTree
     in
         { failures = Dict.insert (toString minimalValue) finalExpectation failures
-        , results = Dict.insert (toString failingValue) (ShrinksTo minimalValue) newResults
         }
 
 
