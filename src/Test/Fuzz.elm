@@ -134,7 +134,7 @@ shrinkAndAdd :
     -> Failures
 shrinkAndAdd rootTree getExpectation rootsExpectation failures =
     let
-        -- needs annotation
+        shrink : Expectation -> RoseTree a -> ( a, Expectation )
         shrink oldExpectation (Rose failingValue branches) =
             case Lazy.List.headAndTail branches of
                 Just ( (Rose possiblyFailingValue _) as rosetree, moreLazyRoseTrees ) ->
