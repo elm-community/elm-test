@@ -57,9 +57,8 @@ validatedFuzzTest fuzzer desc getExpectation =
         Labeled desc (Test run)
 
 
-type alias State =
-    { failures : Dict String Expectation
-    }
+type alias Failures =
+    Dict String Expectation
 
 
 getFailures : Fuzzer a -> (a -> Expectation) -> Random.Seed -> Int -> Dict String Expectation
@@ -78,24 +77,24 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
         genVal =
             unpackGenVal fuzzer
 
-        initialState =
-            State Dict.empty
+        initialFailures =
+            Dict.empty
 
-        helper currentSeed remainingRuns state =
+        helper currentSeed remainingRuns failures =
             let
                 ( value, nextSeed ) =
                     Random.step genVal currentSeed
             in
                 let
-                    newState =
-                        findNewFailure fuzzer getExpectation state currentSeed value
+                    newFailures =
+                        findNewFailure fuzzer getExpectation failures currentSeed value
                 in
                     if remainingRuns == 1 then
-                        newState.failures
+                        newFailures
                     else
-                        helper nextSeed (remainingRuns - 1) newState
+                        helper nextSeed (remainingRuns - 1) newFailures
     in
-        helper initialSeed totalRuns initialState
+        helper initialSeed totalRuns initialFailures
 
 
 {-| Knowing that a value in not in the cache, determine if it causes the test to pass or fail.
@@ -103,14 +102,14 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
 findNewFailure :
     Fuzzer a
     -> (a -> Expectation)
-    -> State
+    -> Failures
     -> Random.Seed
     -> a
-    -> State
-findNewFailure fuzzer getExpectation state currentSeed value =
+    -> Failures
+findNewFailure fuzzer getExpectation failures currentSeed value =
     case getExpectation value of
         Pass ->
-            state
+            failures
 
         failedExpectation ->
             let
@@ -121,7 +120,7 @@ findNewFailure fuzzer getExpectation state currentSeed value =
                     -- nextSeed is not used here because caller function has currentSeed
                     Random.step genTree currentSeed
             in
-                shrinkAndAdd rosetree getExpectation failedExpectation state
+                shrinkAndAdd rosetree getExpectation failedExpectation failures
 
 
 {-| Knowing that the rosetree's root already failed, finds the shrunken failure.
@@ -131,9 +130,9 @@ shrinkAndAdd :
     RoseTree a
     -> (a -> Expectation)
     -> Expectation
-    -> State
-    -> State
-shrinkAndAdd rootTree getExpectation rootsExpectation { failures } =
+    -> Failures
+    -> Failures
+shrinkAndAdd rootTree getExpectation rootsExpectation failures =
     let
         -- needs annotation
         shrink oldExpectation (Rose failingValue branches) =
@@ -163,8 +162,7 @@ shrinkAndAdd rootTree getExpectation rootsExpectation { failures } =
         ( minimalValue, finalExpectation ) =
             shrink rootsExpectation rootTree
     in
-        { failures = Dict.insert (toString minimalValue) finalExpectation failures
-        }
+        Dict.insert (toString minimalValue) finalExpectation failures
 
 
 formatExpectation : ( String, Expectation ) -> Expectation
