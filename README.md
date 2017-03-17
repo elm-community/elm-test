@@ -70,8 +70,8 @@ Here's how to set up and run your tests using the CLI test runner:
 
 Here are some examples of running tests on CI servers:
 
-* [`travis.yml`](https://github.com/rtfeldman/elm-css/blob/6ba8404f53269bc110c2e08ab24c9caf850da515/.travis.yml)
-* [`appveyor.yml`](https://github.com/rtfeldman/elm-css/blob/6ba8404f53269bc110c2e08ab24c9caf850da515/appveyor.yml)
+* [`travis.yml`](https://github.com/rtfeldman/elm-css/blob/master/.travis.yml)
+* [`appveyor.yml`](https://github.com/rtfeldman/elm-css/blob/master/appveyor.yml)
 
 ## Strategies for effective testing
 
