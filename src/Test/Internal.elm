@@ -1,4 +1,4 @@
-module Test.Internal exposing (Test(..), failNow, filter, duplicatedName, blankDescriptionFailure)
+module Test.Internal exposing (Test(..), failNow, duplicatedName, blankDescriptionFailure)
 
 import Random.Pcg as Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
@@ -25,31 +25,6 @@ blankDescriptionFailure =
         { description = "This test has a blank description. Let's give it a useful one!"
         , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
         }
-
-
-filter : (String -> Bool) -> Test -> Test
-filter =
-    filterHelp False
-
-
-filterHelp : Bool -> (String -> Bool) -> Test -> Test
-filterHelp lastCheckPassed isKeepable test =
-    case test of
-        Test _ ->
-            if lastCheckPassed then
-                test
-            else
-                Batch []
-
-        Labeled desc labeledTest ->
-            labeledTest
-                |> filterHelp (isKeepable desc) isKeepable
-                |> Labeled desc
-
-        Batch tests ->
-            tests
-                |> List.map (filterHelp lastCheckPassed isKeepable)
-                |> Batch
 
 
 duplicatedName : List Test -> Result String (Set String)

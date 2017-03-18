@@ -1,4 +1,4 @@
-module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, test, concat, todo, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
 {-| A module containing functions for creating and managing tests.
 
@@ -6,7 +6,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, f
 
 ## Organizing Tests
 
-@docs describe, concat, filter, todo
+@docs describe, concat, todo
 
 ## Fuzz Testing
 
@@ -51,27 +51,6 @@ concat tests =
 
             Ok _ ->
                 Internal.Batch tests
-
-
-{-| Remove any test unless its description satisfies the given predicate
-function. Nested descriptions added with [`describe`](#describe) are not considered.
-
-    describe "String.reverse"
-        [ test "has no effect on a palindrome" testGoesHere
-        , test "reverses a known string" anotherTest
-        , fuzz string "restores the original string if you run it again" oneMore
-        ]
-            |> Test.filter (String.contains "original")
-
-    -- only runs the final test
-
-You can use this to focus on a specific test or two, silencing the failures of
-tests you don't want to work on yet, and then remove the call to `Test.filter`
-after you're done working on the tests.
--}
-filter : (String -> Bool) -> Test -> Test
-filter =
-    Internal.filter
 
 
 {-| Apply a description to a list of tests.
@@ -175,11 +154,43 @@ This functionality is similar to "pending" tests in other frameworks, except
 that a TODO test is considered failing but a pending test often is not.
 -}
 todo : String -> Test
-todo desc =
-    Internal.failNow
-        { description = desc
-        , reason = Test.Expectation.TODO
-        }
+todo =
+    Internal.Todo
+
+
+{-| Returns a [`Test`](#Test) that skips all other tests and only runs the given one.
+
+These tests aren't meant to be committed to version control. Instead, use them
+when you want to focus on getting a particular subset of your tests to pass.
+If you use `Test.only`, your entire test suite is guaranteed to fail, even if
+each of the individual tests pass. This is to help avoid accidentally
+committing a `Test.only` to version control.
+
+If you you use `Test.only` on multiple tests, only those tests will run. If you
+put a `Test.only` inside another `Test.only`, only the outermost `Test.only`
+will affect which tests gets run.
+
+
+    describe "List"
+        [ Test.only <| describe "reverse"
+            [ test "has no effect on an empty list" <|
+                \() ->
+                    List.reverse []
+                        |> Expect.equal []
+            , fuzz int "has no effect on a one-item list" <|
+                \num ->
+                     List.reverse [ num ]
+                        |> Expect.equal [ num ]
+            ]
+        , test "This will not get run, because of the Test.only above!" <|
+            \() ->
+                List.length []
+                    |> Expect.equal 0
+        ]
+-}
+only : Test -> Test
+only =
+    Internal.Only
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
