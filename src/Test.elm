@@ -256,6 +256,13 @@ fuzzWithHelp options test =
         Internal.Labeled label subTest ->
             Internal.Labeled label (fuzzWithHelp options subTest)
 
+        Internal.Todo _ ->
+            test
+
+        Internal.Only subTest ->
+            fuzzWithHelp options subTest
+                |> Internal.Only
+
         Internal.Batch tests ->
             tests
                 |> List.map (fuzzWithHelp options)

@@ -8,6 +8,8 @@ import Set exposing (Set)
 type Test
     = Test (Random.Seed -> Int -> List Expectation)
     | Labeled String Test
+    | Todo String
+    | Only Test
     | Batch (List Test)
 
 
@@ -41,6 +43,12 @@ duplicatedName =
 
                 Test _ ->
                     []
+
+                Todo str ->
+                    [ str ]
+
+                Only subTest ->
+                    names subTest
 
         insertOrFail : String -> Result String (Set String) -> Result String (Set String)
         insertOrFail newName =
