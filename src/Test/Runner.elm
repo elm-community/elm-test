@@ -67,7 +67,6 @@ type Runnable
 -}
 type Runner
     = Runnable Runnable
-    | Skipped Runner
     | Labeled String Runner
     | Batch (List Runner)
 
@@ -104,70 +103,37 @@ fromTest runs seed test =
         in
             if List.isEmpty distribution.only then
                 { runners = distribution.all
-                , skipped = (stats distribution.all).skipped
+                , skipped = countAllRunnables distribution.skipped
                 }
             else
-                let
-                    allStats =
-                        stats distribution.all
-
-                    onlyStats =
-                        stats distribution.only
-
-                    skipped =
-                        -- don't double-count the `only` skips!
-                        allStats.runnable - onlyStats.runnable - onlyStats.skipped
-                in
-                    { runners = distribution.only
-                    , skipped = skipped
-                    }
-
-
-type alias RunnerStats =
-    { runnable : Int, skipped : Int }
-
-
-stats : List Runner -> RunnerStats
-stats =
-    List.foldl runnerStats { runnable = 0, skipped = 0 }
-
-
-runnerStats : Runner -> RunnerStats -> RunnerStats
-runnerStats runner oldStats =
-    case runner of
-        Runnable _ ->
-            { oldStats | runnable = oldStats.runnable + 1 }
-
-        Skipped subRunner ->
-            let
-                { runnable, skipped } =
-                    stats [ subRunner ]
-            in
-                { oldStats | skipped = oldStats.skipped + runnable + skipped }
-
-        Labeled _ subRunner ->
-            let
-                { runnable, skipped } =
-                    stats [ subRunner ]
-            in
-                { skipped = oldStats.skipped + skipped
-                , runnable = oldStats.runnable + runnable
+                { runners = distribution.only
+                , skipped = countAllRunnables distribution.all - countAllRunnables distribution.only
                 }
+
+
+countAllRunnables : List Runner -> Int
+countAllRunnables =
+    List.foldl (countRunnables >> (+)) 0
+
+
+countRunnables : Runner -> Int
+countRunnables runnable =
+    case runnable of
+        Runnable runnable ->
+            1
+
+        Labeled _ runner ->
+            countRunnables runner
 
         Batch runners ->
-            let
-                { runnable, skipped } =
-                    stats runners
-            in
-                { skipped = oldStats.skipped + skipped
-                , runnable = oldStats.runnable + runnable
-                }
+            countAllRunnables runners
 
 
 type alias Distribution =
     { seed : Random.Pcg.Seed
     , only : List Runner
     , all : List Runner
+    , skipped : List Runner
     }
 
 
@@ -183,6 +149,7 @@ emptyDistribution seed =
     { seed = seed
     , all = []
     , only = []
+    , skipped = []
     }
 
 
@@ -222,6 +189,7 @@ distributeSeeds runs seed test =
                 { seed = nextSeed
                 , all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
                 , only = []
+                , skipped = []
                 }
 
         Internal.Labeled description subTest ->
@@ -232,6 +200,7 @@ distributeSeeds runs seed test =
                 { seed = next.seed
                 , all = List.map (Labeled description) next.all
                 , only = List.map (Labeled description) next.only
+                , skipped = List.map (Labeled description) next.skipped
                 }
 
         Internal.Skipped subTest ->
@@ -242,8 +211,9 @@ distributeSeeds runs seed test =
                     distributeSeeds runs seed subTest
             in
                 { seed = next.seed
-                , all = List.map Skipped next.all
+                , all = []
                 , only = []
+                , skipped = next.all
                 }
 
         Internal.Only subTest ->
@@ -267,6 +237,7 @@ batchDistribute runs test prev =
         { seed = next.seed
         , all = prev.all ++ next.all
         , only = prev.only ++ next.only
+        , skipped = prev.skipped ++ next.skipped
         }
 
 
