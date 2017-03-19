@@ -88,41 +88,68 @@ your Elm code; it's easy and makes your tests reproducible.
 -}
 fromTest : Int -> Random.Pcg.Seed -> Test -> SeededRunners
 fromTest runs seed test =
-    let
-        { runners } =
-            distributeSeeds runs seed test
-    in
-        if runs < 1 then
-            { all =
-                [ (\() -> [ Expect.fail ("Test runner run count must be at least 1, not " ++ toString runs) ])
-                    |> Thunk
-                    |> Runnable
-                ]
-            , only = []
-            , skipped = []
-            }
-        else
-            runners
+    if runs < 1 then
+        { runners =
+            [ (\() -> [ Expect.fail ("Test runner run count must be at least 1, not " ++ toString runs) ])
+                |> Thunk
+                |> Runnable
+            ]
+        , skipped = 0
+        }
+    else
+        let
+            distribution =
+                distributeSeeds runs seed test
+        in
+            if List.isEmpty distribution.only then
+                { runners = distribution.all
+                , skipped = countAllRunnables distribution.skipped
+                }
+            else
+                { runners = distribution.only
+                , skipped = countAllRunnables distribution.all - countAllRunnables distribution.only
+                }
+
+
+countAllRunnables : List Runner -> Int
+countAllRunnables =
+    List.foldl (countRunnables >> (+)) 0
+
+
+countRunnables : Runner -> Int
+countRunnables runnable =
+    case runnable of
+        Runnable runnable ->
+            1
+
+        Labeled _ runner ->
+            countRunnables runner
+
+        Batch runners ->
+            countAllRunnables runners
 
 
 type alias Distribution =
     { seed : Random.Pcg.Seed
-    , runners : SeededRunners
+    , only : List Runner
+    , all : List Runner
+    , skipped : List Runner
     }
 
 
 {-| -}
 type alias SeededRunners =
-    { only : List Runner
-    , all : List Runner
-    , skipped : List Runner
+    { runners : List Runner
+    , skipped : Int
     }
 
 
 emptyDistribution : Random.Pcg.Seed -> Distribution
 emptyDistribution seed =
     { seed = seed
-    , runners = { all = [], only = [], skipped = [] }
+    , all = []
+    , only = []
+    , skipped = []
     }
 
 
@@ -160,11 +187,9 @@ distributeSeeds runs seed test =
                     Random.Pcg.step Random.Pcg.independentSeed seed
             in
                 { seed = nextSeed
-                , runners =
-                    { all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
-                    , only = []
-                    , skipped = []
-                    }
+                , all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
+                , only = []
+                , skipped = []
                 }
 
         Internal.Labeled description subTest ->
@@ -173,11 +198,9 @@ distributeSeeds runs seed test =
                     distributeSeeds runs seed subTest
             in
                 { seed = next.seed
-                , runners =
-                    { all = List.map (Labeled description) next.runners.all
-                    , only = List.map (Labeled description) next.runners.only
-                    , skipped = List.map (Labeled description) next.runners.skipped
-                    }
+                , all = List.map (Labeled description) next.all
+                , only = List.map (Labeled description) next.only
+                , skipped = List.map (Labeled description) next.skipped
                 }
 
         Internal.Skipped subTest ->
@@ -188,21 +211,18 @@ distributeSeeds runs seed test =
                     distributeSeeds runs seed subTest
             in
                 { seed = next.seed
-                , runners = { all = [], only = [], skipped = next.runners.all }
+                , all = []
+                , only = []
+                , skipped = next.all
                 }
 
         Internal.Only subTest ->
             let
                 next =
                     distributeSeeds runs seed subTest
-
-                nextRunners =
-                    next.runners
             in
                 -- `only` all the things!
-                { seed = next.seed
-                , runners = { nextRunners | only = nextRunners.all }
-                }
+                { next | only = next.all }
 
         Internal.Batch tests ->
             List.foldl (batchDistribute runs) (emptyDistribution seed) tests
@@ -215,11 +235,9 @@ batchDistribute runs test prev =
             distributeSeeds runs prev.seed test
     in
         { seed = next.seed
-        , runners =
-            { all = prev.runners.all ++ next.runners.all
-            , only = prev.runners.only ++ next.runners.only
-            , skipped = prev.runners.skipped ++ next.runners.skipped
-            }
+        , all = prev.all ++ next.all
+        , only = prev.only ++ next.only
+        , skipped = prev.skipped ++ next.skipped
         }
 
 

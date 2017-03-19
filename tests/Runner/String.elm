@@ -25,7 +25,7 @@ type alias Summary =
 
 toOutput : Summary -> SeededRunners -> Summary
 toOutput summary seededRunners =
-    List.foldl (toOutputHelp []) summary seededRunners.all
+    List.foldl (toOutputHelp []) summary seededRunners.runners
 
 
 toOutputHelp : List String -> Runner -> Summary -> Summary
