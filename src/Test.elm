@@ -36,15 +36,21 @@ type alias Test =
 -}
 concat : List Test -> Test
 concat tests =
-    case Internal.duplicatedName tests of
-        Err duped ->
-            Internal.failNow
-                { description = "A test group contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
-                , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
-                }
+    if List.isEmpty tests then
+        Internal.failNow
+            { description = "This `concat` has no tests in it. Let's give it some!"
+            , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
+            }
+    else
+        case Internal.duplicatedName tests of
+            Err duped ->
+                Internal.failNow
+                    { description = "A test group contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
+                    , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                    }
 
-        Ok _ ->
-            Internal.Batch tests
+            Ok _ ->
+                Internal.Batch tests
 
 
 {-| Remove any test unless its description satisfies the given predicate
@@ -99,26 +105,26 @@ describe untrimmedDesc tests =
     in
         if desc == "" then
             Internal.failNow
-                { description = "You must pass 'describe' a nonempty string!"
+                { description = "This `describe` has an empty description string. Let's give it a nonempty one!"
                 , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
                 }
         else if List.isEmpty tests then
             Internal.failNow
-                { description = "You tried to describe '" ++ desc ++ "' but included no tests!"
+                { description = "This `describe " ++ toString desc ++ "` has no tests in it. Let's give it some!"
                 , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
                 }
         else
             case Internal.duplicatedName tests of
                 Err duped ->
                     Internal.failNow
-                        { description = "The tests '" ++ desc ++ "' contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
+                        { description = "The tests '" ++ desc ++ "' contains multiple tests named '" ++ duped ++ "'. Let's do some renaming so that tests have unique names."
                         , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
                         }
 
                 Ok childrenNames ->
                     if Set.member desc childrenNames then
                         Internal.failNow
-                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Do some renaming so that tests have distinct names."
+                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Let's do some renaming so that tests have distinct names."
                             , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
                             }
                     else
@@ -145,7 +151,7 @@ test untrimmedDesc thunk =
     in
         if desc == "" then
             Internal.failNow
-                { description = "You must pass 'test' a nonempty string!"
+                { description = "This test has empty description string. Let's give it a nonempty one!"
                 , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
                 }
         else
@@ -230,12 +236,12 @@ fuzzWith options fuzzer untrimmedDesc getTest =
     in
         if options.runs < 1 then
             Internal.failNow
-                { description = "Fuzz test run count must be at least 1, not " ++ toString options.runs
+                { description = "Fuzz tests must have a run count of at least 1, not " ++ toString options.runs
                 , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
                 }
         else if desc == "" then
             Internal.failNow
-                { description = "You must pass 'test' a nonempty string!"
+                { description = "This test has empty description string. Let's give it a nonempty one!"
                 , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
                 }
         else
