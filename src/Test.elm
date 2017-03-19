@@ -229,23 +229,14 @@ for example like this:
                     |> Expect.equal (List.member target nums)
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzWith options fuzzer untrimmedDesc getTest =
-    let
-        desc =
-            String.trim untrimmedDesc
-    in
-        if options.runs < 1 then
-            Internal.failNow
-                { description = "Fuzz tests must have a run count of at least 1, not " ++ toString options.runs
-                , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
-                }
-        else if desc == "" then
-            Internal.failNow
-                { description = "This test has empty description string. Let's give it a nonempty one!"
-                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-                }
-        else
-            fuzzWithHelp options (fuzz fuzzer desc getTest)
+fuzzWith options fuzzer desc getTest =
+    if options.runs < 1 then
+        Internal.failNow
+            { description = "Fuzz tests must have a run count of at least 1, not " ++ toString options.runs
+            , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
+            }
+    else
+        fuzzWithHelp options (fuzz fuzzer desc getTest)
 
 
 fuzzWithHelp : FuzzOptions -> Test -> Test
