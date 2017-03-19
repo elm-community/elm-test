@@ -154,8 +154,11 @@ This functionality is similar to "pending" tests in other frameworks, except
 that a TODO test is considered failing but a pending test often is not.
 -}
 todo : String -> Test
-todo =
-    Internal.Todo
+todo desc =
+    Internal.failNow
+        { description = desc
+        , reason = Test.Expectation.TODO
+        }
 
 
 {-| Returns a [`Test`](#Test) that skips all other tests and only runs the given one.
@@ -256,8 +259,11 @@ fuzzWithHelp options test =
         Internal.Labeled label subTest ->
             Internal.Labeled label (fuzzWithHelp options subTest)
 
-        Internal.Todo _ ->
-            test
+        Internal.Skipped subTest ->
+            -- It's important to treat skipped tests exactly the same as normal,
+            -- until after seed distribution has completed.
+            fuzzWithHelp options subTest
+                |> Internal.Only
 
         Internal.Only subTest ->
             fuzzWithHelp options subTest

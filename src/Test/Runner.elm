@@ -99,6 +99,7 @@ fromTest runs seed test =
                     |> Runnable
                 ]
             , only = []
+            , skipped = []
             }
         else
             runners
@@ -114,13 +115,14 @@ type alias Distribution =
 type alias SeededRunners =
     { only : List Runner
     , all : List Runner
+    , skipped : List Runner
     }
 
 
 emptyDistribution : Random.Pcg.Seed -> Distribution
 emptyDistribution seed =
     { seed = seed
-    , runners = { all = [], only = [] }
+    , runners = { all = [], only = [], skipped = [] }
     }
 
 
@@ -160,6 +162,7 @@ distributeSeeds runs seed test =
                 , runners =
                     { all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
                     , only = []
+                    , skipped = []
                     }
                 }
 
@@ -172,13 +175,20 @@ distributeSeeds runs seed test =
                 , runners =
                     { all = List.map (Labeled description) next.runners.all
                     , only = List.map (Labeled description) next.runners.only
+                    , skipped = List.map (Labeled description) next.runners.skipped
                     }
                 }
 
-        Internal.Todo todo ->
-            { seed = seed
-            , runners = { all = [], only = [] }
-            }
+        Internal.Skipped subTest ->
+            let
+                -- Go through the motions in order to obtain the seed, but then
+                -- move everything to skipped.
+                next =
+                    distributeSeeds runs seed subTest
+            in
+                { seed = next.seed
+                , runners = { all = [], only = [], skipped = next.runners.all }
+                }
 
         Internal.Only subTest ->
             let
@@ -207,6 +217,7 @@ batchDistribute runs test prev =
         , runners =
             { all = prev.runners.all ++ next.runners.all
             , only = prev.runners.only ++ next.runners.only
+            , skipped = prev.runners.skipped ++ next.runners.skipped
             }
         }
 

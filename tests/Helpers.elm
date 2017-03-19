@@ -73,8 +73,9 @@ expectFailureHelper f test =
         TI.Batch tests ->
             TI.Batch (List.map (expectFailureHelper f) tests)
 
-        TI.Todo _ ->
-            test
+        TI.Skipped subTest ->
+            expectFailureHelper f subTest
+                |> TI.Skipped
 
         TI.Only subTest ->
             expectFailureHelper f subTest

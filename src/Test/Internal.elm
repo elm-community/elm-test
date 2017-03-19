@@ -8,7 +8,7 @@ import Set exposing (Set)
 type Test
     = Test (Random.Seed -> Int -> List Expectation)
     | Labeled String Test
-    | Todo String
+    | Skipped Test
     | Only Test
     | Batch (List Test)
 
@@ -44,8 +44,8 @@ duplicatedName =
                 Test _ ->
                     []
 
-                Todo str ->
-                    [ str ]
+                Skipped subTest ->
+                    names subTest
 
                 Only subTest ->
                     names subTest
