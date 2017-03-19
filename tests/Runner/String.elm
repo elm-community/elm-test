@@ -38,6 +38,9 @@ toOutputHelp labels runner summary =
         Labeled label subRunner ->
             toOutputHelp (label :: labels) subRunner summary
 
+        Skipped _ ->
+            summary
+
         Batch runners ->
             List.foldl (toOutputHelp labels) summary runners
 
