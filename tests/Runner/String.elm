@@ -13,7 +13,7 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 import Expect exposing (Expectation)
 import Random.Pcg as Random
 import Test exposing (Test)
-import Test.Runner exposing (Runner(..), SeededRunners)
+import Test.Runner exposing (Runner(..), SeededRunners(..))
 
 
 {-| The output string, the number of passed tests,
@@ -25,7 +25,22 @@ type alias Summary =
 
 toOutput : Summary -> SeededRunners -> Summary
 toOutput summary seededRunners =
-    List.foldl (toOutputHelp []) summary seededRunners.runners
+    let
+        render =
+            List.foldl (toOutputHelp []) summary
+    in
+        case seededRunners of
+            Plain runners ->
+                render runners
+
+            Only runners ->
+                render runners
+
+            Skipping skipped runners ->
+                render runners
+
+            Invalid message ->
+                { output = message, passed = 0, failed = 0 }
 
 
 toOutputHelp : List String -> Runner -> Summary -> Summary

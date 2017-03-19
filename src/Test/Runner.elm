@@ -2,7 +2,7 @@ module Test.Runner
     exposing
         ( Runnable
         , Runner(..)
-        , SeededRunners
+        , SeededRunners(..)
         , run
         , fromTest
         , getFailure
@@ -89,26 +89,21 @@ your Elm code; it's easy and makes your tests reproducible.
 fromTest : Int -> Random.Pcg.Seed -> Test -> SeededRunners
 fromTest runs seed test =
     if runs < 1 then
-        { runners =
-            [ (\() -> [ Expect.fail ("Test runner run count must be at least 1, not " ++ toString runs) ])
-                |> Thunk
-                |> Runnable
-            ]
-        , skipped = 0
-        }
+        Invalid ("Test runner run count must be at least 1, not " ++ toString runs)
     else
         let
             distribution =
                 distributeSeeds runs seed test
         in
             if List.isEmpty distribution.only then
-                { runners = distribution.all
-                , skipped = countAllRunnables distribution.skipped
-                }
+                case countAllRunnables distribution.skipped of
+                    0 ->
+                        Plain distribution.all
+
+                    skipped ->
+                        Skipping skipped distribution.all
             else
-                { runners = distribution.only
-                , skipped = countAllRunnables distribution.all - countAllRunnables distribution.only
-                }
+                Only distribution.only
 
 
 countAllRunnables : List Runner -> Int
@@ -138,10 +133,11 @@ type alias Distribution =
 
 
 {-| -}
-type alias SeededRunners =
-    { runners : List Runner
-    , skipped : Int
-    }
+type SeededRunners
+    = Plain (List Runner)
+    | Only (List Runner)
+    | Skipping Int (List Runner)
+    | Invalid String
 
 
 emptyDistribution : Random.Pcg.Seed -> Distribution
