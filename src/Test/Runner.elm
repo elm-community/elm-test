@@ -2,6 +2,7 @@ module Test.Runner
     exposing
         ( Runnable
         , Runner(..)
+        , SeededRunners
         , run
         , fromTest
         , getFailure
@@ -19,7 +20,7 @@ can be found in the `README`.
 
 ## Runner
 
-@docs Runner, fromTest
+@docs Runner, SeededRunners, fromTest
 
 ## Runnable
 
@@ -85,55 +86,97 @@ random 32-bit integer to `Random.Pcg.initialSeed`. You can obtain such an intege
 `Math.floor(Math.random()*0xFFFFFFFF)` in Node. It's typically fine to hard-code this value into
 your Elm code; it's easy and makes your tests reproducible.
 -}
-fromTest : Int -> Random.Pcg.Seed -> Test -> Runner
+fromTest : Int -> Random.Pcg.Seed -> Test -> Result String SeededRunners
 fromTest runs seed test =
     if runs < 1 then
-        Thunk (\() -> [ Expect.fail ("Test runner run count must be at least 1, not " ++ toString runs) ])
-            |> Runnable
+        Err ("Test runner run count must be at least 1, not " ++ toString runs)
     else
-        case test of
-            Internal.Test run ->
-                Thunk (\() -> run seed runs)
-                    |> Runnable
-
-            Internal.Labeled label subTest ->
-                subTest
-                    |> fromTest runs seed
-                    |> Labeled label
-
-            Internal.Batch subTests ->
-                subTests
-                    |> List.foldl (distributeSeeds runs) ( seed, [] )
-                    |> Tuple.second
-                    |> Batch
+        distributeSeeds runs seed test
+            |> Tuple.second
 
 
-distributeSeeds : Int -> Test -> ( Random.Pcg.Seed, List Runner ) -> ( Random.Pcg.Seed, List Runner )
-distributeSeeds runs test ( startingSeed, runners ) =
+{-| -}
+type alias SeededRunners =
+    { todos : List (List String)
+    , only : List Runner
+    , all : List Runner
+    }
+
+
+emptyDistribution : SeededRunners
+emptyDistribution =
+    { all = []
+    , only = []
+    , todos = []
+    }
+
+
+distributeSeeds : Int -> Random.Pcg.Seed -> Test -> ( Random.Pcg.Seed, Result String SeededRunners )
+distributeSeeds runs seed test =
     case test of
         Internal.Test run ->
             let
-                ( seed, nextSeed ) =
-                    Random.Pcg.step Random.Pcg.independentSeed startingSeed
+                ( firstSeed, nextSeed ) =
+                    Random.Pcg.step Random.Pcg.independentSeed seed
             in
-                ( nextSeed, runners ++ [ Runnable (Thunk (\() -> run seed runs)) ] )
+                ( nextSeed
+                , Ok
+                    { all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
+                    , only = []
+                    , todos = []
+                    }
+                )
 
-        Internal.Labeled label subTest ->
-            let
-                ( nextSeed, nextRunners ) =
-                    distributeSeeds runs subTest ( startingSeed, [] )
+        Internal.Labeled description subTest ->
+            case distributeSeeds runs seed subTest of
+                ( nextSeed, Ok next ) ->
+                    ( nextSeed
+                    , Ok
+                        { all = List.map (Labeled description) next.all
+                        , only = List.map (Labeled description) next.only
+                        , todos = List.map (\labels -> description :: labels) next.todos
+                        }
+                    )
 
-                finalRunners =
-                    List.map (Labeled label) nextRunners
-            in
-                ( nextSeed, runners ++ finalRunners )
+                ( _, Err _ ) as err ->
+                    err
+
+        Internal.Todo todo ->
+            ( seed, Ok { all = [], only = [], todos = [ todo ] } )
+
+        Internal.Only subTest ->
+            case distributeSeeds runs seed subTest of
+                ( nextSeed, Ok next ) ->
+                    -- `only` all the things!
+                    ( nextSeed, Ok { next | only = next.all } )
+
+                ( _, Err _ ) as err ->
+                    err
 
         Internal.Batch tests ->
-            let
-                ( nextSeed, nextRunners ) =
-                    List.foldl (distributeSeeds runs) ( startingSeed, [] ) tests
-            in
-                ( nextSeed, [ Batch (runners ++ nextRunners) ] )
+            tests
+                |> List.foldl (batchDistribute runs) ( seed, Ok emptyDistribution )
+
+
+batchDistribute : Int -> Test -> ( Random.Pcg.Seed, Result String SeededRunners ) -> ( Random.Pcg.Seed, Result String SeededRunners )
+batchDistribute runs test ( seed, old ) =
+    case old of
+        Ok prev ->
+            case distributeSeeds runs seed test of
+                ( nextSeed, Ok next ) ->
+                    ( nextSeed
+                    , Ok
+                        { all = prev.all ++ next.all
+                        , only = prev.only ++ next.only
+                        , todos = prev.todos ++ next.todos
+                        }
+                    )
+
+                ( _, Err _ ) as err ->
+                    err
+
+        (Err _) as err ->
+            ( seed, err )
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
