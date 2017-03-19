@@ -10,23 +10,35 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 @docs Summary, run, runWithOptions
 -}
 
+import Expect exposing (Expectation)
 import Random.Pcg as Random
 import Test exposing (Test)
-import Expect exposing (Expectation)
-import String
-import Test.Runner exposing (Runner(..))
+import Test.Runner exposing (Runner(..), SeededRunners)
 
 
 {-| The output string, the number of passed tests,
 and the number of failed tests.
 -}
 type alias Summary =
-    { output : String, passed : Int, failed : Int }
+    { output : String, passed : Int, failed : Int, todos : List (List String) }
 
 
-toOutput : Summary -> Runner -> Summary
-toOutput =
-    flip (toOutputHelp [])
+toOutput : Summary -> SeededRunners -> Summary
+toOutput summary seededRunners =
+    let
+        result =
+            List.foldl (toOutputHelp []) summary seededRunners.all
+    in
+        { result
+            | output = result.output ++ outputTodos result.todos
+        }
+
+
+outputTodos : List (List String) -> String
+outputTodos todos =
+    todos
+        |> List.map outputLabels
+        |> String.join "\n\n"
 
 
 toOutputHelp : List String -> Runner -> Summary -> Summary
@@ -62,9 +74,10 @@ fromExpectation expectation summary =
                 newOutput =
                     "\n\n" ++ (prefix ++ indentLines message) ++ "\n"
             in
-                { output = summary.output ++ newOutput
-                , failed = summary.failed + 1
-                , passed = summary.passed
+                { summary
+                    | output = summary.output ++ newOutput
+                    , failed = summary.failed + 1
+                    , passed = summary.passed
                 }
 
 
@@ -108,6 +121,14 @@ tests that failed.
 -}
 runWithOptions : Int -> Random.Seed -> Test -> Summary
 runWithOptions runs seed test =
-    test
-        |> Test.Runner.fromTest runs seed
-        |> toOutput { output = "", passed = 0, failed = 0 }
+    let
+        seededRunners =
+            Test.Runner.fromTest runs seed test
+    in
+        toOutput
+            { output = ""
+            , passed = 0
+            , failed = 0
+            , todos = seededRunners.todos
+            }
+            seededRunners
