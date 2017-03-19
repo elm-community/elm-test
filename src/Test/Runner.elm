@@ -1,9 +1,7 @@
 module Test.Runner
     exposing
-        ( Runnable
-        , Runner(..)
+        ( Runner
         , SeededRunners(..)
-        , run
         , fromTest
         , getFailure
         , isTodo
@@ -21,10 +19,6 @@ can be found in the `README`.
 ## Runner
 
 @docs Runner, SeededRunners, fromTest
-
-## Runnable
-
-@docs Runnable, run
 
 ## Expectations
 
@@ -60,25 +54,27 @@ type Runnable
     = Thunk (() -> List Expectation)
 
 
+{-| A function which, when evaluated, produces a list of expectations. Also a
+list of labels which apply to this outcome.
+-}
+type alias Runner =
+    { run : () -> List Expectation
+    , labels : List String
+    }
+
+
 {-| A structured test runner, incorporating:
 
 * The expectations to run
 * The hierarchy of description strings that describe the results
 -}
-type Runner
+type RunnableTree
     = Runnable Runnable
-    | Labeled String Runner
-    | Batch (List Runner)
+    | Labeled String RunnableTree
+    | Batch (List RunnableTree)
 
 
-{-| Evaluate a [`Runnable`](#Runnable) to get a list of `Expectation`s.
--}
-run : Runnable -> List Expectation
-run (Thunk fn) =
-    fn ()
-
-
-{-| Convert a `Test` into a `Runner`.
+{-| Convert a `Test` into `SeededRunners`.
 
 In order to run any fuzz tests that the `Test` may have, it requires a default run count as well
 as an initial `Random.Pcg.Seed`. `100` is a good run count. To obtain a good random seed, pass a
@@ -98,20 +94,26 @@ fromTest runs seed test =
             if List.isEmpty distribution.only then
                 case countAllRunnables distribution.skipped of
                     0 ->
-                        Plain distribution.all
+                        distribution.all
+                            |> List.concatMap fromRunnableTree
+                            |> Plain
 
                     skipped ->
-                        Skipping skipped distribution.all
+                        distribution.all
+                            |> List.concatMap fromRunnableTree
+                            |> Skipping skipped
             else
-                Only distribution.only
+                distribution.only
+                    |> List.concatMap fromRunnableTree
+                    |> Only
 
 
-countAllRunnables : List Runner -> Int
+countAllRunnables : List RunnableTree -> Int
 countAllRunnables =
     List.foldl (countRunnables >> (+)) 0
 
 
-countRunnables : Runner -> Int
+countRunnables : RunnableTree -> Int
 countRunnables runnable =
     case runnable of
         Runnable runnable ->
@@ -124,11 +126,37 @@ countRunnables runnable =
             countAllRunnables runners
 
 
+run : Runnable -> List Expectation
+run (Thunk fn) =
+    fn ()
+
+
+fromRunnableTree : RunnableTree -> List Runner
+fromRunnableTree =
+    fromRunnableTreeHelp []
+
+
+fromRunnableTreeHelp : List String -> RunnableTree -> List Runner
+fromRunnableTreeHelp labels runner =
+    case runner of
+        Runnable runnable ->
+            [ { labels = labels
+              , run = \() -> run runnable
+              }
+            ]
+
+        Labeled label subRunner ->
+            fromRunnableTreeHelp (label :: labels) subRunner
+
+        Batch runners ->
+            List.concatMap (fromRunnableTreeHelp labels) runners
+
+
 type alias Distribution =
     { seed : Random.Pcg.Seed
-    , only : List Runner
-    , all : List Runner
-    , skipped : List Runner
+    , only : List RunnableTree
+    , all : List RunnableTree
+    , skipped : List RunnableTree
     }
 
 
