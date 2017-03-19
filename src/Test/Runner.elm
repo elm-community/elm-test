@@ -98,7 +98,6 @@ fromTest runs seed test =
                     |> Thunk
                     |> Runnable
                 ]
-            , todos = []
             , only = []
             }
         else
@@ -113,8 +112,7 @@ type alias Distribution =
 
 {-| -}
 type alias SeededRunners =
-    { todos : List (List String)
-    , only : List Runner
+    { only : List Runner
     , all : List Runner
     }
 
@@ -122,7 +120,7 @@ type alias SeededRunners =
 emptyDistribution : Random.Pcg.Seed -> Distribution
 emptyDistribution seed =
     { seed = seed
-    , runners = { all = [], only = [], todos = [] }
+    , runners = { all = [], only = [] }
     }
 
 
@@ -162,7 +160,6 @@ distributeSeeds runs seed test =
                 , runners =
                     { all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
                     , only = []
-                    , todos = []
                     }
                 }
 
@@ -175,13 +172,12 @@ distributeSeeds runs seed test =
                 , runners =
                     { all = List.map (Labeled description) next.runners.all
                     , only = List.map (Labeled description) next.runners.only
-                    , todos = List.map (\labels -> description :: labels) next.runners.todos
                     }
                 }
 
         Internal.Todo todo ->
             { seed = seed
-            , runners = { all = [], only = [], todos = [ [ todo ] ] }
+            , runners = { all = [], only = [] }
             }
 
         Internal.Only subTest ->
@@ -211,7 +207,6 @@ batchDistribute runs test prev =
         , runners =
             { all = prev.runners.all ++ next.runners.all
             , only = prev.runners.only ++ next.runners.only
-            , todos = prev.runners.todos ++ next.runners.todos
             }
         }
 

@@ -20,25 +20,12 @@ import Test.Runner exposing (Runner(..), SeededRunners)
 and the number of failed tests.
 -}
 type alias Summary =
-    { output : String, passed : Int, failed : Int, todos : List (List String) }
+    { output : String, passed : Int, failed : Int }
 
 
 toOutput : Summary -> SeededRunners -> Summary
 toOutput summary seededRunners =
-    let
-        result =
-            List.foldl (toOutputHelp []) summary seededRunners.all
-    in
-        { result
-            | output = result.output ++ outputTodos result.todos
-        }
-
-
-outputTodos : List (List String) -> String
-outputTodos todos =
-    todos
-        |> List.map outputLabels
-        |> String.join "\n\n"
+    List.foldl (toOutputHelp []) summary seededRunners.all
 
 
 toOutputHelp : List String -> Runner -> Summary -> Summary
@@ -129,6 +116,5 @@ runWithOptions runs seed test =
             { output = ""
             , passed = 0
             , failed = 0
-            , todos = seededRunners.todos
             }
             seededRunners
