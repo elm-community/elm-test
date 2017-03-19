@@ -135,14 +135,15 @@ random number seeds to them. Along the way it also does a few other things:
 
 Some design notes:
 
-1. `only` tests do not affect seed distribution. This is important for the case
-where a user runs tests, sees one failure, and decides to isolate it by using
-both `only` and providing the same seed as before. If `only` changes seed
-distribution, then that test result might not reproduce anymore! This would be
-very frustrating, as it would mean you could reproduce the failure when not
-using `only`, but it magically disappeared as soon as you tried to isolate it.
+1. `only` tests and `skip` tests do not affect seed distribution. This is
+important for the case where a user runs tests, sees one failure, and decides
+to isolate it by using both `only` and providing the same seed as before. If
+`only` changes seed distribution, then that test result might not reproduce!
+This would be very frustrating, as it would mean you could reproduce the
+failure when not using `only`, but it magically disappeared as soon as you
+tried to isolate it. The same logic applies to `skip`.
 
-Theoretically this could become tail-recursive. However, the Labeled and Batch
+2. Theoretically this could become tail-recursive. However, the Labeled and Batch
 cases would presumably become very gnarly, and it's unclear whether there would
 be a performance benefit or penalty in the end. If some brave soul wants to
 attempt it for kicks, beware that this is not a performance optimization for
