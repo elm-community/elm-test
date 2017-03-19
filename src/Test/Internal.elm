@@ -1,4 +1,4 @@
-module Test.Internal exposing (Test(..), failNow, filter, duplicatedName)
+module Test.Internal exposing (Test(..), failNow, filter, duplicatedName, emptyDescriptionFailure)
 
 import Random.Pcg as Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
@@ -17,6 +17,14 @@ failNow : { description : String, reason : Test.Expectation.Reason } -> Test
 failNow record =
     Test
         (\_ _ -> [ Test.Expectation.fail record ])
+
+
+emptyDescriptionFailure : Test
+emptyDescriptionFailure =
+    failNow
+        { description = "This test has an empty description. Let's give it a nonempty one!"
+        , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+        }
 
 
 filter : (String -> Bool) -> Test -> Test

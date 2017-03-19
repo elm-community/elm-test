@@ -149,11 +149,8 @@ test untrimmedDesc thunk =
         desc =
             String.trim untrimmedDesc
     in
-        if desc == "" then
-            Internal.failNow
-                { description = "This test has empty description string. Let's give it a nonempty one!"
-                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-                }
+        if String.isEmpty desc then
+            Internal.emptyDescriptionFailure
         else
             Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
 
