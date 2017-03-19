@@ -1,4 +1,4 @@
-module Test exposing (Test, FuzzOptions, describe, test, concat, todo, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, test, concat, todo, skip, only, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
 {-| A module containing functions for creating and managing tests.
 
@@ -6,7 +6,7 @@ module Test exposing (Test, FuzzOptions, describe, test, concat, todo, fuzz, fuz
 
 ## Organizing Tests
 
-@docs describe, concat, todo
+@docs describe, concat, todo, skip, only
 
 ## Fuzz Testing
 
@@ -165,7 +165,7 @@ todo desc =
 
 These tests aren't meant to be committed to version control. Instead, use them
 when you want to focus on getting a particular subset of your tests to pass.
-If you use `Test.only`, your entire test suite is guaranteed to fail, even if
+If you use `Test.only`, your entire test suite will fail, even if
 each of the individual tests pass. This is to help avoid accidentally
 committing a `Test.only` to version control.
 
@@ -173,6 +173,7 @@ If you you use `Test.only` on multiple tests, only those tests will run. If you
 put a `Test.only` inside another `Test.only`, only the outermost `Test.only`
 will affect which tests gets run.
 
+See also [`Test.skip`](#skip)
 
     describe "List"
         [ Test.only <| describe "reverse"
@@ -194,6 +195,39 @@ will affect which tests gets run.
 only : Test -> Test
 only =
     Internal.Only
+
+
+{-| Returns a [`Test`](#Test) that gets skipped.
+
+These tests aren't meant to be committed to version control. Instead, use them
+when you want to focus on getting a particular subset of your tests to pass.
+If you use `Test.skip`, your entire test suite will fail, even if
+each of the individual tests pass. This is to help avoid accidentally
+committing a `Test.skip` to version control.
+
+See also [`Test.only`](#only)
+
+
+    describe "List"
+        [ Test.skip <| describe "reverse"
+            [ test "has no effect on an empty list" <|
+                \() ->
+                    List.reverse []
+                        |> Expect.equal []
+            , fuzz int "has no effect on a one-item list" <|
+                \num ->
+                     List.reverse [ num ]
+                        |> Expect.equal [ num ]
+            ]
+        , test "This is the only test that will get run; the other was skipped!" <|
+            \() ->
+                List.length []
+                    |> Expect.equal 0
+        ]
+-}
+skip : Test -> Test
+skip =
+    Internal.Skipped
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
