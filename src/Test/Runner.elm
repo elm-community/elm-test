@@ -181,7 +181,7 @@ distributeSeeds runs seed test =
 
         Internal.Todo todo ->
             { seed = seed
-            , runners = { all = [], only = [], todos = [ todo ] }
+            , runners = { all = [], only = [], todos = [ [ todo ] ] }
             }
 
         Internal.Only subTest ->
