@@ -86,23 +86,27 @@ random 32-bit integer to `Random.Pcg.initialSeed`. You can obtain such an intege
 `Math.floor(Math.random()*0xFFFFFFFF)` in Node. It's typically fine to hard-code this value into
 your Elm code; it's easy and makes your tests reproducible.
 -}
-fromTest : Int -> Random.Pcg.Seed -> Test -> Result (List String) SeededRunners
+fromTest : Int -> Random.Pcg.Seed -> Test -> SeededRunners
 fromTest runs seed test =
     let
-        { errors, runners } =
+        { runners } =
             distributeSeeds runs seed test
     in
         if runs < 1 then
-            Err (("Test runner run count must be at least 1, not " ++ toString runs) :: errors)
-        else if List.isEmpty errors then
-            Ok runners
+            { all =
+                [ (\() -> [ Expect.fail ("Test runner run count must be at least 1, not " ++ toString runs) ])
+                    |> Thunk
+                    |> Runnable
+                ]
+            , todos = []
+            , only = []
+            }
         else
-            Err errors
+            runners
 
 
 type alias Distribution =
     { seed : Random.Pcg.Seed
-    , errors : List String
     , runners : SeededRunners
     }
 
@@ -118,7 +122,6 @@ type alias SeededRunners =
 emptyDistribution : Random.Pcg.Seed -> Distribution
 emptyDistribution seed =
     { seed = seed
-    , errors = []
     , runners = { all = [], only = [], todos = [] }
     }
 
@@ -139,8 +142,6 @@ distribution, then that test result might not reproduce anymore! This would be
 very frustrating, as it would mean you could reproduce the failure when not
 using `only`, but it magically disappeared as soon as you tried to isolate it.
 
-2. It would be fine to do additional validations in here later.
-
 Theoretically this could become tail-recursive. However, the Labeled and Batch
 cases would presumably become very gnarly, and it's unclear whether there would
 be a performance benefit or penalty in the end. If some brave soul wants to
@@ -158,7 +159,6 @@ distributeSeeds runs seed test =
                     Random.Pcg.step Random.Pcg.independentSeed seed
             in
                 { seed = nextSeed
-                , errors = []
                 , runners =
                     { all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
                     , only = []
@@ -172,7 +172,6 @@ distributeSeeds runs seed test =
                     distributeSeeds runs seed subTest
             in
                 { seed = next.seed
-                , errors = next.errors
                 , runners =
                     { all = List.map (Labeled description) next.runners.all
                     , only = List.map (Labeled description) next.runners.only
@@ -182,7 +181,6 @@ distributeSeeds runs seed test =
 
         Internal.Todo todo ->
             { seed = seed
-            , errors = []
             , runners = { all = [], only = [], todos = [ todo ] }
             }
 
@@ -196,7 +194,6 @@ distributeSeeds runs seed test =
             in
                 -- `only` all the things!
                 { seed = next.seed
-                , errors = next.errors
                 , runners = { nextRunners | only = nextRunners.all }
                 }
 
@@ -211,7 +208,6 @@ batchDistribute runs test prev =
             distributeSeeds runs prev.seed test
     in
         { seed = next.seed
-        , errors = prev.errors ++ next.errors
         , runners =
             { all = prev.runners.all ++ next.runners.all
             , only = prev.runners.only ++ next.runners.only
