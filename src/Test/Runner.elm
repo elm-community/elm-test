@@ -86,13 +86,25 @@ random 32-bit integer to `Random.Pcg.initialSeed`. You can obtain such an intege
 `Math.floor(Math.random()*0xFFFFFFFF)` in Node. It's typically fine to hard-code this value into
 your Elm code; it's easy and makes your tests reproducible.
 -}
-fromTest : Int -> Random.Pcg.Seed -> Test -> Result String SeededRunners
+fromTest : Int -> Random.Pcg.Seed -> Test -> Result (List String) SeededRunners
 fromTest runs seed test =
-    if runs < 1 then
-        Err ("Test runner run count must be at least 1, not " ++ toString runs)
-    else
-        distributeSeeds runs seed test
-            |> Tuple.second
+    let
+        { errors, runners } =
+            distributeSeeds runs seed test
+    in
+        if runs < 1 then
+            Err (("Test runner run count must be at least 1, not " ++ toString runs) :: errors)
+        else if List.isEmpty errors then
+            Ok runners
+        else
+            Err errors
+
+
+type alias Distribution =
+    { seed : Random.Pcg.Seed
+    , errors : List String
+    , runners : SeededRunners
+    }
 
 
 {-| -}
@@ -103,15 +115,41 @@ type alias SeededRunners =
     }
 
 
-emptyDistribution : SeededRunners
-emptyDistribution =
-    { all = []
-    , only = []
-    , todos = []
+emptyDistribution : Random.Pcg.Seed -> Distribution
+emptyDistribution seed =
+    { seed = seed
+    , errors = []
+    , runners = { all = [], only = [], todos = [] }
     }
 
 
-distributeSeeds : Int -> Random.Pcg.Seed -> Test -> ( Random.Pcg.Seed, Result String SeededRunners )
+{-| This breaks down a test into individual Runners, while assigning different
+random number seeds to them. Along the way it also does a few other things:
+
+1. Collect any tests created with `Test.only` so later we can run only those.
+2. Collect any tests created with `Test.todo` so later we can fail the run.
+3. Validate that the run count is at least 1.
+
+Some design notes:
+
+1. `only` tests do not affect seed distribution. This is important for the case
+where a user runs tests, sees one failure, and decides to isolate it by using
+both `only` and providing the same seed as before. If `only` changes seed
+distribution, then that test result might not reproduce anymore! This would be
+very frustrating, as it would mean you could reproduce the failure when not
+using `only`, but it magically disappeared as soon as you tried to isolate it.
+
+2. It would be fine to do additional validations in here later.
+
+Theoretically this could become tail-recursive. However, the Labeled and Batch
+cases would presumably become very gnarly, and it's unclear whether there would
+be a performance benefit or penalty in the end. If some brave soul wants to
+attempt it for kicks, beware that this is not a performance optimization for
+the faint of heart. Practically speaking, it seems unlikely to be worthwhile
+unless somehow people start seeing stack overflows during seed distribution -
+which would presumably require some absurdly deeply nested `describe` calls.
+-}
+distributeSeeds : Int -> Random.Pcg.Seed -> Test -> Distribution
 distributeSeeds runs seed test =
     case test of
         Internal.Test run ->
@@ -119,64 +157,67 @@ distributeSeeds runs seed test =
                 ( firstSeed, nextSeed ) =
                     Random.Pcg.step Random.Pcg.independentSeed seed
             in
-                ( nextSeed
-                , Ok
+                { seed = nextSeed
+                , errors = []
+                , runners =
                     { all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
                     , only = []
                     , todos = []
                     }
-                )
+                }
 
         Internal.Labeled description subTest ->
-            case distributeSeeds runs seed subTest of
-                ( nextSeed, Ok next ) ->
-                    ( nextSeed
-                    , Ok
-                        { all = List.map (Labeled description) next.all
-                        , only = List.map (Labeled description) next.only
-                        , todos = List.map (\labels -> description :: labels) next.todos
-                        }
-                    )
-
-                ( _, Err _ ) as err ->
-                    err
+            let
+                next =
+                    distributeSeeds runs seed subTest
+            in
+                { seed = next.seed
+                , errors = next.errors
+                , runners =
+                    { all = List.map (Labeled description) next.runners.all
+                    , only = List.map (Labeled description) next.runners.only
+                    , todos = List.map (\labels -> description :: labels) next.runners.todos
+                    }
+                }
 
         Internal.Todo todo ->
-            ( seed, Ok { all = [], only = [], todos = [ todo ] } )
+            { seed = seed
+            , errors = []
+            , runners = { all = [], only = [], todos = [ todo ] }
+            }
 
         Internal.Only subTest ->
-            case distributeSeeds runs seed subTest of
-                ( nextSeed, Ok next ) ->
-                    -- `only` all the things!
-                    ( nextSeed, Ok { next | only = next.all } )
+            let
+                next =
+                    distributeSeeds runs seed subTest
 
-                ( _, Err _ ) as err ->
-                    err
+                nextRunners =
+                    next.runners
+            in
+                -- `only` all the things!
+                { seed = next.seed
+                , errors = next.errors
+                , runners = { nextRunners | only = nextRunners.all }
+                }
 
         Internal.Batch tests ->
-            tests
-                |> List.foldl (batchDistribute runs) ( seed, Ok emptyDistribution )
+            List.foldl (batchDistribute runs) (emptyDistribution seed) tests
 
 
-batchDistribute : Int -> Test -> ( Random.Pcg.Seed, Result String SeededRunners ) -> ( Random.Pcg.Seed, Result String SeededRunners )
-batchDistribute runs test ( seed, old ) =
-    case old of
-        Ok prev ->
-            case distributeSeeds runs seed test of
-                ( nextSeed, Ok next ) ->
-                    ( nextSeed
-                    , Ok
-                        { all = prev.all ++ next.all
-                        , only = prev.only ++ next.only
-                        , todos = prev.todos ++ next.todos
-                        }
-                    )
-
-                ( _, Err _ ) as err ->
-                    err
-
-        (Err _) as err ->
-            ( seed, err )
+batchDistribute : Int -> Test -> Distribution -> Distribution
+batchDistribute runs test prev =
+    let
+        next =
+            distributeSeeds runs prev.seed test
+    in
+        { seed = next.seed
+        , errors = prev.errors ++ next.errors
+        , runners =
+            { all = prev.runners.all ++ next.runners.all
+            , only = prev.runners.only ++ next.runners.only
+            , todos = prev.runners.todos ++ next.runners.todos
+            }
+        }
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
