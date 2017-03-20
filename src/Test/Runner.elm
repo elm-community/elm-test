@@ -92,16 +92,14 @@ fromTest runs seed test =
                 distributeSeeds runs seed test
         in
             if List.isEmpty distribution.only then
-                case countAllRunnables distribution.skipped of
-                    0 ->
-                        distribution.all
-                            |> List.concatMap fromRunnableTree
-                            |> Plain
-
-                    skipped ->
-                        distribution.all
-                            |> List.concatMap fromRunnableTree
-                            |> Skipping skipped
+                if countAllRunnables distribution.skipped == 0 then
+                    distribution.all
+                        |> List.concatMap fromRunnableTree
+                        |> Plain
+                else
+                    distribution.all
+                        |> List.concatMap fromRunnableTree
+                        |> Skipping
             else
                 distribution.only
                     |> List.concatMap fromRunnableTree
@@ -164,7 +162,7 @@ type alias Distribution =
 type SeededRunners
     = Plain (List Runner)
     | Only (List Runner)
-    | Skipping Int (List Runner)
+    | Skipping (List Runner)
     | Invalid String
 
 
