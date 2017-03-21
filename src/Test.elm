@@ -229,7 +229,7 @@ fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzWith options fuzzer desc getTest =
     if options.runs < 1 then
         Internal.failNow
-            { description = "Fuzz tests must have a run count of at least 1, not " ++ toString options.runs
+            { description = "Fuzz tests must have a run count of at least 1, not " ++ toString options.runs ++ "."
             , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
             }
     else
