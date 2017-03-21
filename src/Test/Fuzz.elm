@@ -2,7 +2,7 @@ module Test.Fuzz exposing (fuzzTest)
 
 import Dict exposing (Dict)
 import Test.Expectation exposing (Expectation(..))
-import Test.Internal exposing (Test(..), failNow, emptyDescriptionFailure)
+import Test.Internal exposing (Test(..), failNow, blankDescriptionFailure)
 import Fuzz exposing (Fuzzer)
 import Fuzz.Internal exposing (unpackGenVal, unpackGenTree)
 import RoseTree exposing (RoseTree(..))
@@ -19,7 +19,7 @@ fuzzTest ((Fuzz.Internal.Fuzzer baseFuzzer) as fuzzer) untrimmedDesc getExpectat
             String.trim untrimmedDesc
     in
         if String.isEmpty desc then
-            emptyDescriptionFailure
+            blankDescriptionFailure
         else
             case Fuzz.Internal.invalidReason (baseFuzzer True) of
                 Just reason ->

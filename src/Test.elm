@@ -103,9 +103,9 @@ describe untrimmedDesc tests =
         desc =
             String.trim untrimmedDesc
     in
-        if desc == "" then
+        if String.isEmpty desc then
             Internal.failNow
-                { description = "This `describe` has an empty description string. Let's give it a nonempty one!"
+                { description = "This `describe` has a blank description. Let's give it a useful one!"
                 , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
                 }
         else if List.isEmpty tests then
@@ -150,7 +150,7 @@ test untrimmedDesc thunk =
             String.trim untrimmedDesc
     in
         if String.isEmpty desc then
-            Internal.emptyDescriptionFailure
+            Internal.blankDescriptionFailure
         else
             Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
 
