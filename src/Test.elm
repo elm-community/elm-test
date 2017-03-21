@@ -117,14 +117,14 @@ describe untrimmedDesc tests =
             case Internal.duplicatedName tests of
                 Err duped ->
                     Internal.failNow
-                        { description = "The tests '" ++ desc ++ "' contains multiple tests named '" ++ duped ++ "'. Let's do some renaming so that tests have unique names."
+                        { description = "The tests '" ++ desc ++ "' contain multiple tests named '" ++ duped ++ "'. Let's rename them so we know which is which."
                         , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
                         }
 
                 Ok childrenNames ->
                     if Set.member desc childrenNames then
                         Internal.failNow
-                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Let's do some renaming so that tests have distinct names."
+                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Let's rename them so we know which is which."
                             , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
                             }
                     else
