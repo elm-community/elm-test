@@ -32,9 +32,9 @@ failureMessage { given, description, reason } =
 
         Invalid BadDescription ->
             if description == "" then
-                "The empty string is not a valid name."
+                "The empty string is not a valid test description."
             else
-                "You used an invalid name: " ++ description
+                "This is an invalid test description: " ++ description
 
         Invalid _ ->
             description

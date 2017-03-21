@@ -36,15 +36,21 @@ type alias Test =
 -}
 concat : List Test -> Test
 concat tests =
-    case Internal.duplicatedName tests of
-        Err duped ->
-            Internal.failNow
-                { description = "A test group contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
-                , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
-                }
+    if List.isEmpty tests then
+        Internal.failNow
+            { description = "This `concat` has no tests in it. Let's give it some!"
+            , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
+            }
+    else
+        case Internal.duplicatedName tests of
+            Err duped ->
+                Internal.failNow
+                    { description = "A test group contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
+                    , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                    }
 
-        Ok _ ->
-            Internal.Batch tests
+            Ok _ ->
+                Internal.Batch tests
 
 
 {-| Remove any test unless its description satisfies the given predicate
@@ -97,28 +103,28 @@ describe untrimmedDesc tests =
         desc =
             String.trim untrimmedDesc
     in
-        if desc == "" then
+        if String.isEmpty desc then
             Internal.failNow
-                { description = "You must pass 'describe' a nonempty string!"
+                { description = "This `describe` has a blank description. Let's give it a useful one!"
                 , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
                 }
         else if List.isEmpty tests then
             Internal.failNow
-                { description = "You tried to describe '" ++ desc ++ "' but included no tests!"
+                { description = "This `describe " ++ toString desc ++ "` has no tests in it. Let's give it some!"
                 , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
                 }
         else
             case Internal.duplicatedName tests of
                 Err duped ->
                     Internal.failNow
-                        { description = "The tests '" ++ desc ++ "' contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
+                        { description = "The tests '" ++ desc ++ "' contain multiple tests named '" ++ duped ++ "'. Let's rename them so we know which is which."
                         , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
                         }
 
                 Ok childrenNames ->
                     if Set.member desc childrenNames then
                         Internal.failNow
-                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Do some renaming so that tests have distinct names."
+                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Let's rename them so we know which is which."
                             , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
                             }
                     else
@@ -143,11 +149,8 @@ test untrimmedDesc thunk =
         desc =
             String.trim untrimmedDesc
     in
-        if desc == "" then
-            Internal.failNow
-                { description = "You must pass 'test' a nonempty string!"
-                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-                }
+        if String.isEmpty desc then
+            Internal.blankDescriptionFailure
         else
             Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
 
@@ -223,23 +226,14 @@ for example like this:
                     |> Expect.equal (List.member target nums)
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzWith options fuzzer untrimmedDesc getTest =
-    let
-        desc =
-            String.trim untrimmedDesc
-    in
-        if options.runs < 1 then
-            Internal.failNow
-                { description = "Fuzz test run count must be at least 1, not " ++ toString options.runs
-                , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
-                }
-        else if desc == "" then
-            Internal.failNow
-                { description = "You must pass 'test' a nonempty string!"
-                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-                }
-        else
-            fuzzWithHelp options (fuzz fuzzer desc getTest)
+fuzzWith options fuzzer desc getTest =
+    if options.runs < 1 then
+        Internal.failNow
+            { description = "Fuzz tests must have a run count of at least 1, not " ++ toString options.runs ++ "."
+            , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
+            }
+    else
+        fuzzWithHelp options (fuzz fuzzer desc getTest)
 
 
 fuzzWithHelp : FuzzOptions -> Test -> Test
