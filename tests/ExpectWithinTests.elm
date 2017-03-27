@@ -64,7 +64,8 @@ testExpectWithin =
                 -- U getting started-test
                 \x ->
                     (sin x) ^ 2 + (cos x) ^ 2 |> Expect.within Float.epsilon 1.0
-              -- U test cases in documentation
+
+            -- U test cases in documentation
             , test "floats known to not add exactly" <|
                 -- (0.1 is non-terminating in base 2)
                 \() -> 0.1 + 0.2 |> Expect.within Float.epsilon 0.3
@@ -85,7 +86,8 @@ testExpectWithin =
             , fuzz float "Float.infinity does not equal any finite number" <|
                 -- F infinity does not equal finite numbers
                 \a -> Float.infinity |> Expect.notWithin Float.epsilon a
-              -- U infinity does not equal the nearest finite floats, cartesian product positive/negative
+
+            -- U infinity does not equal the nearest finite floats, cartesian product positive/negative
             , test "infinity does not equal the largest finite float" <|
                 \() -> Float.infinity |> Expect.notWithin Float.minAbsValue Float.maxAbsValue
             , test "infinity does not equal the smallest finite float" <|
@@ -151,16 +153,19 @@ testExpectWithin =
                         Expect.all
                             -- just under the relative edge
                             [ (\d -> (d / 2.0) |> Expect.notWithin (4 / 3) (-d / 2.0))
-                              -- note: floats have such low precision down here that 1.333... is the closest factor below 2 we can use.
-                              -- a factor such as 1.5 or 1.999 causes a rounding error internally in `Expect.within`.
+
+                            -- note: floats have such low precision down here that 1.333... is the closest factor below 2 we can use.
+                            -- a factor such as 1.5 or 1.999 causes a rounding error internally in `Expect.within`.
                             , (\d -> (d / 2.0) |> Expect.within 1.333333333333334 (-d / 2.0))
                             , (\d -> (d / 2.0) |> Expect.within 2 (-d / 2.0))
                             , (\d -> (d / 2.0) |> Expect.within 2.001 (-d / 2.0))
-                              -- on the relative/absolute edge
+
+                            -- on the relative/absolute edge
                             , (\d -> d |> Expect.notWithin 1.999 -d)
                             , (\d -> d |> Expect.within 2 -d)
                             , (\d -> d |> Expect.within 2.001 -d)
-                              -- just over the relative edge
+
+                            -- just over the relative edge
                             , (\d -> 2 * d |> Expect.notWithin 1.999 (-d * 2.0))
                             , (\d -> 2 * d |> Expect.within 2 (-d * 2.0))
                             , (\d -> 2 * d |> Expect.within 2.001 (-d * 2.0))
@@ -192,7 +197,8 @@ testExpectWithin =
                                 , (\( low, high ) -> high * 1.1 |> Expect.notWithin (1 - 1 / 1.0999999) high)
                                 ]
                                 ( low, high )
-                  -- U edge small - abs
+
+                -- U edge small - abs
                 , fuzz (floatRange (Float.minAbsValue) (Float.minAbsValue * 2 ^ 4)) "absolute comparison for values below edge at Float.minAbsValue * 2^4" <|
                     \a ->
                         if abs a < Float.minAbsValue * 2 ^ 4 then
@@ -230,8 +236,8 @@ testExpectWithin =
                         -- intended to test absolute comparison (the near-zero case)
                         \epsilon a ->
                             a |> Expect.within (abs epsilon) a
-                      --
-                      -- tests for comparison of floats small enough to be considered zero
+
+                    -- tests for comparison of floats small enough to be considered zero
                     , test "extremely small float equality" <|
                         \() -> Float.minAbsValue |> Expect.within Float.epsilon Float.minAbsValue
                     , test "extremely small plus minus float equality" <|
@@ -293,18 +299,19 @@ testExpectWithin =
                                 Expect.notWithin delta a b
                         in
                             Expect.notEqual (succeeded isWithin) (succeeded isNotWithin)
-                  -- F commutativity
+
+                -- F commutativity
                 , fuzz3 float float float "within commutativity" <|
                     \epsilon a b ->
                         succeeded (Expect.within (abs epsilon) a b) |> Expect.equal (succeeded <| Expect.within (abs epsilon) b a)
                 , fuzz3 float float float "notWithin commutativity" <|
                     \epsilon a b ->
                         succeeded (Expect.notWithin (abs epsilon) a b) |> Expect.equal (succeeded <| Expect.notWithin (abs epsilon) b a)
-                  -- F reflexivity, no matter what positive epsilon is used
+
+                -- F reflexivity, no matter what positive epsilon is used
                 , fuzz2 float float "within reflexive" <|
                     \epsilon a ->
                         Expect.within (abs epsilon) a a
-                  -- this next test should always fail
                 , expectToFail <|
                     fuzz2 float float "notWithin irreflexive" <|
                         \epsilon a ->
