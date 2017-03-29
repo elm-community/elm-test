@@ -173,7 +173,9 @@ If you you use `Test.only` on multiple tests, only those tests will run. If you
 put a `Test.only` inside another `Test.only`, only the outermost `Test.only`
 will affect which tests gets run.
 
-See also [`Test.skip`](#skip)
+See also [`Test.skip`](#skip). Note that `skip` takes precedence over `only`;
+if you use a `skip` inside an `only`, it will still get skipped, and if you use
+an `only` inside a `skip`, it will also get skipped.
 
     describe "List"
         [ Test.only <| describe "reverse"
@@ -205,7 +207,9 @@ If you use `Test.skip`, your entire test suite will fail, even if
 each of the individual tests pass. This is to help avoid accidentally
 committing a `Test.skip` to version control.
 
-See also [`Test.only`](#only)
+See also [`Test.only`](#only). Note that `skip` takes precedence over `only`;
+if you use a `skip` inside an `only`, it will still get skipped, and if you use
+an `only` inside a `skip`, it will also get skipped.
 
 
     describe "List"
