@@ -13,11 +13,6 @@ all =
         [ fromTest ]
 
 
-
--- fromTest : Int -> Random.Pcg.Seed -> Test -> SeededRunners
--- fromTest runs seed test =
-
-
 toSeededRunners : Test -> SeededRunners
 toSeededRunners =
     Test.Runner.fromTest 5 (Random.initialSeed 42)
@@ -79,18 +74,3 @@ fromTest =
 passing : Test
 passing =
     test "A passing test" (\() -> Expect.pass)
-
-
-
---
--- type SeededRunners
---     = Plain (List Runner)
---     | Only (List Runner)
---     | Skipping (List Runner)
---     | Invalid String
---
---
--- type alias Runner =
---     { run : () -> List Expectation
---     , labels : List String
---     }
