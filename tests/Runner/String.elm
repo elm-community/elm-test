@@ -13,7 +13,7 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 import Expect exposing (Expectation)
 import Random.Pcg as Random
 import Test exposing (Test)
-import Test.Runner exposing (Runner(..), SeededRunners(..))
+import Test.Runner exposing (Runner, SeededRunners(..))
 
 
 {-| The output string, the number of passed tests,
@@ -36,7 +36,7 @@ toOutput summary seededRunners =
             Only runners ->
                 render runners
 
-            Skipping skipped runners ->
+            Skipping runners ->
                 render runners
 
             Invalid message ->
@@ -45,16 +45,8 @@ toOutput summary seededRunners =
 
 toOutputHelp : List String -> Runner -> Summary -> Summary
 toOutputHelp labels runner summary =
-    case runner of
-        Runnable runnable ->
-            Test.Runner.run runnable
-                |> List.foldl fromExpectation summary
-
-        Labeled label subRunner ->
-            toOutputHelp (label :: labels) subRunner summary
-
-        Batch runners ->
-            List.foldl (toOutputHelp labels) summary runners
+    runner.run ()
+        |> List.foldl fromExpectation summary
 
 
 fromExpectation : Expectation -> Summary -> Summary
