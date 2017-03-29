@@ -74,8 +74,6 @@ expectationTests =
                     \_ -> "dummy subject" |> Expect.all []
             ]
         , testExpectWithin
-
-        -- , describe "Expect.somethingElse" [ ... ]
         ]
 
 
