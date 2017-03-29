@@ -20,27 +20,27 @@ import Test.Runner exposing (Runner, SeededRunners(..))
 and the number of failed tests.
 -}
 type alias Summary =
-    { output : String, passed : Int, failed : Int }
+    { output : String, passed : Int, failed : Int, autoFail : Maybe String }
 
 
 toOutput : Summary -> SeededRunners -> Summary
 toOutput summary seededRunners =
     let
         render =
-            List.foldl (toOutputHelp []) summary
+            List.foldl (toOutputHelp [])
     in
         case seededRunners of
             Plain runners ->
-                render runners
+                render { summary | autoFail = Nothing } runners
 
             Only runners ->
-                render runners
+                render { summary | autoFail = Just "Test.only was used" } runners
 
             Skipping runners ->
-                render runners
+                render { summary | autoFail = Just "Test.skip was used" } runners
 
             Invalid message ->
-                { output = message, passed = 0, failed = 0 }
+                { output = message, passed = 0, failed = 0, autoFail = Nothing }
 
 
 toOutputHelp : List String -> Runner -> Summary -> Summary
@@ -123,5 +123,6 @@ runWithOptions runs seed test =
             { output = ""
             , passed = 0
             , failed = 0
+            , autoFail = Just "no tests were run"
             }
             seededRunners
