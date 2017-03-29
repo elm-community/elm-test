@@ -36,6 +36,84 @@ fromTest =
                                 Expect.pass
                             else
                                 Expect.fail ("Expected a run count of " ++ toString runs ++ " to be invalid, but was valid with this value: " ++ toString val)
+            , test "an only inside another only has no effect" <|
+                \() ->
+                    let
+                        runners =
+                            toSeededRunners <|
+                                describe "three tests"
+                                    [ test "passes" <|
+                                        \() -> Expect.pass
+                                    , Test.only <|
+                                        describe "two tests"
+                                            [ test "fails" <|
+                                                \() -> Expect.fail "failed on purpose"
+                                            , Test.only <|
+                                                test "is an only" <|
+                                                    \() -> Expect.fail "failed on purpose"
+                                            ]
+                                    ]
+                    in
+                        case runners of
+                            Only runners ->
+                                runners
+                                    |> List.length
+                                    |> Expect.equal 2
+
+                            val ->
+                                Expect.fail ("Expected SeededRunner to be Only, but was " ++ toString val)
+            , test "a skip inside an only takes effect" <|
+                \() ->
+                    let
+                        runners =
+                            toSeededRunners <|
+                                describe "three tests"
+                                    [ test "passes" <|
+                                        \() -> Expect.pass
+                                    , Test.only <|
+                                        describe "two tests"
+                                            [ test "fails" <|
+                                                \() -> Expect.fail "failed on purpose"
+                                            , Test.skip <|
+                                                test "is skipped" <|
+                                                    \() -> Expect.fail "failed on purpose"
+                                            ]
+                                    ]
+                    in
+                        case runners of
+                            Only runners ->
+                                runners
+                                    |> List.length
+                                    |> Expect.equal 1
+
+                            val ->
+                                Expect.fail ("Expected SeededRunner to be Only, but was " ++ toString val)
+            , test "an only inside a skip has no effect" <|
+                \() ->
+                    let
+                        runners =
+                            toSeededRunners <|
+                                describe "three tests"
+                                    [ test "passes" <|
+                                        \() -> Expect.pass
+                                    , Test.skip <|
+                                        describe "two tests"
+                                            [ test "fails" <|
+                                                \() -> Expect.fail "failed on purpose"
+                                            , Test.only <|
+                                                test "is skipped" <|
+                                                    \() -> Expect.fail "failed on purpose"
+                                            ]
+                                    ]
+                    in
+                        case runners of
+                            Skipping runners ->
+                                runners
+                                    |> List.length
+                                    |> Expect.equal 1
+
+                            val ->
+                                Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "a test that uses only is an Only summary" <|
                 \() ->
                     case toSeededRunners (Test.only <| test "passes" (\() -> Expect.pass)) of
@@ -46,6 +124,32 @@ fromTest =
 
                         val ->
                             Expect.fail ("Expected SeededRunner to be Only, but was " ++ toString val)
+            , test "a skip inside another skip has no effect" <|
+                \() ->
+                    let
+                        runners =
+                            toSeededRunners <|
+                                describe "three tests"
+                                    [ test "passes" <|
+                                        \() -> Expect.pass
+                                    , Test.skip <|
+                                        describe "two tests"
+                                            [ test "fails" <|
+                                                \() -> Expect.fail "failed on purpose"
+                                            , Test.skip <|
+                                                test "is skipped" <|
+                                                    \() -> Expect.fail "failed on purpose"
+                                            ]
+                                    ]
+                    in
+                        case runners of
+                            Skipping runners ->
+                                runners
+                                    |> List.length
+                                    |> Expect.equal 1
+
+                            val ->
+                                Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "a pair of tests where one uses skip is a Skipping summary" <|
                 \() ->
                     let
@@ -67,7 +171,7 @@ fromTest =
 
                             val ->
                                 Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
-            , test "a test that uses skip is an empty Skipping summary" <|
+            , test "when all tests are skipped, we get an empty Skipping summary" <|
                 \() ->
                     case toSeededRunners (Test.skip <| test "passes" (\() -> Expect.pass)) of
                         Skipping runners ->
