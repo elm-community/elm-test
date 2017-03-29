@@ -10,12 +10,19 @@ import Expect
 import Helpers exposing (..)
 import ExpectWithinTests exposing (testExpectWithin)
 import FuzzerTests exposing (fuzzerTests)
+import Test.Runner.Tests
 
 
 all : Test
 all =
     Test.concat
-        [ readmeExample, regressions, testTests, expectationTests, fuzzerTests ]
+        [ readmeExample
+        , regressions
+        , testTests
+        , expectationTests
+        , fuzzerTests
+        , Test.Runner.Tests.all
+        ]
 
 
 readmeExample : Test
