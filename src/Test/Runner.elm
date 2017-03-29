@@ -114,7 +114,7 @@ countAllRunnables =
 countRunnables : RunnableTree -> Int
 countRunnables runnable =
     case runnable of
-        Runnable runnable ->
+        Runnable _ ->
             1
 
         Labeled _ runner ->
