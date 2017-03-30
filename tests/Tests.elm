@@ -6,6 +6,8 @@ import Test.Runner
 import Fuzz exposing (..)
 import Dict
 import Set
+import Random.Pcg as Random
+import Shrink
 import Expect
 import Helpers exposing (..)
 import ExpectWithinTests exposing (testExpectWithin)
@@ -86,6 +88,16 @@ regressions =
             \positiveInt ->
                 positiveInt
                     |> Expect.greaterThan 0
+        , fuzz
+            (custom (Random.int 1 8) Shrink.noShrink)
+            "fuzz tests run 100 times"
+            (Expect.notEqual 5)
+            |> expectToFail
+          {- If fuzz tests actually run 100 times, then asserting that no number
+             in 1..8 equals 5 fails with 0.999998 probability. If they only run
+             once, or stop after a duplicate due to #127, then it's much more
+             likely (but not guaranteed) that the 5 won't turn up. See #128.
+          -}
         ]
 
 
