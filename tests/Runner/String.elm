@@ -10,37 +10,43 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 @docs Summary, run, runWithOptions
 -}
 
+import Expect exposing (Expectation)
 import Random.Pcg as Random
 import Test exposing (Test)
-import Expect exposing (Expectation)
-import String
-import Test.Runner exposing (Runner(..))
+import Test.Runner exposing (Runner, SeededRunners(..))
 
 
 {-| The output string, the number of passed tests,
 and the number of failed tests.
 -}
 type alias Summary =
-    { output : String, passed : Int, failed : Int }
+    { output : String, passed : Int, failed : Int, autoFail : Maybe String }
 
 
-toOutput : Summary -> Runner -> Summary
-toOutput =
-    flip (toOutputHelp [])
+toOutput : Summary -> SeededRunners -> Summary
+toOutput summary seededRunners =
+    let
+        render =
+            List.foldl (toOutputHelp [])
+    in
+        case seededRunners of
+            Plain runners ->
+                render { summary | autoFail = Nothing } runners
+
+            Only runners ->
+                render { summary | autoFail = Just "Test.only was used" } runners
+
+            Skipping runners ->
+                render { summary | autoFail = Just "Test.skip was used" } runners
+
+            Invalid message ->
+                { output = message, passed = 0, failed = 0, autoFail = Nothing }
 
 
 toOutputHelp : List String -> Runner -> Summary -> Summary
 toOutputHelp labels runner summary =
-    case runner of
-        Runnable runnable ->
-            Test.Runner.run runnable
-                |> List.foldl fromExpectation summary
-
-        Labeled label subRunner ->
-            toOutputHelp (label :: labels) subRunner summary
-
-        Batch runners ->
-            List.foldl (toOutputHelp labels) summary runners
+    runner.run ()
+        |> List.foldl fromExpectation summary
 
 
 fromExpectation : Expectation -> Summary -> Summary
@@ -62,9 +68,10 @@ fromExpectation expectation summary =
                 newOutput =
                     "\n\n" ++ (prefix ++ indentLines message) ++ "\n"
             in
-                { output = summary.output ++ newOutput
-                , failed = summary.failed + 1
-                , passed = summary.passed
+                { summary
+                    | output = summary.output ++ newOutput
+                    , failed = summary.failed + 1
+                    , passed = summary.passed
                 }
 
 
@@ -108,6 +115,14 @@ tests that failed.
 -}
 runWithOptions : Int -> Random.Seed -> Test -> Summary
 runWithOptions runs seed test =
-    test
-        |> Test.Runner.fromTest runs seed
-        |> toOutput { output = "", passed = 0, failed = 0 }
+    let
+        seededRunners =
+            Test.Runner.fromTest runs seed test
+    in
+        toOutput
+            { output = ""
+            , passed = 0
+            , failed = 0
+            , autoFail = Just "no tests were run"
+            }
+            seededRunners

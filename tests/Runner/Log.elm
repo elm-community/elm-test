@@ -40,13 +40,18 @@ runWithOptions runs seed test =
 
 
 summarize : Summary -> String
-summarize { output, passed, failed } =
+summarize { output, passed, failed, autoFail } =
     let
         headline =
             if failed > 0 then
                 output ++ "\n\nTEST RUN FAILED"
             else
-                "TEST RUN PASSED"
+                case autoFail of
+                    Nothing ->
+                        "TEST RUN PASSED"
+
+                    Just reason ->
+                        "TEST RUN FAILED because " ++ reason
     in
         String.join "\n"
             [ output
@@ -63,7 +68,7 @@ logOutput summary arg =
             summarize summary ++ "\n\nExit code"
 
         _ =
-            if summary.failed > 0 then
+            if summary.failed > 0 || summary.autoFail /= Nothing then
                 output
                     |> (flip Debug.log 1)
                     |> (\_ -> Debug.crash "FAILED TEST RUN")

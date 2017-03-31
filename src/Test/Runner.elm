@@ -1,8 +1,7 @@
 module Test.Runner
     exposing
-        ( Runnable
-        , Runner(..)
-        , run
+        ( Runner
+        , SeededRunners(..)
         , fromTest
         , getFailure
         , isTodo
@@ -19,11 +18,7 @@ can be found in the `README`.
 
 ## Runner
 
-@docs Runner, fromTest
-
-## Runnable
-
-@docs Runnable, run
+@docs Runner, SeededRunners, fromTest
 
 ## Expectations
 
@@ -59,25 +54,27 @@ type Runnable
     = Thunk (() -> List Expectation)
 
 
+{-| A function which, when evaluated, produces a list of expectations. Also a
+list of labels which apply to this outcome.
+-}
+type alias Runner =
+    { run : () -> List Expectation
+    , labels : List String
+    }
+
+
 {-| A structured test runner, incorporating:
 
 * The expectations to run
 * The hierarchy of description strings that describe the results
 -}
-type Runner
+type RunnableTree
     = Runnable Runnable
-    | Labeled String Runner
-    | Batch (List Runner)
+    | Labeled String RunnableTree
+    | Batch (List RunnableTree)
 
 
-{-| Evaluate a [`Runnable`](#Runnable) to get a list of `Expectation`s.
--}
-run : Runnable -> List Expectation
-run (Thunk fn) =
-    fn ()
-
-
-{-| Convert a `Test` into a `Runner`.
+{-| Convert a `Test` into `SeededRunners`.
 
 In order to run any fuzz tests that the `Test` may have, it requires a default run count as well
 as an initial `Random.Pcg.Seed`. `100` is a good run count. To obtain a good random seed, pass a
@@ -85,55 +82,185 @@ random 32-bit integer to `Random.Pcg.initialSeed`. You can obtain such an intege
 `Math.floor(Math.random()*0xFFFFFFFF)` in Node. It's typically fine to hard-code this value into
 your Elm code; it's easy and makes your tests reproducible.
 -}
-fromTest : Int -> Random.Pcg.Seed -> Test -> Runner
+fromTest : Int -> Random.Pcg.Seed -> Test -> SeededRunners
 fromTest runs seed test =
     if runs < 1 then
-        Thunk (\() -> [ Expect.fail ("Test runner run count must be at least 1, not " ++ toString runs) ])
-            |> Runnable
+        Invalid ("Test runner run count must be at least 1, not " ++ toString runs)
     else
-        case test of
-            Internal.Test run ->
-                Thunk (\() -> run seed runs)
-                    |> Runnable
+        let
+            distribution =
+                distributeSeeds runs seed test
+        in
+            if List.isEmpty distribution.only then
+                if countAllRunnables distribution.skipped == 0 then
+                    distribution.all
+                        |> List.concatMap fromRunnableTree
+                        |> Plain
+                else
+                    distribution.all
+                        |> List.concatMap fromRunnableTree
+                        |> Skipping
+            else
+                distribution.only
+                    |> List.concatMap fromRunnableTree
+                    |> Only
 
-            Internal.Labeled label subTest ->
-                subTest
-                    |> fromTest runs seed
-                    |> Labeled label
 
-            Internal.Batch subTests ->
-                subTests
-                    |> List.foldl (distributeSeeds runs) ( seed, [] )
-                    |> Tuple.second
-                    |> Batch
+countAllRunnables : List RunnableTree -> Int
+countAllRunnables =
+    List.foldl (countRunnables >> (+)) 0
 
 
-distributeSeeds : Int -> Test -> ( Random.Pcg.Seed, List Runner ) -> ( Random.Pcg.Seed, List Runner )
-distributeSeeds runs test ( startingSeed, runners ) =
+countRunnables : RunnableTree -> Int
+countRunnables runnable =
+    case runnable of
+        Runnable _ ->
+            1
+
+        Labeled _ runner ->
+            countRunnables runner
+
+        Batch runners ->
+            countAllRunnables runners
+
+
+run : Runnable -> List Expectation
+run (Thunk fn) =
+    fn ()
+
+
+fromRunnableTree : RunnableTree -> List Runner
+fromRunnableTree =
+    fromRunnableTreeHelp []
+
+
+fromRunnableTreeHelp : List String -> RunnableTree -> List Runner
+fromRunnableTreeHelp labels runner =
+    case runner of
+        Runnable runnable ->
+            [ { labels = labels
+              , run = \() -> run runnable
+              }
+            ]
+
+        Labeled label subRunner ->
+            fromRunnableTreeHelp (label :: labels) subRunner
+
+        Batch runners ->
+            List.concatMap (fromRunnableTreeHelp labels) runners
+
+
+type alias Distribution =
+    { seed : Random.Pcg.Seed
+    , only : List RunnableTree
+    , all : List RunnableTree
+    , skipped : List RunnableTree
+    }
+
+
+{-| -}
+type SeededRunners
+    = Plain (List Runner)
+    | Only (List Runner)
+    | Skipping (List Runner)
+    | Invalid String
+
+
+emptyDistribution : Random.Pcg.Seed -> Distribution
+emptyDistribution seed =
+    { seed = seed
+    , all = []
+    , only = []
+    , skipped = []
+    }
+
+
+{-| This breaks down a test into individual Runners, while assigning different
+random number seeds to them. Along the way it also does a few other things:
+
+1. Collect any tests created with `Test.only` so later we can run only those.
+2. Collect any tests created with `Test.todo` so later we can fail the run.
+3. Validate that the run count is at least 1.
+
+Some design notes:
+
+1. `only` tests and `skip` tests do not affect seed distribution. This is
+important for the case where a user runs tests, sees one failure, and decides
+to isolate it by using both `only` and providing the same seed as before. If
+`only` changes seed distribution, then that test result might not reproduce!
+This would be very frustrating, as it would mean you could reproduce the
+failure when not using `only`, but it magically disappeared as soon as you
+tried to isolate it. The same logic applies to `skip`.
+
+2. Theoretically this could become tail-recursive. However, the Labeled and Batch
+cases would presumably become very gnarly, and it's unclear whether there would
+be a performance benefit or penalty in the end. If some brave soul wants to
+attempt it for kicks, beware that this is not a performance optimization for
+the faint of heart. Practically speaking, it seems unlikely to be worthwhile
+unless somehow people start seeing stack overflows during seed distribution -
+which would presumably require some absurdly deeply nested `describe` calls.
+-}
+distributeSeeds : Int -> Random.Pcg.Seed -> Test -> Distribution
+distributeSeeds runs seed test =
     case test of
         Internal.Test run ->
             let
-                ( seed, nextSeed ) =
-                    Random.Pcg.step Random.Pcg.independentSeed startingSeed
+                ( firstSeed, nextSeed ) =
+                    Random.Pcg.step Random.Pcg.independentSeed seed
             in
-                ( nextSeed, runners ++ [ Runnable (Thunk (\() -> run seed runs)) ] )
+                { seed = nextSeed
+                , all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
+                , only = []
+                , skipped = []
+                }
 
-        Internal.Labeled label subTest ->
+        Internal.Labeled description subTest ->
             let
-                ( nextSeed, nextRunners ) =
-                    distributeSeeds runs subTest ( startingSeed, [] )
-
-                finalRunners =
-                    List.map (Labeled label) nextRunners
+                next =
+                    distributeSeeds runs seed subTest
             in
-                ( nextSeed, runners ++ finalRunners )
+                { seed = next.seed
+                , all = List.map (Labeled description) next.all
+                , only = List.map (Labeled description) next.only
+                , skipped = List.map (Labeled description) next.skipped
+                }
+
+        Internal.Skipped subTest ->
+            let
+                -- Go through the motions in order to obtain the seed, but then
+                -- move everything to skipped.
+                next =
+                    distributeSeeds runs seed subTest
+            in
+                { seed = next.seed
+                , all = []
+                , only = []
+                , skipped = next.all
+                }
+
+        Internal.Only subTest ->
+            let
+                next =
+                    distributeSeeds runs seed subTest
+            in
+                -- `only` all the things!
+                { next | only = next.all }
 
         Internal.Batch tests ->
-            let
-                ( nextSeed, nextRunners ) =
-                    List.foldl (distributeSeeds runs) ( startingSeed, [] ) tests
-            in
-                ( nextSeed, [ Batch (runners ++ nextRunners) ] )
+            List.foldl (batchDistribute runs) (emptyDistribution seed) tests
+
+
+batchDistribute : Int -> Test -> Distribution -> Distribution
+batchDistribute runs test prev =
+    let
+        next =
+            distributeSeeds runs prev.seed test
+    in
+        { seed = next.seed
+        , all = prev.all ++ next.all
+        , only = prev.only ++ next.only
+        , skipped = prev.skipped ++ next.skipped
+        }
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).

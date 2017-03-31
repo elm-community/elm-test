@@ -1,4 +1,4 @@
-module Test.Internal exposing (Test(..), failNow, filter, duplicatedName, blankDescriptionFailure)
+module Test.Internal exposing (Test(..), failNow, duplicatedName, blankDescriptionFailure)
 
 import Random.Pcg as Random exposing (Generator)
 import Test.Expectation exposing (Expectation(..))
@@ -8,6 +8,8 @@ import Set exposing (Set)
 type Test
     = Test (Random.Seed -> Int -> List Expectation)
     | Labeled String Test
+    | Skipped Test
+    | Only Test
     | Batch (List Test)
 
 
@@ -27,31 +29,6 @@ blankDescriptionFailure =
         }
 
 
-filter : (String -> Bool) -> Test -> Test
-filter =
-    filterHelp False
-
-
-filterHelp : Bool -> (String -> Bool) -> Test -> Test
-filterHelp lastCheckPassed isKeepable test =
-    case test of
-        Test _ ->
-            if lastCheckPassed then
-                test
-            else
-                Batch []
-
-        Labeled desc labeledTest ->
-            labeledTest
-                |> filterHelp (isKeepable desc) isKeepable
-                |> Labeled desc
-
-        Batch tests ->
-            tests
-                |> List.map (filterHelp lastCheckPassed isKeepable)
-                |> Batch
-
-
 duplicatedName : List Test -> Result String (Set String)
 duplicatedName =
     let
@@ -66,6 +43,12 @@ duplicatedName =
 
                 Test _ ->
                     []
+
+                Skipped subTest ->
+                    names subTest
+
+                Only subTest ->
+                    names subTest
 
         insertOrFail : String -> Result String (Set String) -> Result String (Set String)
         insertOrFail newName =

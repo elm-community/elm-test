@@ -1,4 +1,4 @@
-module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (Test, FuzzOptions, describe, test, concat, todo, skip, only, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
 
 {-| A module containing functions for creating and managing tests.
 
@@ -6,7 +6,7 @@ module Test exposing (Test, FuzzOptions, describe, test, filter, concat, todo, f
 
 ## Organizing Tests
 
-@docs describe, concat, filter, todo
+@docs describe, concat, todo, skip, only
 
 ## Fuzz Testing
 
@@ -51,27 +51,6 @@ concat tests =
 
             Ok _ ->
                 Internal.Batch tests
-
-
-{-| Remove any test unless its description satisfies the given predicate
-function. Nested descriptions added with [`describe`](#describe) are not considered.
-
-    describe "String.reverse"
-        [ test "has no effect on a palindrome" testGoesHere
-        , test "reverses a known string" anotherTest
-        , fuzz string "restores the original string if you run it again" oneMore
-        ]
-            |> Test.filter (String.contains "original")
-
-    -- only runs the final test
-
-You can use this to focus on a specific test or two, silencing the failures of
-tests you don't want to work on yet, and then remove the call to `Test.filter`
-after you're done working on the tests.
--}
-filter : (String -> Bool) -> Test -> Test
-filter =
-    Internal.filter
 
 
 {-| Apply a description to a list of tests.
@@ -182,6 +161,80 @@ todo desc =
         }
 
 
+{-| Returns a [`Test`](#Test) that causes other tests to be skipped, and
+only runs the given one.
+
+Calls to `only` aren't meant to be committed to version control. Instead, use
+them when you want to focus on getting a particular subset of your tests to pass.
+If you use `only`, your entire test suite will fail, even if
+each of the individual tests pass. This is to help avoid accidentally
+committing a `only` to version control.
+
+If you you use `only` on multiple tests, only those tests will run. If you
+put a `only` inside another `only`, only the outermost `only`
+will affect which tests gets run.
+
+See also [`skip`](#skip). Note that `skip` takes precedence over `only`;
+if you use a `skip` inside an `only`, it will still get skipped, and if you use
+an `only` inside a `skip`, it will also get skipped.
+
+    describe "List"
+        [ only <| describe "reverse"
+            [ test "has no effect on an empty list" <|
+                \() ->
+                    List.reverse []
+                        |> Expect.equal []
+            , fuzz int "has no effect on a one-item list" <|
+                \num ->
+                     List.reverse [ num ]
+                        |> Expect.equal [ num ]
+            ]
+        , test "This will not get run, because of the `only` above!" <|
+            \() ->
+                List.length []
+                    |> Expect.equal 0
+        ]
+-}
+only : Test -> Test
+only =
+    Internal.Only
+
+
+{-| Returns a [`Test`](#Test) that gets skipped.
+
+Calls to `skip` aren't meant to be committed to version control. Instead, use
+it when you want to focus on getting a particular subset of your tests to
+pass. If you use `skip`, your entire test suite will fail, even if
+each of the individual tests pass. This is to help avoid accidentally
+committing a `skip` to version control.
+
+See also [`only`](#only). Note that `skip` takes precedence over `only`;
+if you use a `skip` inside an `only`, it will still get skipped, and if you use
+an `only` inside a `skip`, it will also get skipped.
+
+
+    describe "List"
+        [ skip <| describe "reverse"
+            [ test "has no effect on an empty list" <|
+                \() ->
+                    List.reverse []
+                        |> Expect.equal []
+            , fuzz int "has no effect on a one-item list" <|
+                \num ->
+                     List.reverse [ num ]
+                        |> Expect.equal [ num ]
+            ]
+        , test "This is the only test that will get run; the other was skipped!" <|
+            \() ->
+                List.length []
+                    |> Expect.equal 0
+        ]
+-}
+skip : Test -> Test
+skip =
+    Internal.Skipped
+
+
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
 API is designed so that it can accept more in the future.
 
@@ -244,6 +297,16 @@ fuzzWithHelp options test =
 
         Internal.Labeled label subTest ->
             Internal.Labeled label (fuzzWithHelp options subTest)
+
+        Internal.Skipped subTest ->
+            -- It's important to treat skipped tests exactly the same as normal,
+            -- until after seed distribution has completed.
+            fuzzWithHelp options subTest
+                |> Internal.Only
+
+        Internal.Only subTest ->
+            fuzzWithHelp options subTest
+                |> Internal.Only
 
         Internal.Batch tests ->
             tests

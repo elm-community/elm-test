@@ -8,15 +8,15 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 -}
 
 import Runner.Log
-import Html
+import Platform
 import Tests
 
 
 main : Program Never () msg
 main =
-    Html.beginnerProgram
-        { model = ()
-        , update = \_ _ -> ()
-        , view = \() -> Html.text "Check the console for useful output!"
+    Platform.program
+        { init = ( (), Cmd.none )
+        , update = \_ _ -> ( (), Cmd.none )
+        , subscriptions = \_ -> Sub.none
         }
         |> Runner.Log.run Tests.all
