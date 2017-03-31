@@ -10,7 +10,7 @@ import Expect
 import Helpers exposing (..)
 import ExpectWithinTests exposing (testExpectWithin)
 import FuzzerTests exposing (fuzzerTests)
-import Test.Runner.Tests
+import RunnerTests
 
 
 all : Test
@@ -21,7 +21,7 @@ all =
         , testTests
         , expectationTests
         , fuzzerTests
-        , Test.Runner.Tests.all
+        , RunnerTests.all
         ]
 
 

@@ -1,4 +1,4 @@
-module Test.Runner.Tests exposing (all)
+module RunnerTests exposing (all)
 
 import Expect
 import Fuzz exposing (..)
