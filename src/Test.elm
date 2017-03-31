@@ -161,24 +161,25 @@ todo desc =
         }
 
 
-{-| Returns a [`Test`](#Test) that skips all other tests and only runs the given one.
+{-| Returns a [`Test`](#Test) that causes other tests to be skipped, and
+only runs the given one.
 
-These tests aren't meant to be committed to version control. Instead, use them
-when you want to focus on getting a particular subset of your tests to pass.
-If you use `Test.only`, your entire test suite will fail, even if
+Calls to `only` aren't meant to be committed to version control. Instead, use
+them when you want to focus on getting a particular subset of your tests to pass.
+If you use `only`, your entire test suite will fail, even if
 each of the individual tests pass. This is to help avoid accidentally
-committing a `Test.only` to version control.
+committing a `only` to version control.
 
-If you you use `Test.only` on multiple tests, only those tests will run. If you
-put a `Test.only` inside another `Test.only`, only the outermost `Test.only`
+If you you use `only` on multiple tests, only those tests will run. If you
+put a `only` inside another `only`, only the outermost `only`
 will affect which tests gets run.
 
-See also [`Test.skip`](#skip). Note that `skip` takes precedence over `only`;
+See also [`skip`](#skip). Note that `skip` takes precedence over `only`;
 if you use a `skip` inside an `only`, it will still get skipped, and if you use
 an `only` inside a `skip`, it will also get skipped.
 
     describe "List"
-        [ Test.only <| describe "reverse"
+        [ only <| describe "reverse"
             [ test "has no effect on an empty list" <|
                 \() ->
                     List.reverse []
@@ -188,7 +189,7 @@ an `only` inside a `skip`, it will also get skipped.
                      List.reverse [ num ]
                         |> Expect.equal [ num ]
             ]
-        , test "This will not get run, because of the Test.only above!" <|
+        , test "This will not get run, because of the `only` above!" <|
             \() ->
                 List.length []
                     |> Expect.equal 0
@@ -201,19 +202,19 @@ only =
 
 {-| Returns a [`Test`](#Test) that gets skipped.
 
-These tests aren't meant to be committed to version control. Instead, use them
-when you want to focus on getting a particular subset of your tests to pass.
-If you use `Test.skip`, your entire test suite will fail, even if
+Calls to `skip` aren't meant to be committed to version control. Instead, use
+it when you want to focus on getting a particular subset of your tests to
+pass. If you use `skip`, your entire test suite will fail, even if
 each of the individual tests pass. This is to help avoid accidentally
-committing a `Test.skip` to version control.
+committing a `skip` to version control.
 
-See also [`Test.only`](#only). Note that `skip` takes precedence over `only`;
+See also [`only`](#only). Note that `skip` takes precedence over `only`;
 if you use a `skip` inside an `only`, it will still get skipped, and if you use
 an `only` inside a `skip`, it will also get skipped.
 
 
     describe "List"
-        [ Test.skip <| describe "reverse"
+        [ skip <| describe "reverse"
             [ test "has no effect on an empty list" <|
                 \() ->
                     List.reverse []
