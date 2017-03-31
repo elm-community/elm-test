@@ -1,4 +1,4 @@
-module Helpers exposing (passingTest, testStringLengthIsPreserved, expectToFail, testShrinking, randomSeedFuzzer, succeeded)
+module Helpers exposing (expectPass, testStringLengthIsPreserved, expectToFail, testShrinking, randomSeedFuzzer, succeeded)
 
 import Test exposing (Test)
 import Test.Expectation exposing (Expectation(..))
@@ -10,8 +10,8 @@ import Random.Pcg as Random
 import Shrink
 
 
-passingTest : a -> Expectation
-passingTest _ =
+expectPass : a -> Expectation
+expectPass _ =
     Expect.pass
 
 

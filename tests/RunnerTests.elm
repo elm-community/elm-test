@@ -5,6 +5,7 @@ import Fuzz exposing (..)
 import Test exposing (..)
 import Test.Runner exposing (SeededRunners(..))
 import Random.Pcg as Random
+import Helpers exposing (expectPass)
 
 
 all : Test
@@ -42,8 +43,7 @@ fromTest =
                         runners =
                             toSeededRunners <|
                                 describe "three tests"
-                                    [ test "passes" <|
-                                        \() -> Expect.pass
+                                    [ test "passes" expectPass
                                     , Test.only <|
                                         describe "two tests"
                                             [ test "fails" <|
@@ -68,8 +68,7 @@ fromTest =
                         runners =
                             toSeededRunners <|
                                 describe "three tests"
-                                    [ test "passes" <|
-                                        \() -> Expect.pass
+                                    [ test "passes" expectPass
                                     , Test.only <|
                                         describe "two tests"
                                             [ test "fails" <|
@@ -94,8 +93,7 @@ fromTest =
                         runners =
                             toSeededRunners <|
                                 describe "three tests"
-                                    [ test "passes" <|
-                                        \() -> Expect.pass
+                                    [ test "passes" expectPass
                                     , Test.skip <|
                                         describe "two tests"
                                             [ test "fails" <|
@@ -116,7 +114,7 @@ fromTest =
                                 Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "a test that uses only is an Only summary" <|
                 \() ->
-                    case toSeededRunners (Test.only <| test "passes" (\() -> Expect.pass)) of
+                    case toSeededRunners (Test.only <| test "passes" expectPass) of
                         Only runners ->
                             runners
                                 |> List.length
@@ -130,8 +128,7 @@ fromTest =
                         runners =
                             toSeededRunners <|
                                 describe "three tests"
-                                    [ test "passes" <|
-                                        \() -> Expect.pass
+                                    [ test "passes" expectPass
                                     , Test.skip <|
                                         describe "two tests"
                                             [ test "fails" <|
@@ -156,8 +153,7 @@ fromTest =
                         runners =
                             toSeededRunners <|
                                 describe "two tests"
-                                    [ test "passes" <|
-                                        \() -> Expect.pass
+                                    [ test "passes" expectPass
                                     , Test.skip <|
                                         test "fails" <|
                                             \() -> Expect.fail "failed on purpose"
@@ -173,7 +169,7 @@ fromTest =
                                 Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "when all tests are skipped, we get an empty Skipping summary" <|
                 \() ->
-                    case toSeededRunners (Test.skip <| test "passes" (\() -> Expect.pass)) of
+                    case toSeededRunners (Test.skip <| test "passes" expectPass) of
                         Skipping runners ->
                             runners
                                 |> List.length
@@ -183,7 +179,7 @@ fromTest =
                             Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "a test that does not use only or skip is a Plain summary" <|
                 \() ->
-                    case toSeededRunners (test "passes" (\() -> Expect.pass)) of
+                    case toSeededRunners (test "passes" expectPass) of
                         Plain runners ->
                             runners
                                 |> List.length
@@ -197,4 +193,4 @@ fromTest =
 
 passing : Test
 passing =
-    test "A passing test" (\() -> Expect.pass)
+    test "A passing test" expectPass

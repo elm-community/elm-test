@@ -99,17 +99,17 @@ testTests =
     describe "functions that create tests"
         [ describe "describe"
             [ expectToFail <| describe "fails with empty list" []
-            , expectToFail <| describe "" [ test "describe with empty description fail" <| passingTest ]
+            , expectToFail <| describe "" [ test "describe with empty description fail" expectPass ]
             ]
         , describe "test"
-            [ expectToFail <| test "" passingTest
+            [ expectToFail <| test "" expectPass
             ]
         , describe "fuzz"
-            [ expectToFail <| fuzz Fuzz.bool "" passingTest
+            [ expectToFail <| fuzz Fuzz.bool "" expectPass
             ]
         , describe "fuzzWith"
-            [ expectToFail <| fuzzWith { runs = 0 } Fuzz.bool "nonpositive" passingTest
-            , expectToFail <| fuzzWith { runs = 1 } Fuzz.bool "" passingTest
+            [ expectToFail <| fuzzWith { runs = 0 } Fuzz.bool "nonpositive" expectPass
+            , expectToFail <| fuzzWith { runs = 1 } Fuzz.bool "" expectPass
             ]
         , describe "Test.todo"
             [ expectToFail <| todo "a TODO test fails"
@@ -133,43 +133,43 @@ identicalNamesAreRejectedTests =
     describe "Identically-named sibling and parent/child tests fail"
         [ expectToFail <|
             describe "a describe with two identically named children fails"
-                [ test "foo" passingTest
-                , test "foo" passingTest
+                [ test "foo" expectPass
+                , test "foo" expectPass
                 ]
         , expectToFail <|
             describe "a describe with the same name as a child test fails"
-                [ test "a describe with the same name as a child test fails" passingTest
+                [ test "a describe with the same name as a child test fails" expectPass
                 ]
         , expectToFail <|
             describe "a describe with the same name as a child describe fails"
                 [ describe "a describe with the same name as a child describe fails"
-                    [ test "a test" passingTest ]
+                    [ test "a test" expectPass ]
                 ]
         , expectToFail <|
             Test.concat
                 [ describe "a describe with the same name as a sibling describe fails"
-                    [ test "a test" passingTest ]
+                    [ test "a test" expectPass ]
                 , describe "a describe with the same name as a sibling describe fails"
-                    [ test "another test" passingTest ]
+                    [ test "another test" expectPass ]
                 ]
         , expectToFail <|
             Test.concat
                 [ Test.concat
                     [ describe "a describe with the same name as a de facto sibling describe fails"
-                        [ test "a test" passingTest ]
+                        [ test "a test" expectPass ]
                     ]
                 , describe "a describe with the same name as a de facto sibling describe fails"
-                    [ test "another test" passingTest ]
+                    [ test "another test" expectPass ]
                 ]
         , expectToFail <|
             Test.concat
                 [ Test.concat
                     [ describe "a describe with the same name as a de facto sibling describe fails"
-                        [ test "a test" passingTest ]
+                        [ test "a test" expectPass ]
                     ]
                 , Test.concat
                     [ describe "a describe with the same name as a de facto sibling describe fails"
-                        [ test "another test" passingTest ]
+                        [ test "another test" expectPass ]
                     ]
                 ]
         ]
