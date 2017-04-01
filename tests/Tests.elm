@@ -29,7 +29,7 @@ all =
 
 readmeExample : Test
 readmeExample =
-    describe "the String module"
+    describe "The String module"
         [ describe "String.reverse"
             [ test "has no effect on a palindrome" <|
                 \() ->
@@ -43,18 +43,6 @@ readmeExample =
                     "ABCDEFG"
                         |> String.reverse
                         |> Expect.equal "GFEDCBA"
-            , test "equal lists" <|
-                \() ->
-                    [ 1, 2, 3 ]
-                        |> Expect.equalLists [ 1, 2, 3 ]
-            , test "equal dicts" <|
-                \() ->
-                    (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
-                        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
-            , test "equal sets" <|
-                \() ->
-                    (Set.fromList [ 1, 2, 3 ])
-                        |> Expect.equalSets (Set.fromList [ 1, 2, 3 ])
             , fuzz string "restores the original string if you run it again" <|
                 \randomlyGeneratedString ->
                     randomlyGeneratedString
@@ -98,11 +86,12 @@ regressions =
             "fuzz tests run 100 times"
             (Expect.notEqual 5)
             |> expectToFail
-          {- If fuzz tests actually run 100 times, then asserting that no number
-             in 1..8 equals 5 fails with 0.999998 probability. If they only run
-             once, or stop after a duplicate due to #127, then it's much more
-             likely (but not guaranteed) that the 5 won't turn up. See #128.
-          -}
+
+        {- If fuzz tests actually run 100 times, then asserting that no number
+           in 1..8 equals 5 fails with 0.999998 probability. If they only run
+           once, or stop after a duplicate due to #127, then it's much more
+           likely (but not guaranteed) that the 5 won't turn up. See #128.
+        -}
         ]
 
 
