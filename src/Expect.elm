@@ -23,38 +23,45 @@ module Expect
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
 
+
 ## Quick Reference
 
-* [`equal`](#equal) `(arg2 == arg1)`
-* [`notEqual`](#notEqual) `(arg2 /= arg1)`
-* [`lessThan`](#lessThan) `(arg2 < arg1)`
-* [`atMost`](#atMost) `(arg2 <= arg1)`
-* [`greaterThan`](#greaterThan) `(arg2 > arg1)`
-* [`atLeast`](#atLeast) `(arg2 >= arg1)`
-* [`true`](#true) `(arg == True)`
-* [`false`](#false) `(arg == False)`
-* [`within`](#within) `(float equality)`
-* [`notWithin`](#notWithin) `(float inequality)`
+  - [`equal`](#equal) `(arg2 == arg1)`
+  - [`notEqual`](#notEqual) `(arg2 /= arg1)`
+  - [`lessThan`](#lessThan) `(arg2 < arg1)`
+  - [`atMost`](#atMost) `(arg2 <= arg1)`
+  - [`greaterThan`](#greaterThan) `(arg2 > arg1)`
+  - [`atLeast`](#atLeast) `(arg2 >= arg1)`
+  - [`true`](#true) `(arg == True)`
+  - [`false`](#false) `(arg == False)`
+  - [`within`](#within) `(float equality)`
+  - [`notWithin`](#notWithin) `(float inequality)`
+
 
 ## Basic Expectations
 
 @docs Expectation, equal, notEqual, all
 
+
 ## Comparisons
 
 @docs lessThan, atMost, greaterThan, atLeast, within, notWithin
+
 
 ## Booleans
 
 @docs true, false
 
+
 ## Collections
 
 @docs err, equalLists, equalDicts, equalSets
 
+
 ## Customizing
 
 @docs pass, fail, onFail
+
 -}
 
 import Test.Expectation
@@ -92,6 +99,7 @@ which argument is which:
     [ "Betty Botter", "bought", "some", "butter" ]
 
     -}
+
 -}
 equal : a -> a -> Expectation
 equal =
@@ -118,6 +126,7 @@ equal =
     100
 
     -}
+
 -}
 notEqual : a -> a -> Expectation
 notEqual =
@@ -147,6 +156,7 @@ which argument is which:
     -1
 
     -}
+
 -}
 lessThan : comparable -> comparable -> Expectation
 lessThan =
@@ -175,6 +185,7 @@ which argument is which:
     -3
 
     -}
+
 -}
 atMost : comparable -> comparable -> Expectation
 atMost =
@@ -203,6 +214,7 @@ which argument is which:
     1
 
     -}
+
 -}
 greaterThan : comparable -> comparable -> Expectation
 greaterThan =
@@ -231,6 +243,7 @@ which argument is which:
     3
 
     -}
+
 -}
 atLeast : comparable -> comparable -> Expectation
 atLeast =
@@ -247,7 +260,6 @@ tolerance.
 
     -- So instead write this test, which passes
     0.1 + 0.2 |> Expect.within 0.000000001 0.3
-
 
 Failures resemble code written in pipeline style, so you can tell
 which argument is which:
@@ -351,6 +363,7 @@ which argument is which:
     Expected the list to be empty.
 
     -}
+
 -}
 true : String -> Bool -> Expectation
 true message bool =
@@ -378,6 +391,7 @@ which argument is which:
     Expected the list not to be empty.
 
     -}
+
 -}
 false : String -> Bool -> Expectation
 false message bool =
@@ -413,6 +427,7 @@ any `Err`.
     Err _
 
     -}
+
 -}
 err : Result a b -> Expectation
 err result =
@@ -452,6 +467,7 @@ differed at or which list was longer:
     [1,2,5]
 
     -}
+
 -}
 equalLists : List a -> List a -> Expectation
 equalLists expected actual =
@@ -526,6 +542,7 @@ or added to each dict:
     Dict.fromList [(1,"one"),(2,"two"),(3,"three")]
 
     -}
+
 -}
 equalDicts : Dict comparable a -> Dict comparable a -> Expectation
 equalDicts expected actual =
@@ -573,6 +590,7 @@ or added to each set:
     Set.fromList [1,2,5]
 
     -}
+
 -}
 equalSets : Set comparable -> Set comparable -> Expectation
 equalSets expected actual =
@@ -606,6 +624,7 @@ equalSets expected actual =
 
                 Err err ->
                     Expect.fail err
+
 -}
 pass : Expectation
 pass =
@@ -627,6 +646,7 @@ pass =
 
                 Err err ->
                     Expect.fail err
+
 -}
 fail : String -> Expectation
 fail str =
@@ -638,6 +658,7 @@ fail str =
     "something"
         |> Expect.equal "something else"
         |> Expect.onFail "thought those two strings would be the same"
+
 -}
 onFail : String -> Expectation -> Expectation
 onFail str expectation =
@@ -652,14 +673,17 @@ onFail str expectation =
 {-| Passes if each of the given functions passes when applied to the subject.
 **NOTE:** Passing an empty list is assumed to be a mistake, so `Expect.all []`
 will always return a failed expectation no matter what else it is passed.
+
     Expect.all
         [ Expect.greaterThan -2
         , Expect.lessThan 5
         ]
         (List.length [])
     -- Passes because (0 > -2) is True and (0 < 5) is also True
+
 Failures resemble code written in pipeline style, so you can tell
 which argument is which:
+
     -- Fails because (0 < -10) is False
     List.length []
         |> Expect.all
@@ -674,6 +698,7 @@ which argument is which:
     ╵
     -10
     -}
+
 -}
 all : List (subject -> Expectation) -> subject -> Expectation
 all list query =

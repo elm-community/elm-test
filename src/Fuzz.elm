@@ -11,17 +11,25 @@ into more minimal examples, some of which might also cause the tests to fail. In
 this way, fuzzers can usually find the smallest or simplest input that
 reproduces a bug.
 
+
 ## Common Fuzzers
+
 @docs bool, int, intRange, float, floatRange, percentage, string, maybe, result, list, array
 
+
 ## Working with Fuzzers
+
 @docs Fuzzer, constant, map, map2, map3,map4, map5, andMap, andThen, frequency, conditional
 
+
 ## Tuple Fuzzers
+
 Instead of using a tuple, consider using `fuzzN`.
 @docs tuple, tuple3, tuple4, tuple5
 
+
 ## Uncommon Fuzzers
+
 @docs custom, char, unit, order, invalid
 
 -}
@@ -72,23 +80,27 @@ Here is an example for a custom union type, assuming there is already a `genName
     question =
         let
             generator =
-                Random.bool |> Random.andThen (\b ->
-                    if b then
-                        Random.map Name genName
-                    else
-                        Random.map Age (Random.int 0 120)
-                 )
+                Random.bool
+                    |> Random.andThen
+                        (\b ->
+                            if b then
+                                Random.map Name genName
+                            else
+                                Random.map Age (Random.int 0 120)
+                        )
 
             shrinker question =
                 case question of
                     Name n ->
                         Shrink.string n |> Shrink.map Name
+
                     Age i ->
                         Shrink.int i |> Shrink.map Age
         in
             Fuzz.custom generator shrinker
 
 It is not possible to extract the generator and shrinker from an existing fuzzer.
+
 -}
 custom : Generator a -> Shrinker a -> Fuzzer a
 custom generator shrinker =
@@ -146,6 +158,7 @@ order =
 
 It's possible for this fuzzer to generate any 32-bit integer, but it favors
 numbers between -50 and 50 and especially zero.
+
 -}
 int : Fuzzer Int
 int =
@@ -167,6 +180,7 @@ inclusive. Shrunken values will also be within the range.
 Remember that [Random.maxInt](http://package.elm-lang.org/packages/elm-lang/core/latest/Random#maxInt)
 is the maximum possible int value, so you can do `intRange x Random.maxInt` to get all
 the ints x or bigger.
+
 -}
 intRange : Int -> Int -> Fuzzer Int
 intRange lo hi =
@@ -185,9 +199,9 @@ intRange lo hi =
 
 {-| A fuzzer for float values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
 
-
 It's possible for this fuzzer to generate any other floating-point value, but it
 favors numbers between -50 and 50, numbers between -1 and 1, and especially zero.
+
 -}
 float : Fuzzer Float
 float =
@@ -254,6 +268,7 @@ charGenerator =
 {-| Generates random printable ASCII strings of up to 1000 characters.
 
 Shorter strings are more common, especially the empty string.
+
 -}
 string : Fuzzer String
 string =
@@ -688,6 +703,7 @@ The argument order is meant to accommodate chaining:
         |> andMap aThirdFuzzer
 
 Note that shrinking may be better using mapN.
+
 -}
 andMap : Fuzzer a -> Fuzzer (a -> b) -> Fuzzer b
 andMap =
@@ -766,6 +782,7 @@ acceptable or not, and finally the fuzzer itself.
 
 A good number of max retires is ten. A large number of retries might
 blow the stack.
+
 -}
 conditional : { retries : Int, fallback : a -> a, condition : a -> Bool } -> Fuzzer a -> Fuzzer a
 conditional { retries, fallback, condition } fuzzer =
@@ -797,16 +814,18 @@ you could do this:
 There are a few circumstances in which this function will return an invalid
 fuzzer, which causes it to fail any test that uses it:
 
-* If you provide an empty list of frequencies
-* If any of the weights are less than 0
-* If the weights sum to 0
+  - If you provide an empty list of frequencies
+  - If any of the weights are less than 0
+  - If the weights sum to 0
 
 Be careful recursively using this fuzzer in its arguments. Often using `map`
 is a better way to do what you want. If you are fuzzing a tree-like data
 structure, you should include a depth limit so to avoid infinite recursion, like
 so:
 
-    type Tree = Leaf | Branch Tree Tree
+    type Tree
+        = Leaf
+        | Branch Tree Tree
 
     tree : Int -> Fuzzer Tree
     tree i =
@@ -814,9 +833,10 @@ so:
             Fuzz.constant Leaf
         else
             Fuzz.frequency
-                [(1, Fuzz.constant Leaf)
-                ,(2, Fuzz.map2 Branch (tree (i-1)) (tree (i-1)) )
+                [ ( 1, Fuzz.constant Leaf )
+                , ( 2, Fuzz.map2 Branch (tree (i - 1)) (tree (i - 1)) )
                 ]
+
 -}
 frequency : List ( Float, Fuzzer a ) -> Fuzzer a
 frequency list =

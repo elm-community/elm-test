@@ -16,22 +16,28 @@ display tests. A typical user will use an existing runner library for Node or
 the browser, which is implemented using this interface. A list of these runners
 can be found in the `README`.
 
+
 ## Runner
 
 @docs Runner, SeededRunners, fromTest
+
 
 ## Expectations
 
 @docs getFailure, isTodo
 
+
 ## Formatting
 
 @docs formatLabels
 
+
 ## Fuzzers
+
 These functions give you the ability to run fuzzers separate of running fuzz tests.
 
 @docs Shrinkable, fuzz, shrink
+
 -}
 
 import Test exposing (Test)
@@ -65,8 +71,9 @@ type alias Runner =
 
 {-| A structured test runner, incorporating:
 
-* The expectations to run
-* The hierarchy of description strings that describe the results
+  - The expectations to run
+  - The hierarchy of description strings that describe the results
+
 -}
 type RunnableTree
     = Runnable Runnable
@@ -81,6 +88,7 @@ as an initial `Random.Pcg.Seed`. `100` is a good run count. To obtain a good ran
 random 32-bit integer to `Random.Pcg.initialSeed`. You can obtain such an integer by running
 `Math.floor(Math.random()*0xFFFFFFFF)` in Node. It's typically fine to hard-code this value into
 your Elm code; it's easy and makes your tests reproducible.
+
 -}
 fromTest : Int -> Random.Pcg.Seed -> Test -> SeededRunners
 fromTest runs seed test =
@@ -178,27 +186,28 @@ emptyDistribution seed =
 {-| This breaks down a test into individual Runners, while assigning different
 random number seeds to them. Along the way it also does a few other things:
 
-1. Collect any tests created with `Test.only` so later we can run only those.
-2. Collect any tests created with `Test.todo` so later we can fail the run.
-3. Validate that the run count is at least 1.
+1.  Collect any tests created with `Test.only` so later we can run only those.
+2.  Collect any tests created with `Test.todo` so later we can fail the run.
+3.  Validate that the run count is at least 1.
 
 Some design notes:
 
-1. `only` tests and `skip` tests do not affect seed distribution. This is
-important for the case where a user runs tests, sees one failure, and decides
-to isolate it by using both `only` and providing the same seed as before. If
-`only` changes seed distribution, then that test result might not reproduce!
-This would be very frustrating, as it would mean you could reproduce the
-failure when not using `only`, but it magically disappeared as soon as you
-tried to isolate it. The same logic applies to `skip`.
+1.  `only` tests and `skip` tests do not affect seed distribution. This is
+    important for the case where a user runs tests, sees one failure, and decides
+    to isolate it by using both `only` and providing the same seed as before. If
+    `only` changes seed distribution, then that test result might not reproduce!
+    This would be very frustrating, as it would mean you could reproduce the
+    failure when not using `only`, but it magically disappeared as soon as you
+    tried to isolate it. The same logic applies to `skip`.
 
-2. Theoretically this could become tail-recursive. However, the Labeled and Batch
-cases would presumably become very gnarly, and it's unclear whether there would
-be a performance benefit or penalty in the end. If some brave soul wants to
-attempt it for kicks, beware that this is not a performance optimization for
-the faint of heart. Practically speaking, it seems unlikely to be worthwhile
-unless somehow people start seeing stack overflows during seed distribution -
-which would presumably require some absurdly deeply nested `describe` calls.
+2.  Theoretically this could become tail-recursive. However, the Labeled and Batch
+    cases would presumably become very gnarly, and it's unclear whether there would
+    be a performance benefit or penalty in the end. If some brave soul wants to
+    attempt it for kicks, beware that this is not a performance optimization for
+    the faint of heart. Practically speaking, it seems unlikely to be worthwhile
+    unless somehow people start seeing stack overflows during seed distribution -
+    which would presumably require some absurdly deeply nested `describe` calls.
+
 -}
 distributeSeeds : Int -> Random.Pcg.Seed -> Test -> Distribution
 distributeSeeds runs seed test =
@@ -277,6 +286,7 @@ For example, if a fuzz test generates random integers, this might return
 
     getFailure (Expect.pass)
     -- Nothing
+
 -}
 getFailure : Expectation -> Maybe { given : Maybe String, message : String }
 getFailure expectation =
@@ -311,21 +321,23 @@ The HTML, Node, String, and Log runners all use this.
 
 What it does:
 
-* drop any labels that are empty strings
-* format the first label differently from the others
-* reverse the resulting list
+  - drop any labels that are empty strings
+  - format the first label differently from the others
+  - reverse the resulting list
+
+Example:
 
     [ "the actual test that failed"
     , "nested description failure"
     , "top-level description failure"
     ]
-        |> formatLabels ((++) "↓ ") ((++) "✗ ")
+    |> formatLabels ((++) "↓ ") ((++) "✗ ")
 
     {-
-        [ "↓ top-level description failure"
-        , "↓ nested description failure"
-        , "✗ the actual test that failed"
-        ]
+    [ "↓ top-level description failure"
+    , "↓ nested description failure"
+    , "✗ the actual test that failed"
+    ]
     -}
 
 -}

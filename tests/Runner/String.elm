@@ -1,6 +1,6 @@
 module Runner.String exposing (Summary, run, runWithOptions)
 
-{-| # String Runner
+{-| String Runner
 
 Run a test and present its results as a nicely-formatted String, along with
 a count of how many tests passed and failed.
@@ -8,6 +8,7 @@ a count of how many tests passed and failed.
 Note that this always uses an initial seed of 902101337, since it can't do effects.
 
 @docs Summary, run, runWithOptions
+
 -}
 
 import Expect exposing (Expectation)
@@ -104,6 +105,7 @@ indentLines str =
 tests that failed.
 
 Fuzz tests use a default run count of 100, and a fixed initial seed.
+
 -}
 run : Test -> Summary
 run =

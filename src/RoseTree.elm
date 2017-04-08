@@ -4,6 +4,7 @@ module RoseTree exposing (..)
 
 This implementation is private to elm-test and has non-essential functions removed.
 If you need a complete RoseTree implementation, one can be found on elm-package.
+
 -}
 
 import Lazy.List as LazyList exposing (LazyList, (:::), (+++))

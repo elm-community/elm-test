@@ -4,13 +4,16 @@ module Test exposing (Test, FuzzOptions, describe, test, concat, todo, skip, onl
 
 @docs Test, test
 
+
 ## Organizing Tests
 
 @docs describe, concat, todo, skip, only
 
+
 ## Fuzz Testing
 
 @docs fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, FuzzOptions
+
 -}
 
 import Set
@@ -25,6 +28,7 @@ import Fuzz exposing (Fuzzer)
 or more [`Expectation`](../Expect#Expectation)s.
 
 See [`test`](#test) and [`fuzz`](#fuzz) for some ways to create a `Test`.
+
 -}
 type alias Test =
     Internal.Test
@@ -33,6 +37,7 @@ type alias Test =
 {-| Run each of the given tests.
 
     concat [ testDecoder, testSorting ]
+
 -}
 concat : List Test -> Test
 concat tests =
@@ -75,6 +80,7 @@ concat tests =
 
 Passing an empty list will result in a failing test, because you either made a
 mistake or are creating a placeholder.
+
 -}
 describe : String -> List Test -> Test
 describe untrimmedDesc tests =
@@ -121,6 +127,7 @@ describe untrimmedDesc tests =
         \() ->
             List.length []
                 |> Expect.equal 0
+
 -}
 test : String -> (() -> Expectation) -> Test
 test untrimmedDesc thunk =
@@ -152,6 +159,7 @@ because your suite will fail.
 
 This functionality is similar to "pending" tests in other frameworks, except
 that a TODO test is considered failing but a pending test often is not.
+
 -}
 todo : String -> Test
 todo desc =
@@ -194,6 +202,7 @@ an `only` inside a `skip`, it will also get skipped.
                 List.length []
                     |> Expect.equal 0
         ]
+
 -}
 only : Test -> Test
 only =
@@ -212,7 +221,6 @@ See also [`only`](#only). Note that `skip` takes precedence over `only`;
 if you use a `skip` inside an `only`, it will still get skipped, and if you use
 an `only` inside a `skip`, it will also get skipped.
 
-
     describe "List"
         [ skip <| describe "reverse"
             [ test "has no effect on an empty list" <|
@@ -229,6 +237,7 @@ an `only` inside a `skip`, it will also get skipped.
                 List.length []
                     |> Expect.equal 0
         ]
+
 -}
 skip : Test -> Test
 skip =
@@ -237,6 +246,7 @@ skip =
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
 API is designed so that it can accept more in the future.
+
 
 ### `runs`
 
@@ -255,6 +265,7 @@ The number of times to run each fuzz test. (Default is 100.)
             fuzzList
                 |> List.length
                 |> Expect.atLeast 0
+
 -}
 type alias FuzzOptions =
     { runs : Int }
@@ -277,6 +288,7 @@ for example like this:
             \(nums, target) ->
                 List.member target (List.reverse nums)
                     |> Expect.equal (List.member target nums)
+
 -}
 fuzzWith : FuzzOptions -> Fuzzer a -> String -> (a -> Expectation) -> Test
 fuzzWith options fuzzer desc getTest =
@@ -336,6 +348,7 @@ You may find them elsewhere called [property-based tests](http://blog.jessitron.
             fuzzList
                 |> List.length
                 |> Expect.atLeast 0
+
 -}
 fuzz :
     Fuzzer a
@@ -360,6 +373,7 @@ See [`fuzzWith`](#fuzzWith) for an example of writing this in tuple style.
         \nums target ->
             List.member target (List.reverse nums)
                 |> Expect.equal (List.member target nums)
+
 -}
 fuzz2 :
     Fuzzer a
@@ -378,6 +392,7 @@ fuzz2 fuzzA fuzzB desc =
 {-| Run a [fuzz test](#fuzz) using three random inputs.
 
 This is a convenience function that lets you skip calling [`Fuzz.tuple3`](Fuzz#tuple3).
+
 -}
 fuzz3 :
     Fuzzer a
@@ -397,6 +412,7 @@ fuzz3 fuzzA fuzzB fuzzC desc =
 {-| Run a [fuzz test](#fuzz) using four random inputs.
 
 This is a convenience function that lets you skip calling [`Fuzz.tuple4`](Fuzz#tuple4).
+
 -}
 fuzz4 :
     Fuzzer a
@@ -417,6 +433,7 @@ fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
 {-| Run a [fuzz test](#fuzz) using five random inputs.
 
 This is a convenience function that lets you skip calling [`Fuzz.tuple5`](Fuzz#tuple5).
+
 -}
 fuzz5 :
     Fuzzer a

@@ -1,6 +1,6 @@
 module Runner.Log exposing (run, runWithOptions)
 
-{-| # Log Runner
+{-| Log Runner
 
 Runs a test and outputs its results using `Debug.log`, then calls `Debug.crash`
 if there are any failures.
@@ -15,6 +15,7 @@ This will log the test results to the console, then exit with exit code 0
 if the tests all passed, and 1 if any failed.
 
 @docs run, runWithOptions
+
 -}
 
 import Random.Pcg as Random
