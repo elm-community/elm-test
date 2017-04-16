@@ -75,15 +75,15 @@ Here are some examples of running tests on CI servers:
 
 ## Strategies for effective testing
 
-* [Make impossible states unrepresentable](https://www.youtube.com/watch?v=IcgmSRJHu_8) so that you don't have to test that they can't occur.
-* When doing TDD, treat compiler errors as a red test. So feel free to write the test you wish you had even if it means calling functions that don't exist yet!
-* If your API is difficult for you to test, it will be difficult for someone else to use.
-* How do you know when to stop testing? This is an engineering tradeoff without a perfect answer. If you don't feel confident in the correctness of your code, write more tests. If you feel you are wasting time testing better spent writing your application, stop writing tests for now.
-* Prefer fuzz tests to unit tests, when possible. But don't be afraid to supplement them with unit tests for tricky cases and regressions.
-* For simple functions, it's okay to copy the implementation to the test; this is a useful regression check. But if the implementation isn't obviously right, try to write tests that don't duplicate the suspect logic. The great thing about fuzz tests is that you don't have to arrive at the exact same value as the code under test, just state something that will be true of that value.
-* Tests should be small and focused: call the code under test and set an expectation about the result. Setup code should be moved into reusable functions, or custom fuzzers. For example, a test to remove an element from a data structure should be given a nonempty data structure; it should not have to create one itself.
-* If you're writing a library that wraps an existing standard or protocol, use examples from the specification or docs as unit tests. Anything in your README should be backed by a unit test (sadly there's no easy way to keep them in sync).
-* Not even your test modules can import unexposed functions, so test them only as the exposed interface uses them. Don't expose a function just to test it. Every exposed function should have tests. (If you practice TDD, this happens automatically!)
+1. [Make impossible states unrepresentable](https://www.youtube.com/watch?v=IcgmSRJHu_8) so that you don't have to test that they can't occur.
+1. When doing TDD, treat compiler errors as a red test. So feel free to write the test you wish you had even if it means calling functions that don't exist yet!
+1. If your API is difficult for you to test, it will be difficult for someone else to use.
+1. How do you know when to stop testing? This is an engineering tradeoff without a perfect answer. If you don't feel confident in the correctness of your code, write more tests. If you feel you are wasting time testing better spent writing your application, stop writing tests for now.
+1. Prefer fuzz tests to unit tests, when possible. But don't be afraid to supplement them with unit tests for tricky cases and regressions.
+1. For simple functions, it's okay to copy the implementation to the test; this is a useful regression check. But if the implementation isn't obviously right, try to write tests that don't duplicate the suspect logic. The great thing about fuzz tests is that you don't have to arrive at the exact same value as the code under test, just state something that will be true of that value.
+1. Tests should be small and focused: call the code under test and set an expectation about the result. Setup code should be moved into reusable functions, or custom fuzzers. For example, a test to remove an element from a data structure should be given a nonempty data structure; it should not have to create one itself.
+1. If you're writing a library that wraps an existing standard or protocol, use examples from the specification or docs as unit tests. Anything in your README should be backed by a unit test (sadly there's no easy way to keep them in sync).
+1. Not even your test modules can import unexposed functions, so test them only as the exposed interface uses them. Don't expose a function just to test it. Every exposed function should have tests. (If you practice TDD, this happens automatically!)
 
 ### Application-specific techniques
 There are a few extra ideas that apply to testing webapps, instead of libraries:
