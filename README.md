@@ -142,7 +142,7 @@ This lets you use the latest test runners right now, and upgrade incrementally.
 ## Releases
 | Version | Notes |
 | ------- | ----- |
-| [**4.0.0**](https://github.com/elm-community/elm-test/tree/4.0.0) | Add `only`, `skip`, `todo`, `Expect.within`; change `Fuzz.frequency` to fail rather than crash on bad input, disallow tests with blank or duplicate descriptions.
+| [**4.0.0**](https://github.com/elm-community/elm-test/tree/4.0.0) | Add `only`, `skip`, `todo`; change `Fuzz.frequency` to fail rather than crash on bad input, disallow tests with blank or duplicate descriptions.
 | [**3.1.0**](https://github.com/elm-community/elm-test/tree/3.1.0) | Add `Expect.all`
 | [**3.0.0**](https://github.com/elm-community/elm-test/tree/3.0.0) | Update for Elm 0.18; switch the argument order of `Fuzz.andMap`.
 | [**2.1.0**](https://github.com/elm-community/elm-test/tree/2.1.0) | Switch to rose trees for `Fuzz.andThen`, other API additions.
