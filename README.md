@@ -93,7 +93,7 @@ wipSuite =
         ]
 ```
 
-If you run this example, or any suite that uses one of these three functions, it will result in a "yellow" test run. No tests failed, so it's not red, but you also didn't run your entire suite, so we can't mark it green either. You should **set your CI system to reject yellow test runs** so you don't accidentally commit a gutted test suite.
+If you run this example, or any suite that uses one of these three functions, it will result in an _incomplete_ test run. No tests failed, but you also didn't run your entire suite, so we can't call it a success either. Incomplete test runs are reported to CI systems as indistinguishable from failed test runs, to safeguard against accidentally committing a gutted test suite!
 
 ## Strategies for effective testing
 
