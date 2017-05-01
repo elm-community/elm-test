@@ -9,8 +9,6 @@ module Expect
         , lessThan
         , greaterThan
         , atLeast
-        , within
-        , notWithin
         , true
         , false
         , err
@@ -34,7 +32,6 @@ module Expect
   - [`atLeast`](#atLeast) `(arg2 >= arg1)`
   - [`true`](#true) `(arg == True)`
   - [`false`](#false) `(arg == False)`
-  - [`within`](#within) `(float equality)`
   - [`notWithin`](#notWithin) `(float inequality)`
 
 
@@ -45,7 +42,7 @@ module Expect
 
 ## Comparisons
 
-@docs lessThan, atMost, greaterThan, atLeast, within, notWithin
+@docs lessThan, atMost, greaterThan, atLeast
 
 
 ## Booleans
@@ -67,7 +64,6 @@ module Expect
 import Test.Expectation
 import Dict exposing (Dict)
 import Set exposing (Set)
-import Float
 
 
 {-| The result of a single test run: either a [`pass`](#pass) or a
@@ -248,101 +244,6 @@ which argument is which:
 atLeast : comparable -> comparable -> Expectation
 atLeast =
     compareWith "Expect.atLeast" (>=)
-
-
-{-| Passes if the second and third arguments are equal within a relative tolerance
-specified by the first argument. This is intended to avoid failing because of
-minor inaccuracies introduced by floating point arithmetic. Don't use a negative
-tolerance.
-
-    -- Fails because 0.1 + 0.2 == 0.30000000000000004 (0.1 is non-terminating in base 2)
-    0.1 + 0.2 |> Expect.equal 0.3
-
-    -- So instead write this test, which passes
-    0.1 + 0.2 |> Expect.within 0.000000001 0.3
-
-Failures resemble code written in pipeline style, so you can tell
-which argument is which:
-
-    -- Fails because 3.14 is not close enough to pi
-    3.14 |> Expect.within 0.0001 pi
-
-    {-
-
-    3.14
-    ╷
-    │ Expect.within 0.0001
-    ╵
-    3.141592653589793
-
-    -}
-
-This implementation uses relative tolerance from ±Infinity down to ±2^-1022 (≈±2e-308), and then progressively increases the tolerance down to ±2^-1070 (≈±2e-323), after which it considers all values to be equal to zero. You might encounter small anomalies around these constants, depending on the tolerance used.
-
--}
-within : Float -> Float -> Float -> Expectation
-within tolerance =
-    compareWith ("Expect.within " ++ toString tolerance)
-        (withinCompare tolerance)
-
-
-{-| Passes if (and only if) a call to `within` with the same arguments would have failed.
--}
-notWithin : Float -> Float -> Float -> Expectation
-notWithin tolerance =
-    compareWith ("Expect.notWithin " ++ toString tolerance)
-        (\a b -> not <| withinCompare tolerance a b)
-
-
-withinCompare : Float -> Float -> Float -> Bool
-withinCompare tolerance a b =
-    let
-        delta =
-            abs (a - b)
-
-        -- Avoid dividing by infinity; use the largest available non-inf value instead.
-        abSum =
-            min ((abs a + abs b) / 2.0) Float.maxAbsValue
-
-        -- The argument closer to and further from zero, respectively.
-        ( smallMag, largeMag ) =
-            if abs a < abs b || (abs a == abs b && a < b) then
-                ( a, b )
-            else
-                ( b, a )
-    in
-        if tolerance < 0.0 then
-            -- No value is that close to another value. Use a non-negative tolerance.
-            -- The pragmatic way would be to use the absolute of the tolerance, but that
-            -- would only help with the tests for this module itself; otherwise the tolerance
-            -- argument is almost always a constant literal.
-            False
-        else if tolerance == 0 then
-            -- No tolerance; they have to be exactly equal.
-            a == b
-        else if (a == 0 || b == 0) && (not (isNaN a) && not (isNaN b)) && tolerance >= 1 then
-            -- Tolerance is large enough; the non-zero value is considered close enough to zero, if it's a number.
-            True
-        else if a == b then
-            -- If they're *exactly* equal.
-            True
-        else if ((abs a < Float.minAbsValue * 2 ^ 4) && (abs b < Float.minAbsValue * 2 ^ 4)) || delta < Float.minAbsValue * 2 ^ 4 then
-            -- This is extremely close to the smallest absolute value representable in a float. Ignore the sign; these are equal.
-            True
-        else
-            -- Very close to zero; use signed relative tolerance weighted so that values closer to zero have a higher tolerance.
-            -- (floating point arithmetic loses precision below Float.minNormal)
-            let
-                precisionLossCorrectionFactor =
-                    1.0 + (Float.minAbsNormal - min (abs largeMag) Float.minAbsNormal) / Float.minAbsNormal
-
-                lowMagLimit =
-                    smallMag + -tolerance * (abs smallMag) * precisionLossCorrectionFactor
-
-                highMagLimit =
-                    smallMag + tolerance * (abs smallMag) * precisionLossCorrectionFactor
-            in
-                (lowMagLimit <= largeMag) && (largeMag <= highMagLimit)
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
