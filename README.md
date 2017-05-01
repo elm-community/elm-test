@@ -73,11 +73,33 @@ Here are some examples of running tests on CI servers:
 * [`travis.yml`](https://github.com/rtfeldman/elm-css/blob/master/.travis.yml)
 * [`appveyor.yml`](https://github.com/rtfeldman/elm-css/blob/master/appveyor.yml)
 
+### Not running tests
+
+During development, you'll often want to focus on a specific tests, silence a failing tests, or jot down many ideas for tests that you can't implement all at once. We've got you covered with `skip`, `only`, and `todo`:
+
+```elm
+wipSuite : Test
+wipSuite =
+    describe "skip, only, and todo"
+        [ only <| describe "Marking this test as `only` means no other tests will be run!"
+            [ test "This test will be run" <|
+                  \() -> 1 + 1 |> Expect.equal 2
+            , skip <| "This test will be skipped, even though it's in an only!" <|
+                  \() -> 2 + 3 |> Expect.equal 4
+            ]
+        , test "This test will be skipped because it has no only" <|
+            \() -> "left" |> Expect.equal "right"
+        , todo "Make sure all splines are reticulated"
+        ]
+```
+
+If you run this example, or any suite that uses one of these three functions, it will result in a "yellow" test run. No tests failed, so it's not red, but you also didn't run your entire suite, so we can't mark it green either. You should **set your CI system to reject yellow test runs** so you don't accidentally commit a gutted test suite.
+
 ## Strategies for effective testing
 
 1. [Make impossible states unrepresentable](https://www.youtube.com/watch?v=IcgmSRJHu_8) so that you don't have to test that they can't occur.
 1. When doing TDD, treat compiler errors as a red test. So feel free to write the test you wish you had even if it means calling functions that don't exist yet!
-1. If your API is difficult for you to test, it will be difficult for someone else to use.
+1. If your API is difficult for you to test, it will be difficult for someone else to use. You are your API's first client.
 1. How do you know when to stop testing? This is an engineering tradeoff without a perfect answer. If you don't feel confident in the correctness of your code, write more tests. If you feel you are wasting time testing better spent writing your application, stop writing tests for now.
 1. Prefer fuzz tests to unit tests, when possible. But don't be afraid to supplement them with unit tests for tricky cases and regressions.
 1. For simple functions, it's okay to copy the implementation to the test; this is a useful regression check. But if the implementation isn't obviously right, try to write tests that don't duplicate the suspect logic. The great thing about fuzz tests is that you don't have to arrive at the exact same value as the code under test, just state something that will be true of that value.
@@ -86,22 +108,31 @@ Here are some examples of running tests on CI servers:
 1. Not even your test modules can import unexposed functions, so test them only as the exposed interface uses them. Don't expose a function just to test it. Every exposed function should have tests. (If you practice TDD, this happens automatically!)
 
 ### Application-specific techniques
-There are a few extra ideas that apply to testing webapps, instead of libraries:
+There are a few extra ideas that apply to testing webapps and reusable view packages:
 
 * Avoid importing your `Main` module. Most of your code belongs in other modules, so import those instead.
 * Test your views using [elm-html-test](http://package.elm-lang.org/packages/eeue56/elm-html-test/latest).
+* To test effects, consider using [elm-testable](http://package.elm-lang.org/packages/rogeriochaves/elm-testable/latest).
 * There is currently no Elm solution for integration or end-to-end testing. Use your favorite PhantomJS or Selenium webdriver, such as Capybara.
-<!-- Not updated for 0.18!
-* To test effects, use [elm-testable](http://package.elm-lang.org/packages/avh4/elm-testable/latest).
--->
 
 ## Upgrading
+### From 3.1.0
+Make sure you grab the latest versions of the test runner that you are using:
+* `npm update -g elm-test`
+* `elm package install rtfeldman/html-test-runner`
+
+`Fuzz.frequency` now fails the test if the frequency is invalid, rather than return a `Result`. If you are using this function, you can remove your `Err` handling code. More likely you are using `Fuzz.frequencyOrCrash`, which you can replace with `Fuzz.frequency`.
+
+Instead of using `Test.filter` to avoid running tests, use `skip` and `only` (see above for documentation).
+
+We now forbid tests and suites to have descriptions that are blank, or that are identical across siblings or parents and children. If you get failures from this, rename your tests to be clearer about what they're testing.
+
 ### From 0.17
 You will need to delete `elm-stuff` and `tests/elm-stuff`.
 
 If you are using the Node runner, you will need to install the latest version (`npm update -g elm-test`) and pull down the new `Main.elm`: `curl -o tests/Main.elm https://raw.githubusercontent.com/rtfeldman/node-test-runner/master/templates/Main.elm`
 
-### From the old elm-test
+### From 1.x and elm-check
 [`legacy-elm-test`](http://package.elm-lang.org/packages/rtfeldman/legacy-elm-test/latest) provides a
 drop-in replacement for the `ElmTest 1.0` API, except implemented in terms of
 the current `elm-test`. It also includes support for `elm-check` tests.
@@ -111,7 +142,8 @@ This lets you use the latest test runners right now, and upgrade incrementally.
 ## Releases
 | Version | Notes |
 | ------- | ----- |
-| [**3.1.0**](https://github.com/elm-community/elm-test/tree/3.1.0) | Add Expect.all
+| [**4.0.0**](https://github.com/elm-community/elm-test/tree/4.0.0) | Add `only`, `skip`, `todo`; change `Fuzz.frequency` to fail rather than crash on bad input, disallow tests with blank or duplicate descriptions.
+| [**3.1.0**](https://github.com/elm-community/elm-test/tree/3.1.0) | Add `Expect.all`
 | [**3.0.0**](https://github.com/elm-community/elm-test/tree/3.0.0) | Update for Elm 0.18; switch the argument order of `Fuzz.andMap`.
 | [**2.1.0**](https://github.com/elm-community/elm-test/tree/2.1.0) | Switch to rose trees for `Fuzz.andThen`, other API additions.
 | [**2.0.0**](https://github.com/elm-community/elm-test/tree/2.0.0) | Scratch-rewrite to project-fuzzball

@@ -28,7 +28,7 @@ all =
 
 readmeExample : Test
 readmeExample =
-    describe "the String module"
+    describe "The String module"
         [ describe "String.reverse"
             [ test "has no effect on a palindrome" <|
                 \() ->
@@ -42,18 +42,6 @@ readmeExample =
                     "ABCDEFG"
                         |> String.reverse
                         |> Expect.equal "GFEDCBA"
-            , test "equal lists" <|
-                \() ->
-                    [ 1, 2, 3 ]
-                        |> Expect.equalLists [ 1, 2, 3 ]
-            , test "equal dicts" <|
-                \() ->
-                    (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
-                        |> Expect.equalDicts (Dict.fromList [ ( 1, "one" ), ( 2, "two" ) ])
-            , test "equal sets" <|
-                \() ->
-                    (Set.fromList [ 1, 2, 3 ])
-                        |> Expect.equalSets (Set.fromList [ 1, 2, 3 ])
             , fuzz string "restores the original string if you run it again" <|
                 \randomlyGeneratedString ->
                     randomlyGeneratedString
