@@ -18,6 +18,7 @@ module Test exposing (Test, FuzzOptions, describe, test, concat, todo, skip, onl
 
 import Set
 import Test.Internal as Internal
+import Test.Message
 import Test.Expectation
 import Test.Fuzz
 import Expect exposing (Expectation)
@@ -242,6 +243,143 @@ an `only` inside a `skip`, it will also get skipped.
 skip : Test -> Test
 skip =
     Internal.Skipped
+
+
+{-| Test an update function.
+
+    updateTest : Test
+    updateTest =
+        fuzz (list msgFuzzer) "hue, ripple, and noise are never negative" <|
+            testUpdate Page.update Page.initialModel <|
+                Expect.all
+                    [ .hue >> Expect.atLeast 0
+                    , .ripple >> Expect.atLeast 0
+                    , .noise >> Expect.atLeast 0
+                    ]
+
+    msgFuzzer : Fuzzer Msg
+    msgFuzzer =
+        Fuzz.frequency
+            [ ( 1, Fuzz.constant SurpriseMe )
+            , ( 1, Fuzz.map SelectByUrl Fuzz.string )
+            , ( 1, Fuzz.map SelectByIndex Fuzz.int )
+            , ( 1, Fuzz.map SetStatus Fuzz.string )
+            , ( 1, Fuzz.map SetHue Fuzz.int )
+            , ( 1, Fuzz.map SetRipple Fuzz.int )
+            , ( 1, Fuzz.map SetNoise Fuzz.int )
+            ]
+
+-- Output --
+
+↓ PhotoGrooveTests
+✗ update works
+
+Given [SetHue -1]
+
+    Previous model:
+
+        { photos = [], status = "", selectedUrl = Nothing, loadingError = Nothing, chosenSize = Medium, hue = 0, ripple = 0, noise = 0 }
+
+    Message applied to that model:
+
+        SetHue -1
+
+    Resulting model:
+
+        { photos = [], status = "", selectedUrl = Nothing, loadingError = Nothing, chosenSize = Medium, hue = -1, ripple = 0, noise = 0 }
+
+    Failure:
+
+    -1
+    ╷
+    │ Expect.atLeast
+    ╵
+    0
+
+Given [SetNoise -1]
+
+    Previous model:
+
+        { photos = [], status = "", selectedUrl = Nothing, loadingError = Nothing, chosenSize = Medium, hue = 0, ripple = 0, noise = 0 }
+
+    Message applied to that model:
+
+        SetNoise -1
+
+    Resulting model:
+
+        { photos = [], status = "", selectedUrl = Nothing, loadingError = Nothing, chosenSize = Medium, hue = 0, ripple = 0, noise = -1 }
+
+    Failure:
+
+    -1
+    ╷
+    │ Expect.atLeast
+    ╵
+    0
+
+Given [SetRipple -1]
+
+    Previous model:
+
+        { photos = [], status = "", selectedUrl = Nothing, loadingError = Nothing, chosenSize = Medium, hue = 0, ripple = 0, noise = 0 }
+
+    Message applied to that model:
+
+        SetRipple -1
+
+    Resulting model:
+
+        { photos = [], status = "", selectedUrl = Nothing, loadingError = Nothing, chosenSize = Medium, hue = 0, ripple = -1, noise = 0 }
+
+    Failure:
+
+    -1
+    ╷
+    │ Expect.atLeast
+    ╵
+    0
+
+-}
+testUpdate : (msg -> model -> ( model, cmd )) -> model -> (model -> Expectation) -> List msg -> Expectation
+testUpdate =
+    testUpdateHelp Expect.pass
+
+
+testUpdateHelp : Expectation -> (msg -> model -> ( model, cmd )) -> model -> (model -> Expectation) -> List msg -> Expectation
+testUpdateHelp expectation update model postcondition messages =
+    case messages of
+        [] ->
+            expectation
+
+        msg :: rest ->
+            let
+                ( newModel, _ ) =
+                    update msg model
+            in
+                case postcondition model of
+                    Test.Expectation.Pass ->
+                        testUpdateHelp expectation update newModel postcondition rest
+
+                    Test.Expectation.Fail record ->
+                        [ "Previous model:"
+                        , ""
+                        , "    " ++ toString model
+                        , ""
+                        , "Message applied to that model:"
+                        , ""
+                        , "    " ++ toString msg
+                        , ""
+                        , "Resulting model:"
+                        , ""
+                        , "    " ++ toString newModel
+                        , ""
+                        , "Failure:"
+                        , ""
+                        , Test.Message.failureMessage record
+                        ]
+                            |> String.join "\n"
+                            |> Expect.fail
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this
