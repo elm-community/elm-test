@@ -24,16 +24,17 @@ module Expect
 
 ## Quick Reference
 
-* [`equal`](#equal) `(arg2 == arg1)`
-* [`notEqual`](#notEqual) `(arg2 /= arg1)`
-* [`lessThan`](#lessThan) `(arg2 < arg1)`
-* [`atMost`](#atMost) `(arg2 <= arg1)`
-* [`greaterThan`](#greaterThan) `(arg2 > arg1)`
-* [`atLeast`](#atLeast) `(arg2 >= arg1)`
-* [`true`](#true) `(arg == True)`
-* [`false`](#false) `(arg == False)`
-* [`within`](#within) `(float equality)`
-* [`notWithin`](#notWithin) `(float inequality)`
+  - [`equal`](#equal) `(arg2 == arg1)`
+  - [`notEqual`](#notEqual) `(arg2 /= arg1)`
+  - [`lessThan`](#lessThan) `(arg2 < arg1)`
+  - [`atMost`](#atMost) `(arg2 <= arg1)`
+  - [`greaterThan`](#greaterThan) `(arg2 > arg1)`
+  - [`atLeast`](#atLeast) `(arg2 >= arg1)`
+  - [`true`](#true) `(arg == True)`
+  - [`false`](#false) `(arg == False)`
+  - [`within`](#within) `(float equality)`
+  - [`notWithin`](#notWithin) `(float inequality)`
+
 
 ## Basic Expectations
 
@@ -43,6 +44,11 @@ module Expect
 ## Comparisons
 
 @docs lessThan, atMost, greaterThan, atLeast
+
+
+### Floating point comparisons
+
+@docs FloatingPointTolerance, within, notWithin
 
 
 ## Booleans
@@ -246,6 +252,19 @@ atLeast =
     compareWith "Expect.atLeast" (>=)
 
 
+{-| A type to describe how close a floating point number must be to the expected value for the test to pass. This may be
+specified as absolute or relative. If you're not deeply familiar with binary floating point, you probably want `Absolute`.
+
+`AbsoluteOrRelative` tolerance uses a logical OR between the absolute (specified first) and relative tolerance. If you
+want a logical AND, use [`Expect.all`](#all).
+
+-}
+type FloatingPointTolerance
+    = Absolute Float
+    | Relative Float
+    | AbsoluteOrRelative Float Float
+
+
 {-| Passes if the second and third arguments are equal within a relative tolerance
 specified by the first argument. This is intended to avoid failing because of
 minor inaccuracies introduced by floating point arithmetic.
@@ -255,7 +274,6 @@ minor inaccuracies introduced by floating point arithmetic.
 
     -- So instead write this test, which passes
     0.1 + 0.2 |> Expect.within 0.000000001 0.3
-
 
 Failures resemble code written in pipeline style, so you can tell
 which argument is which:
@@ -272,6 +290,7 @@ which argument is which:
     3.141592653589793
 
     -}
+
 -}
 within : FloatingPointTolerance -> Float -> Float -> Expectation
 within tolerance =
@@ -285,12 +304,6 @@ notWithin : FloatingPointTolerance -> Float -> Float -> Expectation
 notWithin tolerance =
     compareWith ("Expect.notWithin " ++ toString tolerance)
         (\a b -> not <| withinCompare tolerance a b)
-
-
-type FloatingPointTolerance
-    = Absolute Float
-    | Relative Float
-    | AbsoluteOrRelative Float Float
 
 
 withinCompare : FloatingPointTolerance -> Float -> Float -> Bool
