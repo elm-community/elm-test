@@ -1,6 +1,7 @@
 module Expect
     exposing
         ( Expectation
+        , FloatingPointTolerance(Relative, Absolute, AbsoluteOrRelative)
         , all
         , atLeast
         , atMost
@@ -14,9 +15,11 @@ module Expect
         , greaterThan
         , lessThan
         , notEqual
+        , notWithin
         , onFail
         , pass
         , true
+        , within
         )
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
@@ -24,16 +27,16 @@ module Expect
 
 ## Quick Reference
 
-  - [`equal`](#equal) `(arg2 == arg1)`
-  - [`notEqual`](#notEqual) `(arg2 /= arg1)`
-  - [`lessThan`](#lessThan) `(arg2 < arg1)`
-  - [`atMost`](#atMost) `(arg2 <= arg1)`
-  - [`greaterThan`](#greaterThan) `(arg2 > arg1)`
-  - [`atLeast`](#atLeast) `(arg2 >= arg1)`
-  - [`true`](#true) `(arg == True)`
-  - [`false`](#false) `(arg == False)`
-  - [`notWithin`](#notWithin) `(float inequality)`
-
+* [`equal`](#equal) `(arg2 == arg1)`
+* [`notEqual`](#notEqual) `(arg2 /= arg1)`
+* [`lessThan`](#lessThan) `(arg2 < arg1)`
+* [`atMost`](#atMost) `(arg2 <= arg1)`
+* [`greaterThan`](#greaterThan) `(arg2 > arg1)`
+* [`atLeast`](#atLeast) `(arg2 >= arg1)`
+* [`true`](#true) `(arg == True)`
+* [`false`](#false) `(arg == False)`
+* [`within`](#within) `(float equality)`
+* [`notWithin`](#notWithin) `(float inequality)`
 
 ## Basic Expectations
 
@@ -246,6 +249,77 @@ atLeast =
     compareWith "Expect.atLeast" (>=)
 
 
+{-| Passes if the second and third arguments are equal within a relative tolerance
+specified by the first argument. This is intended to avoid failing because of
+minor inaccuracies introduced by floating point arithmetic.
+
+    -- Fails because 0.1 + 0.2 == 0.30000000000000004 (0.1 is non-terminating in base 2)
+    0.1 + 0.2 |> Expect.equal 0.3
+
+    -- So instead write this test, which passes
+    0.1 + 0.2 |> Expect.within 0.000000001 0.3
+
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which:
+
+    -- Fails because 3.14 is not close enough to pi
+    3.14 |> Expect.within 0.0001 pi
+
+    {-
+
+    3.14
+    ╷
+    │ Expect.within 0.0001
+    ╵
+    3.141592653589793
+
+    -}
+-}
+within : FloatingPointTolerance -> Float -> Float -> Expectation
+within tolerance =
+    compareWith ("Expect.within " ++ toString tolerance)
+        (withinCompare tolerance)
+
+
+{-| Passes if (and only if) a call to `within` with the same arguments would have failed.
+-}
+notWithin : FloatingPointTolerance -> Float -> Float -> Expectation
+notWithin tolerance =
+    compareWith ("Expect.notWithin " ++ toString tolerance)
+        (\a b -> not <| withinCompare tolerance a b)
+
+
+type FloatingPointTolerance
+    = Absolute Float
+    | Relative Float
+    | AbsoluteOrRelative Float Float
+
+
+withinCompare : FloatingPointTolerance -> Float -> Float -> Bool
+withinCompare tolerance a b =
+    let
+        ( absoluteTolerance, relativeTolerance ) =
+            case tolerance of
+                Absolute absolute ->
+                    ( max 0 absolute, 0 )
+
+                AbsoluteOrRelative absolute relative ->
+                    ( max 0 absolute, max 0 relative )
+
+                Relative relative ->
+                    ( 0, max 0 relative )
+
+        withinAbsoluteTolerance =
+            (a - absoluteTolerance <= b && b <= a + absoluteTolerance)
+
+        withinRelativeTolerance =
+            (a * (1 - relativeTolerance) <= b && b <= a * (1 + relativeTolerance))
+                || (b * (1 - relativeTolerance) <= a && a <= b * (1 + relativeTolerance))
+    in
+        (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
+
+
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
 
     Expect.true "Expected the list to be empty." (List.isEmpty [])
@@ -396,10 +470,10 @@ equalLists expected actual =
                                         (toString actual)
                                         ( index, toString e, toString a )
                             in
-                            Test.Expectation.fail
-                                { description = "Expect.equalLists"
-                                , reason = reason
-                                }
+                                Test.Expectation.fail
+                                    { description = "Expect.equalLists"
+                                    , reason = reason
+                                    }
                         )
         in
         case result of
