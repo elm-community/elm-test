@@ -10,6 +10,7 @@ module Expect
         , lessThan
         , greaterThan
         , atLeast
+        , FloatingPointTolerance(Relative, Absolute, AbsoluteOrRelative)
         , within
         , notWithin
         , true
@@ -34,6 +35,8 @@ module Expect
 * [`atLeast`](#atLeast) `(arg2 >= arg1)`
 * [`true`](#true) `(arg == True)`
 * [`false`](#false) `(arg == False)`
+* [`within`](#within) `(float equality)`
+* [`notWithin`](#notWithin) `(float inequality)`
 
 ## Basic Expectations
 
@@ -241,7 +244,7 @@ atLeast =
 specified by the first argument. This is intended to avoid failing because of
 minor inaccuracies introduced by floating point arithmetic.
 
-    -- Fails because 0.1 + 0.2 == 0.30000000000000004 (0.1 is irrational in base 2)
+    -- Fails because 0.1 + 0.2 == 0.30000000000000004 (0.1 is non-terminating in base 2)
     0.1 + 0.2 |> Expect.equal 0.3
 
     -- So instead write this test, which passes
@@ -264,7 +267,7 @@ which argument is which:
 
     -}
 -}
-within : Float -> Float -> Float -> Expectation
+within : FloatingPointTolerance -> Float -> Float -> Expectation
 within tolerance =
     compareWith ("Expect.within " ++ toString tolerance)
         (withinCompare tolerance)
@@ -272,42 +275,40 @@ within tolerance =
 
 {-| Passes if (and only if) a call to `within` with the same arguments would have failed.
 -}
-notWithin : Float -> Float -> Float -> Expectation
+notWithin : FloatingPointTolerance -> Float -> Float -> Expectation
 notWithin tolerance =
     compareWith ("Expect.notWithin " ++ toString tolerance)
         (\a b -> not <| withinCompare tolerance a b)
 
 
+type FloatingPointTolerance
+    = Absolute Float
+    | Relative Float
+    | AbsoluteOrRelative Float Float
+
+
+withinCompare : FloatingPointTolerance -> Float -> Float -> Bool
 withinCompare tolerance a b =
     let
-        delta =
-            abs (a - b)
+        ( absoluteTolerance, relativeTolerance ) =
+            case tolerance of
+                Absolute absolute ->
+                    ( max 0 absolute, 0 )
 
-        -- largest non-infinite value expressible in a 64-bit float
-        float64maxValue =
-            (2 - (2 ^ -52)) * 2 ^ 1023
+                AbsoluteOrRelative absolute relative ->
+                    ( max 0 absolute, max 0 relative )
 
-        -- smallest positive value representable in a 64-bit float with a non-zero radix
-        -- the smallest normal number below which we start loosing precision,
-        -- so that's when we need to look at absolute differences
-        float64MinNormal =
-            2 ^ -1022
+                Relative relative ->
+                    ( 0, max 0 relative )
+
+        withinAbsoluteTolerance =
+            (a - absoluteTolerance <= b && b <= a + absoluteTolerance)
+
+        withinRelativeTolerance =
+            (a * (1 - relativeTolerance) <= b && b <= a * (1 + relativeTolerance))
+                || (b * (1 - relativeTolerance) <= a && a <= b * (1 + relativeTolerance))
     in
-        if a == b then
-            -- if they're *exactly* equal
-            True
-        else if (a == 0 || b == 0 || delta < float64MinNormal) then
-            -- very close to zero; use absolute tolerance relative to smallest possible float numbers
-            -- (floating point arithmetic has very large relative errors near zero)
-            delta < (tolerance * float64MinNormal)
-        else
-            -- otherwise, we use relative equality. Tolerance acts as a maximum multiplier between a and b.
-            let
-                -- avoid dividing by infinity; use the largest available non-inf value instead
-                abSum =
-                    min ((abs a) + (abs b)) float64maxValue
-            in
-                (delta / abSum) < tolerance
+        (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
