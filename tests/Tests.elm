@@ -2,6 +2,10 @@ module Tests exposing (all)
 
 import Dict
 import Set
+import String
+import Expect exposing (FloatingPointTolerance(Absolute, AbsoluteOrRelative, Relative))
+import Fuzz.Internal
+import RoseTree
 import Random.Pcg as Random
 import Shrink
 import Expect
