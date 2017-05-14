@@ -1,22 +1,22 @@
 module Expect
     exposing
         ( Expectation
-        , all
-        , atLeast
-        , atMost
-        , equal
-        , equalDicts
-        , equalLists
-        , equalSets
-        , err
-        , fail
-        , false
-        , greaterThan
-        , lessThan
-        , notEqual
-        , onFail
         , pass
+        , fail
+        , equal
+        , notEqual
+        , atMost
+        , lessThan
+        , greaterThan
+        , atLeast
         , true
+        , false
+        , err
+        , equalLists
+        , equalDicts
+        , equalSets
+        , onFail
+        , all
         )
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
@@ -61,9 +61,9 @@ module Expect
 
 -}
 
+import Test.Expectation
 import Dict exposing (Dict)
 import Set exposing (Set)
-import Test.Expectation
 
 
 {-| The result of a single test run: either a [`pass`](#pass) or a
@@ -467,26 +467,26 @@ equalLists expected actual =
                                         (toString actual)
                                         ( index, toString e, toString a )
                             in
-                            Test.Expectation.fail
-                                { description = "Expect.equalLists"
-                                , reason = reason
-                                }
+                                Test.Expectation.fail
+                                    { description = "Expect.equalLists"
+                                    , reason = reason
+                                    }
                         )
         in
-        case result of
-            Just failure ->
-                failure
+            case result of
+                Just failure ->
+                    failure
 
-            Nothing ->
-                case compare (List.length actual) (List.length expected) of
-                    GT ->
-                        reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
+                Nothing ->
+                    case compare (List.length actual) (List.length expected) of
+                        GT ->
+                            reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
 
-                    LT ->
-                        reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
+                        LT ->
+                            reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
 
-                    _ ->
-                        pass
+                        _ ->
+                            pass
 
 
 {-| Passes if the arguments are equal dicts.
@@ -534,7 +534,7 @@ equalDicts expected actual =
             extraKeys =
                 Dict.foldr (differ expected) [] actual
         in
-        reportCollectionFailure "Expect.equalDicts" expected actual missingKeys extraKeys
+            reportCollectionFailure "Expect.equalDicts" expected actual missingKeys extraKeys
 
 
 {-| Passes if the arguments are equal sets.
@@ -578,7 +578,7 @@ equalSets expected actual =
                 Set.diff actual expected
                     |> Set.toList
         in
-        reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys
+            reportCollectionFailure "Expect.equalSets" expected actual missingKeys extraKeys
 
 
 {-| Always passes.
@@ -589,7 +589,7 @@ equalSets expected actual =
 
 
     test "Json.Decode.int can decode the number 42." <|
-        \_ ->
+        \() ->
             case decodeString int "42" of
                 Ok _ ->
                     Expect.pass
@@ -611,7 +611,7 @@ pass =
 
 
     test "Json.Decode.int can decode the number 42." <|
-        \_ ->
+        \() ->
             case decodeString int "42" of
                 Ok _ ->
                     Expect.pass

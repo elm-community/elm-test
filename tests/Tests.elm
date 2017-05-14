@@ -1,8 +1,11 @@
 module Tests exposing (all)
 
 import Dict
+import Set
+import Random.Pcg as Random
+import Shrink
 import Expect
-import Fuzz exposing (..)
+import Helpers exposing (..)
 import FuzzerTests exposing (fuzzerTests)
 import Helpers exposing (..)
 import Random.Pcg as Random
