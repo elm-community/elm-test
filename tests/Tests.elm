@@ -25,6 +25,7 @@ all =
         , testTests
         , expectationTests
         , fuzzerTests
+        , withinTests
         , RunnerTests.all
         ]
 
@@ -74,66 +75,69 @@ expectationTests =
             ]
         ]
 
-        , describe "Expect.within"
-            [ fuzz float "pythagorean identity" <|
-                \x ->
-                    (sin x) ^ 2 + (cos x) ^ 2 |> Expect.within (AbsoluteOrRelative 0.000001 0.00001) 1.0
-            , test "floats known to not add exactly" <|
-                \() -> 0.1 + 0.2 |> Expect.within (Absolute 0.000000001) 0.3
-            , test "approximation of pi" <|
-                \() -> 3.14 |> Expect.within (Absolute 0.01) pi
-            , fuzz2 float float "self equality" <|
-                \epsilon value ->
-                    let
-                        eps =
-                            if epsilon /= 0 then
-                                epsilon
-                            else
-                                1
-                    in
-                        value |> Expect.within (Relative (abs eps)) value
-            , fuzz float "NaN equality" <|
-                \epsilon ->
-                    let
-                        nan =
-                            0.0 / 0.0
-                    in
-                        nan |> Expect.notWithin (Relative (abs epsilon)) nan
-            , fuzz float "Infinity equality" <|
-                \epsilon ->
-                    let
-                        infinity =
-                            1.0 / 0.0
-                    in
-                        infinity |> Expect.within (Relative epsilon) infinity
-            , fuzz float "Negative infinity equality" <|
-                \epsilon ->
-                    let
-                        infinity =
-                            -1.0 / 0.0
-                    in
-                        infinity |> Expect.within (Relative epsilon) infinity
-            , fuzz float "Zero equality" <|
-                \epsilon -> 0.0 |> Expect.within (Relative epsilon) 0.0
-            , fuzz3 float float float "within absolute commutativity" <|
-                \epsilon a b ->
-                    Expect.equal (Expect.within (Absolute epsilon) a b) (Expect.within (Absolute epsilon) b a)
-            , fuzz3 float float float "notWithin absolute commutativity" <|
-                \epsilon a b ->
-                    Expect.equal (Expect.notWithin (Absolute epsilon) a b) (Expect.notWithin (Absolute epsilon) b a)
-            , fuzz2 float float "within absolute reflexive" <|
-                \epsilon a ->
-                    Expect.within (Absolute epsilon) a a
-            , fuzz3 float float float "within relative commutativity" <|
-                \epsilon a b ->
-                    Expect.equal (Expect.within (Relative epsilon) a b) (Expect.within (Relative epsilon) b a)
-            , fuzz3 float float float "notWithin relative commutativity" <|
-                \epsilon a b ->
-                    Expect.equal (Expect.notWithin (Relative epsilon) a b) (Expect.notWithin (Relative epsilon) b a)
-            , fuzz2 float float "within relative reflexive" <|
-                \epsilon a ->
-                    Expect.within (Relative epsilon) a a
-            ]
+
+withinTests =
+    describe "Expect.within"
+        [ fuzz float "pythagorean identity" <|
+            \x ->
+                (sin x) ^ 2 + (cos x) ^ 2 |> Expect.within (AbsoluteOrRelative 0.000001 0.00001) 1.0
+        , test "floats known to not add exactly" <|
+            \() -> 0.1 + 0.2 |> Expect.within (Absolute 0.000000001) 0.3
+        , test "approximation of pi" <|
+            \() -> 3.14 |> Expect.within (Absolute 0.01) pi
+        , fuzz2 float float "self equality" <|
+            \epsilon value ->
+                let
+                    eps =
+                        if epsilon /= 0 then
+                            epsilon
+                        else
+                            1
+                in
+                    value |> Expect.within (Relative (abs eps)) value
+        , fuzz float "NaN equality" <|
+            \epsilon ->
+                let
+                    nan =
+                        0.0 / 0.0
+                in
+                    nan |> Expect.notWithin (Relative (abs epsilon)) nan
+        , fuzz float "Infinity equality" <|
+            \epsilon ->
+                let
+                    infinity =
+                        1.0 / 0.0
+                in
+                    infinity |> Expect.within (Relative epsilon) infinity
+        , fuzz float "Negative infinity equality" <|
+            \epsilon ->
+                let
+                    infinity =
+                        -1.0 / 0.0
+                in
+                    infinity |> Expect.within (Relative epsilon) infinity
+        , fuzz float "Zero equality" <|
+            \epsilon -> 0.0 |> Expect.within (Relative epsilon) 0.0
+        , fuzz3 float float float "within absolute commutativity" <|
+            \epsilon a b ->
+                Expect.equal (Expect.within (Absolute epsilon) a b) (Expect.within (Absolute epsilon) b a)
+        , fuzz3 float float float "notWithin absolute commutativity" <|
+            \epsilon a b ->
+                Expect.equal (Expect.notWithin (Absolute epsilon) a b) (Expect.notWithin (Absolute epsilon) b a)
+        , fuzz2 float float "within absolute reflexive" <|
+            \epsilon a ->
+                Expect.within (Absolute epsilon) a a
+        , fuzz3 float float float "within relative commutativity" <|
+            \epsilon a b ->
+                Expect.equal (Expect.within (Relative epsilon) a b) (Expect.within (Relative epsilon) b a)
+        , fuzz3 float float float "notWithin relative commutativity" <|
+            \epsilon a b ->
+                Expect.equal (Expect.notWithin (Relative epsilon) a b) (Expect.notWithin (Relative epsilon) b a)
+        , fuzz2 float float "within relative reflexive" <|
+            \epsilon a ->
+                Expect.within (Relative epsilon) a a
+        ]
+
 
 regressions : Test
 regressions =
@@ -147,12 +151,11 @@ regressions =
             "fuzz tests run 100 times"
             (Expect.notEqual 5)
             |> expectToFail
-
-        {- If fuzz tests actually run 100 times, then asserting that no number
-           in 1..8 equals 5 fails with 0.999998 probability. If they only run
-           once, or stop after a duplicate due to #127, then it's much more
-           likely (but not guaranteed) that the 5 won't turn up. See #128.
-        -}
+          {- If fuzz tests actually run 100 times, then asserting that no number
+             in 1..8 equals 5 fails with 0.999998 probability. If they only run
+             once, or stop after a duplicate due to #127, then it's much more
+             likely (but not guaranteed) that the 5 won't turn up. See #128.
+          -}
         ]
 
 
