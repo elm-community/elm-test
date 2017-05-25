@@ -7,7 +7,7 @@ If you need a complete RoseTree implementation, one can be found on elm-package.
 
 -}
 
-import Lazy.List as LazyList exposing (LazyList, (:::), (+++))
+import Lazy.List as LazyList exposing ((+++), (:::), LazyList)
 
 
 {-| RoseTree type.

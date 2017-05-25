@@ -30,18 +30,18 @@ toOutput summary seededRunners =
         render =
             List.foldl (toOutputHelp [])
     in
-        case seededRunners of
-            Plain runners ->
-                render { summary | autoFail = Nothing } runners
+    case seededRunners of
+        Plain runners ->
+            render { summary | autoFail = Nothing } runners
 
-            Only runners ->
-                render { summary | autoFail = Just "Test.only was used" } runners
+        Only runners ->
+            render { summary | autoFail = Just "Test.only was used" } runners
 
-            Skipping runners ->
-                render { summary | autoFail = Just "Test.skip was used" } runners
+        Skipping runners ->
+            render { summary | autoFail = Just "Test.skip was used" } runners
 
-            Invalid message ->
-                { output = message, passed = 0, failed = 0, autoFail = Nothing }
+        Invalid message ->
+            { output = message, passed = 0, failed = 0, autoFail = Nothing }
 
 
 toOutputHelp : List String -> Runner -> Summary -> Summary
@@ -69,11 +69,11 @@ fromExpectation expectation summary =
                 newOutput =
                     "\n\n" ++ (prefix ++ indentLines message) ++ "\n"
             in
-                { summary
-                    | output = summary.output ++ newOutput
-                    , failed = summary.failed + 1
-                    , passed = summary.passed
-                }
+            { summary
+                | output = summary.output ++ newOutput
+                , failed = summary.failed + 1
+                , passed = summary.passed
+            }
 
 
 outputLabels : List String -> String
@@ -121,10 +121,10 @@ runWithOptions runs seed test =
         seededRunners =
             Test.Runner.fromTest runs seed test
     in
-        toOutput
-            { output = ""
-            , passed = 0
-            , failed = 0
-            , autoFail = Just "no tests were run"
-            }
-            seededRunners
+    toOutput
+        { output = ""
+        , passed = 0
+        , failed = 0
+        , autoFail = Just "no tests were run"
+        }
+        seededRunners

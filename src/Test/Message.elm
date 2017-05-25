@@ -1,7 +1,7 @@
 module Test.Message exposing (failureMessage)
 
 import String
-import Test.Expectation exposing (Reason(..), InvalidReason(..))
+import Test.Expectation exposing (InvalidReason(..), Reason(..))
 
 
 verticalBar : String -> String -> String -> String
@@ -58,18 +58,18 @@ failureMessage { given, description, reason } =
                         ""
                     else
                         "\nThese keys are extra: "
-                            ++ (extra |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
+                            ++ (extra |> String.join ", " |> (\d -> "[ " ++ d ++ " ]"))
 
                 missingStr =
                     if List.isEmpty missing then
                         ""
                     else
                         "\nThese keys are missing: "
-                            ++ (missing |> String.join ", " |> \d -> "[ " ++ d ++ " ]")
+                            ++ (missing |> String.join ", " |> (\d -> "[ " ++ d ++ " ]"))
             in
-                String.join ""
-                    [ verticalBar description expected actual
-                    , "\n"
-                    , extraStr
-                    , missingStr
-                    ]
+            String.join ""
+                [ verticalBar description expected actual
+                , "\n"
+                , extraStr
+                , missingStr
+                ]
