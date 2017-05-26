@@ -3,14 +3,14 @@ module Util exposing (..)
 {-| This is where I'm sticking Random helper functions I don't want to add to Pcg.
 -}
 
-import Random.Pcg exposing (..)
 import Array exposing (Array)
+import Random.Pcg exposing (..)
 import String
 
 
 rangeLengthList : Int -> Int -> Generator a -> Generator (List a)
 rangeLengthList minLength maxLength generator =
-    (int minLength maxLength)
+    int minLength maxLength
         |> andThen (\len -> list len generator)
 
 
@@ -22,7 +22,7 @@ rangeLengthArray minLength maxLength generator =
 
 rangeLengthString : Int -> Int -> Generator Char -> Generator String
 rangeLengthString minLength maxLength charGenerator =
-    (int minLength maxLength)
+    int minLength maxLength
         |> andThen (lengthString charGenerator)
 
 

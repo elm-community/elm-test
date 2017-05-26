@@ -2,12 +2,12 @@ module Test.Runner
     exposing
         ( Runner
         , SeededRunners(..)
+        , Shrinkable
+        , formatLabels
         , fromTest
+        , fuzz
         , getFailure
         , isTodo
-        , formatLabels
-        , Shrinkable
-        , fuzz
         , shrink
         )
 
@@ -40,17 +40,17 @@ These functions give you the ability to run fuzzers separate of running fuzz tes
 
 -}
 
-import Test exposing (Test)
-import Test.Internal as Internal
-import Test.Expectation
-import Test.Message exposing (failureMessage)
-import RoseTree exposing (RoseTree(Rose))
-import Lazy.List as LazyList exposing (LazyList)
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
 import Fuzz.Internal
+import Lazy.List as LazyList exposing (LazyList)
 import Random.Pcg
+import RoseTree exposing (RoseTree(Rose))
 import String
+import Test exposing (Test)
+import Test.Expectation
+import Test.Internal as Internal
+import Test.Message exposing (failureMessage)
 
 
 {-| An unevaluated test. Run it with [`run`](#run) to evaluate it into a
@@ -99,19 +99,19 @@ fromTest runs seed test =
             distribution =
                 distributeSeeds runs seed test
         in
-            if List.isEmpty distribution.only then
-                if countAllRunnables distribution.skipped == 0 then
-                    distribution.all
-                        |> List.concatMap fromRunnableTree
-                        |> Plain
-                else
-                    distribution.all
-                        |> List.concatMap fromRunnableTree
-                        |> Skipping
-            else
-                distribution.only
+        if List.isEmpty distribution.only then
+            if countAllRunnables distribution.skipped == 0 then
+                distribution.all
                     |> List.concatMap fromRunnableTree
-                    |> Only
+                    |> Plain
+            else
+                distribution.all
+                    |> List.concatMap fromRunnableTree
+                    |> Skipping
+        else
+            distribution.only
+                |> List.concatMap fromRunnableTree
+                |> Only
 
 
 countAllRunnables : List RunnableTree -> Int
@@ -217,22 +217,22 @@ distributeSeeds runs seed test =
                 ( firstSeed, nextSeed ) =
                     Random.Pcg.step Random.Pcg.independentSeed seed
             in
-                { seed = nextSeed
-                , all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
-                , only = []
-                , skipped = []
-                }
+            { seed = nextSeed
+            , all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
+            , only = []
+            , skipped = []
+            }
 
         Internal.Labeled description subTest ->
             let
                 next =
                     distributeSeeds runs seed subTest
             in
-                { seed = next.seed
-                , all = List.map (Labeled description) next.all
-                , only = List.map (Labeled description) next.only
-                , skipped = List.map (Labeled description) next.skipped
-                }
+            { seed = next.seed
+            , all = List.map (Labeled description) next.all
+            , only = List.map (Labeled description) next.only
+            , skipped = List.map (Labeled description) next.skipped
+            }
 
         Internal.Skipped subTest ->
             let
@@ -241,19 +241,19 @@ distributeSeeds runs seed test =
                 next =
                     distributeSeeds runs seed subTest
             in
-                { seed = next.seed
-                , all = []
-                , only = []
-                , skipped = next.all
-                }
+            { seed = next.seed
+            , all = []
+            , only = []
+            , skipped = next.all
+            }
 
         Internal.Only subTest ->
             let
                 next =
                     distributeSeeds runs seed subTest
             in
-                -- `only` all the things!
-                { next | only = next.all }
+            -- `only` all the things!
+            { next | only = next.all }
 
         Internal.Batch tests ->
             List.foldl (batchDistribute runs) (emptyDistribution seed) tests
@@ -265,11 +265,11 @@ batchDistribute runs test prev =
         next =
             distributeSeeds runs prev.seed test
     in
-        { seed = next.seed
-        , all = prev.all ++ next.all
-        , only = prev.only ++ next.only
-        , skipped = prev.skipped ++ next.skipped
-        }
+    { seed = next.seed
+    , all = prev.all ++ next.all
+    , only = prev.only ++ next.only
+    , skipped = prev.skipped ++ next.skipped
+    }
 
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
@@ -399,9 +399,9 @@ shrink causedPass (Shrinkable { down, over }) =
             else
                 down
     in
-        case LazyList.headAndTail tryNext of
-            Just ( Rose root children, tl ) ->
-                Just ( root, Shrinkable { down = children, over = tl } )
+    case LazyList.headAndTail tryNext of
+        Just ( Rose root children, tl ) ->
+            Just ( root, Shrinkable { down = children, over = tl } )
 
-            Nothing ->
-                Nothing
+        Nothing ->
+            Nothing

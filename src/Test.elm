@@ -1,4 +1,4 @@
-module Test exposing (Test, FuzzOptions, describe, test, concat, todo, skip, only, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith)
+module Test exposing (FuzzOptions, Test, concat, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, only, skip, test, todo)
 
 {-| A module containing functions for creating and managing tests.
 
@@ -16,12 +16,12 @@ module Test exposing (Test, FuzzOptions, describe, test, concat, todo, skip, onl
 
 -}
 
-import Set
-import Test.Internal as Internal
-import Test.Expectation
-import Test.Fuzz
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
+import Set
+import Test.Expectation
+import Test.Fuzz
+import Test.Internal as Internal
 
 
 {-| A test which has yet to be evaluated. When evaluated, it produces one
@@ -88,32 +88,32 @@ describe untrimmedDesc tests =
         desc =
             String.trim untrimmedDesc
     in
-        if String.isEmpty desc then
-            Internal.failNow
-                { description = "This `describe` has a blank description. Let's give it a useful one!"
-                , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
-                }
-        else if List.isEmpty tests then
-            Internal.failNow
-                { description = "This `describe " ++ toString desc ++ "` has no tests in it. Let's give it some!"
-                , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
-                }
-        else
-            case Internal.duplicatedName tests of
-                Err duped ->
+    if String.isEmpty desc then
+        Internal.failNow
+            { description = "This `describe` has a blank description. Let's give it a useful one!"
+            , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+            }
+    else if List.isEmpty tests then
+        Internal.failNow
+            { description = "This `describe " ++ toString desc ++ "` has no tests in it. Let's give it some!"
+            , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
+            }
+    else
+        case Internal.duplicatedName tests of
+            Err duped ->
+                Internal.failNow
+                    { description = "The tests '" ++ desc ++ "' contain multiple tests named '" ++ duped ++ "'. Let's rename them so we know which is which."
+                    , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                    }
+
+            Ok childrenNames ->
+                if Set.member desc childrenNames then
                     Internal.failNow
-                        { description = "The tests '" ++ desc ++ "' contain multiple tests named '" ++ duped ++ "'. Let's rename them so we know which is which."
+                        { description = "The test '" ++ desc ++ "' contains a child test of the same name. Let's rename them so we know which is which."
                         , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
                         }
-
-                Ok childrenNames ->
-                    if Set.member desc childrenNames then
-                        Internal.failNow
-                            { description = "The test '" ++ desc ++ "' contains a child test of the same name. Let's rename them so we know which is which."
-                            , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
-                            }
-                    else
-                        Internal.Labeled desc (Internal.Batch tests)
+                else
+                    Internal.Labeled desc (Internal.Batch tests)
 
 
 {-| Return a [`Test`](#Test) that evaluates a single
@@ -135,10 +135,10 @@ test untrimmedDesc thunk =
         desc =
             String.trim untrimmedDesc
     in
-        if String.isEmpty desc then
-            Internal.blankDescriptionFailure
-        else
-            Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
+    if String.isEmpty desc then
+        Internal.blankDescriptionFailure
+    else
+        Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
 
 
 {-| Returns a [`Test`](#Test) that is "TODO" (not yet implemented). These tests
@@ -386,7 +386,7 @@ fuzz2 fuzzA fuzzB desc =
         fuzzer =
             Fuzz.tuple ( fuzzA, fuzzB )
     in
-        uncurry >> fuzz fuzzer desc
+    uncurry >> fuzz fuzzer desc
 
 
 {-| Run a [fuzz test](#fuzz) using three random inputs.
@@ -406,7 +406,7 @@ fuzz3 fuzzA fuzzB fuzzC desc =
         fuzzer =
             Fuzz.tuple3 ( fuzzA, fuzzB, fuzzC )
     in
-        uncurry3 >> fuzz fuzzer desc
+    uncurry3 >> fuzz fuzzer desc
 
 
 {-| Run a [fuzz test](#fuzz) using four random inputs.
@@ -427,7 +427,7 @@ fuzz4 fuzzA fuzzB fuzzC fuzzD desc =
         fuzzer =
             Fuzz.tuple4 ( fuzzA, fuzzB, fuzzC, fuzzD )
     in
-        uncurry4 >> fuzz fuzzer desc
+    uncurry4 >> fuzz fuzzer desc
 
 
 {-| Run a [fuzz test](#fuzz) using five random inputs.
@@ -449,7 +449,7 @@ fuzz5 fuzzA fuzzB fuzzC fuzzD fuzzE desc =
         fuzzer =
             Fuzz.tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE )
     in
-        uncurry5 >> fuzz fuzzer desc
+    uncurry5 >> fuzz fuzzer desc
 
 
 

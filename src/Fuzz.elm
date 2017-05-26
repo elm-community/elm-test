@@ -1,6 +1,6 @@
-module Fuzz exposing (Fuzzer, custom, constant, unit, bool, order, char, float, floatRange, int, tuple, tuple3, tuple4, tuple5, result, string, percentage, oneOf, map, map2, map3, map4, map5, andMap, andThen, conditional, maybe, intRange, list, array, frequency, invalid)
+module Fuzz exposing (Fuzzer, andMap, andThen, array, bool, char, conditional, constant, custom, float, floatRange, frequency, int, intRange, invalid, list, map, map2, map3, map4, map5, maybe, oneOf, order, percentage, result, string, tuple, tuple3, tuple4, tuple5, unit)
 
-{-| This is a library of *fuzzers* you can use to supply values to your fuzz
+{-| This is a library of _fuzzers_ you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
 
 A `Fuzzer a` knows how to create values of type `a` in two different ways. It
@@ -37,12 +37,12 @@ Instead of using a tuple, consider using `fuzzN`.
 
 import Array exposing (Array)
 import Char
-import Util exposing (..)
-import Lazy.List exposing (LazyList)
-import Shrink exposing (Shrinker)
-import RoseTree exposing (RoseTree(..))
-import Random.Pcg as Random exposing (Generator)
 import Fuzz.Internal as Internal exposing (Fuzz(..), invalidReason)
+import Lazy.List exposing (LazyList)
+import Random.Pcg as Random exposing (Generator)
+import RoseTree exposing (RoseTree(..))
+import Shrink exposing (Shrinker)
+import Util exposing (..)
 
 
 {-| The representation of fuzzers is opaque. Conceptually, a `Fuzzer a`
@@ -98,7 +98,7 @@ Here is an example for a custom union type, assuming there is already a `genName
                     Age i ->
                         Shrink.int i |> Shrink.map Age
         in
-            Fuzz.custom generator shrinker
+        Fuzz.custom generator shrinker
 
 It is not possible to extract the generator and shrinker from an existing fuzzer.
 
@@ -109,13 +109,13 @@ custom generator shrinker =
         shrinkTree a =
             Rose a (Lazy.List.map shrinkTree (shrinker a))
     in
-        Internal.Fuzzer
-            (\noShrink ->
-                if noShrink then
-                    Gen generator
-                else
-                    Shrink <| Random.map shrinkTree generator
-            )
+    Internal.Fuzzer
+        (\noShrink ->
+            if noShrink then
+                Gen generator
+            else
+                Shrink <| Random.map shrinkTree generator
+        )
 
 
 {-| A fuzzer for the unit value. Unit is a type with only one value, commonly
@@ -152,7 +152,7 @@ order =
             else
                 GT
     in
-        custom (Random.map intToOrder (Random.int 0 2)) Shrink.order
+    custom (Random.map intToOrder (Random.int 0 2)) Shrink.order
 
 
 {-| A fuzzer for int values. It will never produce `NaN`, `Infinity`, or `-Infinity`.
@@ -172,7 +172,7 @@ int =
                 , ( 1, Random.int (Random.minInt - Random.maxInt) 0 )
                 ]
     in
-        custom generator Shrink.int
+    custom generator Shrink.int
 
 
 {-| A fuzzer for int values within between a given minimum and maximum value,
@@ -216,7 +216,7 @@ float =
                 , ( 1, Random.float (toFloat <| Random.minInt - Random.maxInt) 0 )
                 ]
     in
-        custom generator Shrink.float
+    custom generator Shrink.float
 
 
 {-| A fuzzer for float values within between a given minimum and maximum
@@ -250,7 +250,7 @@ percentage =
                 , ( 1, Random.constant 1 )
                 ]
     in
-        custom generator Shrink.float
+    custom generator Shrink.float
 
 
 {-| A fuzzer for char values. Generates random ascii chars disregarding the control
@@ -263,7 +263,7 @@ char =
 
 charGenerator : Generator Char
 charGenerator =
-    (Random.map Char.fromCode (Random.int 32 126))
+    Random.map Char.fromCode (Random.int 32 126)
 
 
 {-| Generates random printable ASCII strings of up to 1000 characters.
@@ -284,7 +284,7 @@ string =
                 ]
                 |> Random.andThen (lengthString charGenerator)
     in
-        custom generator Shrink.string
+    custom generator Shrink.string
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
@@ -378,23 +378,23 @@ list (Internal.Fuzzer baseFuzzer) =
                 , ( 0.5, Random.int 100 400 )
                 ]
     in
-        Internal.Fuzzer
-            (\noShrink ->
-                case baseFuzzer noShrink of
-                    Gen genVal ->
-                        genLength
-                            |> Random.andThen (\i -> (Random.list i genVal))
-                            |> Gen
+    Internal.Fuzzer
+        (\noShrink ->
+            case baseFuzzer noShrink of
+                Gen genVal ->
+                    genLength
+                        |> Random.andThen (\i -> Random.list i genVal)
+                        |> Gen
 
-                    Shrink genTree ->
-                        genLength
-                            |> Random.andThen (\i -> (Random.list i genTree))
-                            |> Random.map listShrinkHelp
-                            |> Shrink
+                Shrink genTree ->
+                    genLength
+                        |> Random.andThen (\i -> Random.list i genTree)
+                        |> Random.map listShrinkHelp
+                        |> Shrink
 
-                    InvalidFuzzer reason ->
-                        InvalidFuzzer reason
-            )
+                InvalidFuzzer reason ->
+                    InvalidFuzzer reason
+        )
 
 
 listShrinkHelp : List (RoseTree a) -> RoseTree (List a)
@@ -439,9 +439,9 @@ listShrinkHelp listOfTrees =
                 (List.take index list)
                 (List.drop (index + 1) list)
     in
-        Lazy.List.append shortened shrunkenVals
-            |> Lazy.List.cons (RoseTree.singleton [])
-            |> Rose root
+    Lazy.List.append shortened shrunkenVals
+        |> Lazy.List.cons (RoseTree.singleton [])
+        |> Rose root
 
 
 {-| Given a fuzzer of a type, create a fuzzer of an array of that type.
@@ -492,9 +492,9 @@ tupleShrinkHelp ((Rose root1 children1) as rose1) ((Rose root2 children2) as ros
         shrink2 =
             Lazy.List.map (\subtree -> tupleShrinkHelp rose1 subtree) children2
     in
-        shrink2
-            |> Lazy.List.append shrink1
-            |> Rose root
+    shrink2
+        |> Lazy.List.append shrink1
+        |> Rose root
 
 
 {-| Turn a 3-tuple of fuzzers into a fuzzer of 3-tuples.
@@ -533,10 +533,10 @@ tupleShrinkHelp3 ((Rose root1 children1) as rose1) ((Rose root2 children2) as ro
         shrink3 =
             Lazy.List.map (\subtree -> tupleShrinkHelp3 rose1 rose2 subtree) children3
     in
-        shrink3
-            |> Lazy.List.append shrink2
-            |> Lazy.List.append shrink1
-            |> Rose root
+    shrink3
+        |> Lazy.List.append shrink2
+        |> Lazy.List.append shrink1
+        |> Rose root
 
 
 {-| Turn a 4-tuple of fuzzers into a fuzzer of 4-tuples.
@@ -578,11 +578,11 @@ tupleShrinkHelp4 rose1 rose2 rose3 rose4 =
         shrink4 =
             Lazy.List.map (\subtree -> tupleShrinkHelp4 rose1 rose2 rose3 subtree) (RoseTree.children rose4)
     in
-        shrink4
-            |> Lazy.List.append shrink3
-            |> Lazy.List.append shrink2
-            |> Lazy.List.append shrink1
-            |> Rose root
+    shrink4
+        |> Lazy.List.append shrink3
+        |> Lazy.List.append shrink2
+        |> Lazy.List.append shrink1
+        |> Rose root
 
 
 {-| Turn a 5-tuple of fuzzers into a fuzzer of 5-tuples.
@@ -627,12 +627,12 @@ tupleShrinkHelp5 rose1 rose2 rose3 rose4 rose5 =
         shrink5 =
             Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 rose2 rose3 rose4 subtree) (RoseTree.children rose5)
     in
-        shrink5
-            |> Lazy.List.append shrink4
-            |> Lazy.List.append shrink3
-            |> Lazy.List.append shrink2
-            |> Lazy.List.append shrink1
-            |> Rose root
+    shrink5
+        |> Lazy.List.append shrink4
+        |> Lazy.List.append shrink3
+        |> Lazy.List.append shrink2
+        |> Lazy.List.append shrink1
+        |> Rose root
 
 
 {-| Create a fuzzer that only and always returns the value provided, and performs no shrinking. This is hardly random,
@@ -742,12 +742,12 @@ andThenRoseTrees transform genTree =
                             |> unwindLazyList
                             |> Random.map (Lazy.List.map RoseTree.flatten)
                 in
-                    Random.map2
-                        (\(Rose trueRoot rootsChildren) otherChildren ->
-                            Rose trueRoot (Lazy.List.append rootsChildren otherChildren)
-                        )
-                        (Internal.unpackGenTree (transform root))
-                        genOtherChildren
+                Random.map2
+                    (\(Rose trueRoot rootsChildren) otherChildren ->
+                        Rose trueRoot (Lazy.List.append rootsChildren otherChildren)
+                    )
+                    (Internal.unpackGenTree (transform root))
+                    genOtherChildren
             )
 
 
@@ -796,7 +796,7 @@ conditional { retries, fallback, condition } fuzzer =
                     if condition val then
                         constant val
                     else
-                        conditional { retries = (retries - 1), fallback = fallback, condition = condition } fuzzer
+                        conditional { retries = retries - 1, fallback = fallback, condition = condition } fuzzer
                 )
 
 

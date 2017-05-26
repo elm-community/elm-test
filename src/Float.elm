@@ -2,10 +2,10 @@ module Float
     exposing
         ( epsilon
         , infinity
-        , nan
+        , maxAbsValue
         , minAbsNormal
         , minAbsValue
-        , maxAbsValue
+        , nan
         )
 
 {-| Float contains useful constants related to 64 bit floating point numbers,

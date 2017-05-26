@@ -1,8 +1,8 @@
-module Test.Internal exposing (Test(..), failNow, duplicatedName, blankDescriptionFailure)
+module Test.Internal exposing (Test(..), blankDescriptionFailure, duplicatedName, failNow)
 
 import Random.Pcg as Random exposing (Generator)
-import Test.Expectation exposing (Expectation(..))
 import Set exposing (Set)
+import Test.Expectation exposing (Expectation(..))
 
 
 type Test
@@ -60,5 +60,5 @@ duplicatedName =
                         Ok <| Set.insert newName oldNames
                 )
     in
-        List.concatMap names
-            >> List.foldl insertOrFail (Ok Set.empty)
+    List.concatMap names
+        >> List.foldl insertOrFail (Ok Set.empty)

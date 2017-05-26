@@ -1,7 +1,7 @@
-module Fuzz.Internal exposing (Fuzzer(Fuzzer), Fuzz(..), unpackGenVal, unpackGenTree, invalidReason)
+module Fuzz.Internal exposing (Fuzz(..), Fuzzer(Fuzzer), invalidReason, unpackGenTree, unpackGenVal)
 
-import RoseTree exposing (RoseTree)
 import Random.Pcg exposing (Generator)
+import RoseTree exposing (RoseTree)
 
 
 {- Fuzzers as opt-in RoseTrees
