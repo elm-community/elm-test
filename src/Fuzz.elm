@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, andMap, andThen, array, bool, char, conditional, constant, custom, float, floatRange, frequency, int, intRange, invalid, list, map, map2, map3, map4, map5, maybe, order, percentage, result, string, tuple, tuple3, tuple4, tuple5, unit)
+module Fuzz exposing (Fuzzer, andMap, andThen, array, bool, char, conditional, constant, custom, float, floatRange, frequency, int, intRange, invalid, list, map, map2, map3, map4, map5, maybe, oneOf, order, percentage, result, string, tuple, tuple3, tuple4, tuple5, unit)
 
 {-| This is a library of _fuzzers_ you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -20,6 +20,7 @@ reproduces a bug.
 ## Working with Fuzzers
 
 @docs Fuzzer, constant, map, map2, map3, map4, map5, andMap, andThen, frequency, conditional
+@docs Fuzzer, oneOf, constant, map, map2, map3, map4, map5, andMap, andThen, frequency, conditional
 
 
 ## Tuple Fuzzers
@@ -859,6 +860,25 @@ frequency list =
                         |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
                         |> Random.frequency
                         |> Shrink
+
+
+{-| Choose one of the given fuzzers at random. Each fuzzer has an equal chance
+of being chosen; to customize the probabilities, use [`frequency`](#frequency).
+
+    Fuzz.oneOf
+        [ Fuzz.intRange 0 3
+        , Fuzz.intRange 7 9
+        ]
+
+-}
+oneOf : List (Fuzzer a) -> Fuzzer a
+oneOf list =
+    if List.isEmpty list then
+        invalid "You must pass at least one Fuzzer to Fuzz.oneOf."
+    else
+        list
+            |> List.map (\fuzzer -> ( 1, fuzzer ))
+            |> frequency
 
 
 {-| A fuzzer that is invalid for the provided reason. Any fuzzers built with it
