@@ -1,4 +1,4 @@
-module Test.Expectation exposing (Expectation(..), Reason(..), InvalidReason(..), fail, withGiven)
+module Test.Expectation exposing (Expectation(..), InvalidReason(..), Reason(..), fail, withGiven)
 
 
 type Expectation

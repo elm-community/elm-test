@@ -8,8 +8,8 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 
 -}
 
-import Runner.Log
 import Platform
+import Runner.Log
 import Tests
 
 

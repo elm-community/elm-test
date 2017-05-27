@@ -1,13 +1,13 @@
-module Helpers exposing (expectPass, testStringLengthIsPreserved, expectToFail, testShrinking, randomSeedFuzzer, succeeded)
+module Helpers exposing (expectPass, expectToFail, randomSeedFuzzer, succeeded, testShrinking, testStringLengthIsPreserved)
 
+import Expect
+import Fuzz exposing (Fuzzer)
+import Random.Pcg as Random
+import Shrink
+import String
 import Test exposing (Test)
 import Test.Expectation exposing (Expectation(..))
 import Test.Internal as TI
-import Fuzz exposing (Fuzzer)
-import String
-import Expect
-import Random.Pcg as Random
-import Shrink
 
 
 expectPass : a -> Expectation
@@ -56,15 +56,15 @@ expectFailureHelper f test =
                                 Fail record ->
                                     f record
                     in
-                        expectations
-                            |> List.filterMap goodShrink
-                            |> List.map Expect.fail
-                            |> (\list ->
-                                    if List.isEmpty list then
-                                        [ Expect.pass ]
-                                    else
-                                        list
-                               )
+                    expectations
+                        |> List.filterMap goodShrink
+                        |> List.map Expect.fail
+                        |> (\list ->
+                                if List.isEmpty list then
+                                    [ Expect.pass ]
+                                else
+                                    list
+                           )
                 )
 
         TI.Labeled desc labeledTest ->
@@ -90,17 +90,17 @@ testShrinking =
                 acceptable =
                     String.split "|" description
             in
-                case given of
-                    Nothing ->
-                        Just "Expected this test to have a given value!"
+            case given of
+                Nothing ->
+                    Just "Expected this test to have a given value!"
 
-                    Just g ->
-                        if List.member g acceptable then
-                            Nothing
-                        else
-                            Just <| "Got shrunken value " ++ g ++ " but expected " ++ String.join " or " acceptable
+                Just g ->
+                    if List.member g acceptable then
+                        Nothing
+                    else
+                        Just <| "Got shrunken value " ++ g ++ " but expected " ++ String.join " or " acceptable
     in
-        expectFailureHelper handleFailure
+    expectFailureHelper handleFailure
 
 
 {-| get a good distribution of random seeds, and don't shrink our seeds!

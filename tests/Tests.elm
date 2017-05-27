@@ -1,17 +1,17 @@
 module Tests exposing (all)
 
+import Dict
+import Expect
+import Fuzz exposing (..)
+import FuzzerTests exposing (fuzzerTests)
+import Helpers exposing (..)
+import Random.Pcg as Random
+import RunnerTests
+import Set
+import Shrink
 import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
 import Test.Runner
-import Fuzz exposing (..)
-import Dict
-import Set
-import Random.Pcg as Random
-import Shrink
-import Expect
-import Helpers exposing (..)
-import FuzzerTests exposing (fuzzerTests)
-import RunnerTests
 
 
 all : Test
@@ -36,7 +36,7 @@ readmeExample =
                         palindrome =
                             "hannah"
                     in
-                        Expect.equal palindrome (String.reverse palindrome)
+                    Expect.equal palindrome (String.reverse palindrome)
             , test "reverses a known string" <|
                 \_ ->
                     "ABCDEFG"
