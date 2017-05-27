@@ -1,4 +1,4 @@
-module Test.Fuzz exposing (fuzzTest)
+module Test.Fuzz exposing (fuzzTest, getFailures)
 
 import Dict exposing (Dict)
 import Fuzz exposing (Fuzzer)
