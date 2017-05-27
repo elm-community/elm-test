@@ -68,7 +68,7 @@ concat tests =
     describe "List"
         [ describe "reverse"
             [ test "has no effect on an empty list" <|
-                \() ->
+                \_ ->
                     List.reverse []
                         |> Expect.equal []
             , fuzz int "has no effect on a one-item list" <|
@@ -124,7 +124,7 @@ describe untrimmedDesc tests =
 
 
     test "the empty list has 0 length" <|
-        \() ->
+        \_ ->
             List.length []
                 |> Expect.equal 0
 
@@ -189,7 +189,7 @@ an `only` inside a `skip`, it will also get skipped.
     describe "List"
         [ only <| describe "reverse"
             [ test "has no effect on an empty list" <|
-                \() ->
+                \_ ->
                     List.reverse []
                         |> Expect.equal []
             , fuzz int "has no effect on a one-item list" <|
@@ -198,7 +198,7 @@ an `only` inside a `skip`, it will also get skipped.
                         |> Expect.equal [ num ]
             ]
         , test "This will not get run, because of the `only` above!" <|
-            \() ->
+            \_ ->
                 List.length []
                     |> Expect.equal 0
         ]
@@ -224,7 +224,7 @@ an `only` inside a `skip`, it will also get skipped.
     describe "List"
         [ skip <| describe "reverse"
             [ test "has no effect on an empty list" <|
-                \() ->
+                \_ ->
                     List.reverse []
                         |> Expect.equal []
             , fuzz int "has no effect on a one-item list" <|
@@ -233,7 +233,7 @@ an `only` inside a `skip`, it will also get skipped.
                         |> Expect.equal [ num ]
             ]
         , test "This is the only test that will get run; the other was skipped!" <|
-            \() ->
+            \_ ->
                 List.length []
                     |> Expect.equal 0
         ]

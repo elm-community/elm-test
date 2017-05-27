@@ -38,7 +38,7 @@ fromTest =
                             else
                                 Expect.fail ("Expected a run count of " ++ toString runs ++ " to be invalid, but was valid with this value: " ++ toString val)
             , test "an only inside another only has no effect" <|
-                \() ->
+                \_ ->
                     let
                         runners =
                             toSeededRunners <|
@@ -47,10 +47,10 @@ fromTest =
                                     , Test.only <|
                                         describe "two tests"
                                             [ test "fails" <|
-                                                \() -> Expect.fail "failed on purpose"
+                                                \_ -> Expect.fail "failed on purpose"
                                             , Test.only <|
                                                 test "is an only" <|
-                                                    \() -> Expect.fail "failed on purpose"
+                                                    \_ -> Expect.fail "failed on purpose"
                                             ]
                                     ]
                     in
@@ -63,7 +63,7 @@ fromTest =
                             val ->
                                 Expect.fail ("Expected SeededRunner to be Only, but was " ++ toString val)
             , test "a skip inside an only takes effect" <|
-                \() ->
+                \_ ->
                     let
                         runners =
                             toSeededRunners <|
@@ -72,10 +72,10 @@ fromTest =
                                     , Test.only <|
                                         describe "two tests"
                                             [ test "fails" <|
-                                                \() -> Expect.fail "failed on purpose"
+                                                \_ -> Expect.fail "failed on purpose"
                                             , Test.skip <|
                                                 test "is skipped" <|
-                                                    \() -> Expect.fail "failed on purpose"
+                                                    \_ -> Expect.fail "failed on purpose"
                                             ]
                                     ]
                     in
@@ -88,7 +88,7 @@ fromTest =
                             val ->
                                 Expect.fail ("Expected SeededRunner to be Only, but was " ++ toString val)
             , test "an only inside a skip has no effect" <|
-                \() ->
+                \_ ->
                     let
                         runners =
                             toSeededRunners <|
@@ -97,10 +97,10 @@ fromTest =
                                     , Test.skip <|
                                         describe "two tests"
                                             [ test "fails" <|
-                                                \() -> Expect.fail "failed on purpose"
+                                                \_ -> Expect.fail "failed on purpose"
                                             , Test.only <|
                                                 test "is skipped" <|
-                                                    \() -> Expect.fail "failed on purpose"
+                                                    \_ -> Expect.fail "failed on purpose"
                                             ]
                                     ]
                     in
@@ -113,7 +113,7 @@ fromTest =
                             val ->
                                 Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "a test that uses only is an Only summary" <|
-                \() ->
+                \_ ->
                     case toSeededRunners (Test.only <| test "passes" expectPass) of
                         Only runners ->
                             runners
@@ -123,7 +123,7 @@ fromTest =
                         val ->
                             Expect.fail ("Expected SeededRunner to be Only, but was " ++ toString val)
             , test "a skip inside another skip has no effect" <|
-                \() ->
+                \_ ->
                     let
                         runners =
                             toSeededRunners <|
@@ -132,10 +132,10 @@ fromTest =
                                     , Test.skip <|
                                         describe "two tests"
                                             [ test "fails" <|
-                                                \() -> Expect.fail "failed on purpose"
+                                                \_ -> Expect.fail "failed on purpose"
                                             , Test.skip <|
                                                 test "is skipped" <|
-                                                    \() -> Expect.fail "failed on purpose"
+                                                    \_ -> Expect.fail "failed on purpose"
                                             ]
                                     ]
                     in
@@ -148,7 +148,7 @@ fromTest =
                             val ->
                                 Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "a pair of tests where one uses skip is a Skipping summary" <|
-                \() ->
+                \_ ->
                     let
                         runners =
                             toSeededRunners <|
@@ -156,7 +156,7 @@ fromTest =
                                     [ test "passes" expectPass
                                     , Test.skip <|
                                         test "fails" <|
-                                            \() -> Expect.fail "failed on purpose"
+                                            \_ -> Expect.fail "failed on purpose"
                                     ]
                     in
                         case runners of
@@ -168,7 +168,7 @@ fromTest =
                             val ->
                                 Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "when all tests are skipped, we get an empty Skipping summary" <|
-                \() ->
+                \_ ->
                     case toSeededRunners (Test.skip <| test "passes" expectPass) of
                         Skipping runners ->
                             runners
@@ -178,7 +178,7 @@ fromTest =
                         val ->
                             Expect.fail ("Expected SeededRunner to be Skipping, but was " ++ toString val)
             , test "a test that does not use only or skip is a Plain summary" <|
-                \() ->
+                \_ ->
                     case toSeededRunners (test "passes" expectPass) of
                         Plain runners ->
                             runners

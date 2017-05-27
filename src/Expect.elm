@@ -518,7 +518,7 @@ equalSets expected actual =
 
 
     test "Json.Decode.int can decode the number 42." <|
-        \() ->
+        \_ ->
             case decodeString int "42" of
                 Ok _ ->
                     Expect.pass
@@ -540,7 +540,7 @@ pass =
 
 
     test "Json.Decode.int can decode the number 42." <|
-        \() ->
+        \_ ->
             case decodeString int "42" of
                 Ok _ ->
                     Expect.pass

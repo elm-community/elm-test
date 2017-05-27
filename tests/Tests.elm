@@ -31,14 +31,14 @@ readmeExample =
     describe "The String module"
         [ describe "String.reverse"
             [ test "has no effect on a palindrome" <|
-                \() ->
+                \_ ->
                     let
                         palindrome =
                             "hannah"
                     in
                         Expect.equal palindrome (String.reverse palindrome)
             , test "reverses a known string" <|
-                \() ->
+                \_ ->
                     "ABCDEFG"
                         |> String.reverse
                         |> Expect.equal "GFEDCBA"
@@ -57,11 +57,11 @@ expectationTests =
     describe "Expectations"
         [ describe "Expect.err"
             [ test "passes on Err _" <|
-                \() ->
+                \_ ->
                     Err 12 |> Expect.err
             , expectToFail <|
                 test "passes on Ok _" <|
-                    \() ->
+                    \_ ->
                         Ok 12 |> Expect.err
             ]
         , describe "Expect.all"
