@@ -37,7 +37,15 @@ Instead of using a tuple, consider using `fuzzN`.
 
 import Array exposing (Array)
 import Char
-import Fuzz.Internal as Internal exposing (Fuzz(..), invalidReason)
+import Fuzz.Internal as Internal
+    exposing
+        ( Fuzzer
+        , Valid
+        , ValidFuzzer
+        , combineValid
+        , invalidReason
+        )
+import Lazy
 import Lazy.List exposing (LazyList)
 import Random.Pcg as Random exposing (Generator)
 import RoseTree exposing (RoseTree(..))
@@ -107,15 +115,10 @@ custom : Generator a -> Shrinker a -> Fuzzer a
 custom generator shrinker =
     let
         shrinkTree a =
-            Rose a (Lazy.List.map shrinkTree (shrinker a))
+            Rose a (Lazy.lazy <| \_ -> Lazy.force <| Lazy.List.map shrinkTree (shrinker a))
     in
-    Internal.Fuzzer
-        (\noShrink ->
-            if noShrink then
-                Gen generator
-            else
-                Shrink <| Random.map shrinkTree generator
-        )
+    Ok <|
+        Random.map shrinkTree generator
 
 
 {-| A fuzzer for the unit value. Unit is a type with only one value, commonly
@@ -123,13 +126,9 @@ used as a placeholder.
 -}
 unit : Fuzzer ()
 unit =
-    Internal.Fuzzer
-        (\noShrink ->
-            if noShrink then
-                Gen <| Random.constant ()
-            else
-                Shrink <| Random.constant (RoseTree.singleton ())
-        )
+    RoseTree.singleton ()
+        |> Random.constant
+        |> Ok
 
 
 {-| A fuzzer for bool values.
@@ -186,7 +185,7 @@ the ints x or bigger.
 intRange : Int -> Int -> Fuzzer Int
 intRange lo hi =
     if hi < lo then
-        invalid <| "Fuzz.intRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
+        Err <| "Fuzz.intRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
     else
         custom
             (Random.frequency
@@ -225,7 +224,7 @@ value, inclusive. Shrunken values will also be within the range.
 floatRange : Float -> Float -> Fuzzer Float
 floatRange lo hi =
     if hi < lo then
-        invalid <| "Fuzz.floatRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
+        Err <| "Fuzz.floatRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
     else
         custom
             (Random.frequency
@@ -290,84 +289,39 @@ string =
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
 -}
 maybe : Fuzzer a -> Fuzzer (Maybe a)
-maybe (Internal.Fuzzer baseFuzzer) =
-    Internal.Fuzzer <|
-        \noShrink ->
-            case baseFuzzer noShrink of
-                Gen gen ->
-                    Gen <|
-                        Random.map2
-                            (\useNothing val ->
-                                if useNothing then
-                                    Nothing
-                                else
-                                    Just val
-                            )
-                            (Random.oneIn 4)
-                            gen
-
-                Shrink genTree ->
-                    Shrink <|
-                        Random.map2
-                            (\useNothing tree ->
-                                if useNothing then
-                                    RoseTree.singleton Nothing
-                                else
-                                    RoseTree.map Just tree |> RoseTree.addChild (RoseTree.singleton Nothing)
-                            )
-                            (Random.oneIn 4)
-                            genTree
-
-                InvalidFuzzer reason ->
-                    InvalidFuzzer reason
+maybe fuzzer =
+    let
+        toMaybe : Bool -> RoseTree a -> RoseTree (Maybe a)
+        toMaybe useNothing tree =
+            if useNothing then
+                RoseTree.singleton Nothing
+            else
+                RoseTree.map Just tree |> RoseTree.addChild (RoseTree.singleton Nothing)
+    in
+    (Result.map << Random.map2 toMaybe) (Random.oneIn 4) fuzzer
 
 
 {-| Given fuzzers for an error type and a success type, create a fuzzer for
 a result.
 -}
 result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
-result (Internal.Fuzzer baseFuzzerError) (Internal.Fuzzer baseFuzzerValue) =
-    Internal.Fuzzer <|
-        \noShrink ->
-            case ( baseFuzzerError noShrink, baseFuzzerValue noShrink ) of
-                ( Gen genErr, Gen genVal ) ->
-                    Gen <|
-                        Random.map3
-                            (\useError err val ->
-                                if useError then
-                                    Err err
-                                else
-                                    Ok val
-                            )
-                            (Random.oneIn 4)
-                            genErr
-                            genVal
-
-                ( Shrink genTreeErr, Shrink genTreeVal ) ->
-                    Shrink <|
-                        Random.map3
-                            (\useError errorTree valueTree ->
-                                if useError then
-                                    RoseTree.map Err errorTree
-                                else
-                                    RoseTree.map Ok valueTree
-                            )
-                            (Random.oneIn 4)
-                            genTreeErr
-                            genTreeVal
-
-                ( a, b ) ->
-                    [ invalidReason a, invalidReason b ]
-                        |> List.filterMap identity
-                        |> String.join " "
-                        |> InvalidFuzzer
+result fuzzerError fuzzerValue =
+    let
+        toResult : Bool -> RoseTree error -> RoseTree value -> RoseTree (Result error value)
+        toResult useError errorTree valueTree =
+            if useError then
+                RoseTree.map Err errorTree
+            else
+                RoseTree.map Ok valueTree
+    in
+    (Result.map2 <| Random.map3 toResult (Random.oneIn 4)) fuzzerError fuzzerValue
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a list of that type.
 Generates random lists of varying length, favoring shorter lists.
 -}
 list : Fuzzer a -> Fuzzer (List a)
-list (Internal.Fuzzer baseFuzzer) =
+list fuzzer =
     let
         genLength =
             Random.frequency
@@ -378,23 +332,13 @@ list (Internal.Fuzzer baseFuzzer) =
                 , ( 0.5, Random.int 100 400 )
                 ]
     in
-    Internal.Fuzzer
-        (\noShrink ->
-            case baseFuzzer noShrink of
-                Gen genVal ->
-                    genLength
-                        |> Random.andThen (\i -> Random.list i genVal)
-                        |> Gen
-
-                Shrink genTree ->
-                    genLength
-                        |> Random.andThen (\i -> Random.list i genTree)
-                        |> Random.map listShrinkHelp
-                        |> Shrink
-
-                InvalidFuzzer reason ->
-                    InvalidFuzzer reason
-        )
+    fuzzer
+        |> Result.map
+            (\validFuzzer ->
+                genLength
+                    |> Random.andThen (flip Random.list validFuzzer)
+                    |> Random.map listShrinkHelp
+            )
 
 
 listShrinkHelp : List (RoseTree a) -> RoseTree (List a)
@@ -452,158 +396,62 @@ array fuzzer =
     map Array.fromList (list fuzzer)
 
 
-{-| Turn a tuple of fuzzers into a fuzzer of tuples.
+{-| Map over two fuzzers.
 -}
-tuple : ( Fuzzer a, Fuzzer b ) -> Fuzzer ( a, b )
-tuple ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB ) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case ( baseFuzzerA noShrink, baseFuzzerB noShrink ) of
-                ( Gen genA, Gen genB ) ->
-                    Gen <| Random.map2 (,) genA genB
-
-                ( Shrink genTreeA, Shrink genTreeB ) ->
-                    Shrink <| Random.map2 tupleShrinkHelp genTreeA genTreeB
-
-                ( a, b ) ->
-                    [ invalidReason a, invalidReason b ]
-                        |> List.filterMap identity
-                        |> String.join " "
-                        |> InvalidFuzzer
-        )
+map2 : (a -> b -> c) -> Fuzzer a -> Fuzzer b -> Fuzzer c
+map2 transform fuzzA fuzzB =
+    (Result.map2 << Random.map2) (map2ShrinkHelp transform) fuzzA fuzzB
 
 
-tupleShrinkHelp : RoseTree a -> RoseTree b -> RoseTree ( a, b )
-tupleShrinkHelp ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) =
-    {- Shrinking a tuple of RoseTrees
-       Recurse on all tuples created by substituting one element for any of its shrunken values.
-
+map2ShrinkHelp : (a -> b -> c) -> RoseTree a -> RoseTree b -> RoseTree c
+map2ShrinkHelp transform ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) =
+    {- Shrinking a pair of RoseTrees
+       Recurse on all pairs created by substituting one element for any of its shrunken values.
        A weakness of this algorithm is that it expects that values can be shrunken independently.
        That is, to shrink from (a,b) to (a',b'), we must go through (a',b) or (a,b').
        "No pairs sum to zero" is a pathological predicate that cannot be shrunken this way.
     -}
     let
         root =
-            ( root1, root2 )
+            transform root1 root2
 
         shrink1 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp subtree rose2) children1
+            Lazy.List.map (\subtree -> map2ShrinkHelp transform subtree rose2) children1
 
         shrink2 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp rose1 subtree) children2
+            Lazy.List.map (\subtree -> map2ShrinkHelp transform rose1 subtree) children2
     in
     shrink2
         |> Lazy.List.append shrink1
         |> Rose root
 
 
+{-| Turn a tuple of fuzzers into a fuzzer of tuples.
+-}
+tuple : ( Fuzzer a, Fuzzer b ) -> Fuzzer ( a, b )
+tuple ( fuzzerA, fuzzerB ) =
+    map2 (,) fuzzerA fuzzerB
+
+
 {-| Turn a 3-tuple of fuzzers into a fuzzer of 3-tuples.
 -}
 tuple3 : ( Fuzzer a, Fuzzer b, Fuzzer c ) -> Fuzzer ( a, b, c )
-tuple3 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzzer baseFuzzerC ) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case ( baseFuzzerA noShrink, baseFuzzerB noShrink, baseFuzzerC noShrink ) of
-                ( Gen genA, Gen genB, Gen genC ) ->
-                    Gen <| Random.map3 (,,) genA genB genC
-
-                ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC ) ->
-                    Shrink <| Random.map3 tupleShrinkHelp3 genTreeA genTreeB genTreeC
-
-                ( a, b, c ) ->
-                    [ invalidReason a, invalidReason b, invalidReason c ]
-                        |> List.filterMap identity
-                        |> String.join " "
-                        |> InvalidFuzzer
-        )
-
-
-tupleShrinkHelp3 : RoseTree a -> RoseTree b -> RoseTree c -> RoseTree ( a, b, c )
-tupleShrinkHelp3 ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) ((Rose root3 children3) as rose3) =
-    let
-        root =
-            ( root1, root2, root3 )
-
-        shrink1 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp3 subtree rose2 rose3) children1
-
-        shrink2 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp3 rose1 subtree rose3) children2
-
-        shrink3 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp3 rose1 rose2 subtree) children3
-    in
-    shrink3
-        |> Lazy.List.append shrink2
-        |> Lazy.List.append shrink1
-        |> Rose root
+tuple3 ( fuzzerA, fuzzerB, fuzzerC ) =
+    map3 (,,) fuzzerA fuzzerB fuzzerC
 
 
 {-| Turn a 4-tuple of fuzzers into a fuzzer of 4-tuples.
 -}
 tuple4 : ( Fuzzer a, Fuzzer b, Fuzzer c, Fuzzer d ) -> Fuzzer ( a, b, c, d )
-tuple4 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzzer baseFuzzerC, Internal.Fuzzer baseFuzzerD ) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case ( baseFuzzerA noShrink, baseFuzzerB noShrink, baseFuzzerC noShrink, baseFuzzerD noShrink ) of
-                ( Gen genA, Gen genB, Gen genC, Gen genD ) ->
-                    Gen <| Random.map4 (,,,) genA genB genC genD
-
-                ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC, Shrink genTreeD ) ->
-                    Shrink <| Random.map4 tupleShrinkHelp4 genTreeA genTreeB genTreeC genTreeD
-
-                ( a, b, c, d ) ->
-                    [ invalidReason a, invalidReason b, invalidReason c, invalidReason d ]
-                        |> List.filterMap identity
-                        |> String.join " "
-                        |> InvalidFuzzer
-        )
-
-
-tupleShrinkHelp4 : RoseTree a -> RoseTree b -> RoseTree c -> RoseTree d -> RoseTree ( a, b, c, d )
-tupleShrinkHelp4 rose1 rose2 rose3 rose4 =
-    let
-        root =
-            ( RoseTree.root rose1, RoseTree.root rose2, RoseTree.root rose3, RoseTree.root rose4 )
-
-        shrink1 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp4 subtree rose2 rose3 rose4) (RoseTree.children rose1)
-
-        shrink2 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp4 rose1 subtree rose3 rose4) (RoseTree.children rose2)
-
-        shrink3 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp4 rose1 rose2 subtree rose4) (RoseTree.children rose3)
-
-        shrink4 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp4 rose1 rose2 rose3 subtree) (RoseTree.children rose4)
-    in
-    shrink4
-        |> Lazy.List.append shrink3
-        |> Lazy.List.append shrink2
-        |> Lazy.List.append shrink1
-        |> Rose root
+tuple4 ( fuzzerA, fuzzerB, fuzzerC, fuzzerD ) =
+    map4 (,,,) fuzzerA fuzzerB fuzzerC fuzzerD
 
 
 {-| Turn a 5-tuple of fuzzers into a fuzzer of 5-tuples.
 -}
 tuple5 : ( Fuzzer a, Fuzzer b, Fuzzer c, Fuzzer d, Fuzzer e ) -> Fuzzer ( a, b, c, d, e )
-tuple5 ( Internal.Fuzzer baseFuzzerA, Internal.Fuzzer baseFuzzerB, Internal.Fuzzer baseFuzzerC, Internal.Fuzzer baseFuzzerD, Internal.Fuzzer baseFuzzerE ) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case ( baseFuzzerA noShrink, baseFuzzerB noShrink, baseFuzzerC noShrink, baseFuzzerD noShrink, baseFuzzerE noShrink ) of
-                ( Gen genA, Gen genB, Gen genC, Gen genD, Gen genE ) ->
-                    Gen <| Random.map5 (,,,,) genA genB genC genD genE
-
-                ( Shrink genTreeA, Shrink genTreeB, Shrink genTreeC, Shrink genTreeD, Shrink genTreeE ) ->
-                    Shrink <| Random.map5 tupleShrinkHelp5 genTreeA genTreeB genTreeC genTreeD genTreeE
-
-                ( a, b, c, d, e ) ->
-                    [ invalidReason a, invalidReason b, invalidReason c, invalidReason d, invalidReason e ]
-                        |> List.filterMap identity
-                        |> String.join " "
-                        |> InvalidFuzzer
-        )
+tuple5 ( fuzzerA, fuzzerB, fuzzerC, fuzzerD, fuzzerE ) =
+    map5 (,,,,) fuzzerA fuzzerB fuzzerC fuzzerD fuzzerE
 
 
 tupleShrinkHelp5 : RoseTree a -> RoseTree b -> RoseTree c -> RoseTree d -> RoseTree e -> RoseTree ( a, b, c, d, e )
@@ -640,71 +488,52 @@ and so this function is best used as a helper when creating more complicated fuz
 -}
 constant : a -> Fuzzer a
 constant x =
-    Internal.Fuzzer
-        (\noShrink ->
-            if noShrink then
-                Gen (Random.constant x)
-            else
-                Shrink (Random.constant (RoseTree.singleton x))
-        )
+    Ok <| Random.constant (RoseTree.singleton x)
 
 
 {-| Map a function over a fuzzer. This applies to both the generated and the shrunken values.
 -}
 map : (a -> b) -> Fuzzer a -> Fuzzer b
-map transform (Internal.Fuzzer baseFuzzer) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case baseFuzzer noShrink of
-                Gen genVal ->
-                    Gen <| Random.map transform genVal
-
-                Shrink genTree ->
-                    Shrink <| Random.map (RoseTree.map transform) genTree
-
-                InvalidFuzzer reason ->
-                    InvalidFuzzer reason
-        )
-
-
-{-| Map over two fuzzers.
--}
-map2 : (a -> b -> c) -> Fuzzer a -> Fuzzer b -> Fuzzer c
-map2 transform fuzzA fuzzB =
-    map (\( a, b ) -> transform a b) (tuple ( fuzzA, fuzzB ))
+map =
+    Internal.map
 
 
 {-| Map over three fuzzers.
 -}
 map3 : (a -> b -> c -> d) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d
 map3 transform fuzzA fuzzB fuzzC =
-    map (\( a, b, c ) -> transform a b c) (tuple3 ( fuzzA, fuzzB, fuzzC ))
+    map transform fuzzA
+        |> andMap fuzzB
+        |> andMap fuzzC
 
 
 {-| Map over four fuzzers.
 -}
 map4 : (a -> b -> c -> d -> e) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d -> Fuzzer e
 map4 transform fuzzA fuzzB fuzzC fuzzD =
-    map (\( a, b, c, d ) -> transform a b c d) (tuple4 ( fuzzA, fuzzB, fuzzC, fuzzD ))
+    map transform fuzzA
+        |> andMap fuzzB
+        |> andMap fuzzC
+        |> andMap fuzzD
 
 
 {-| Map over five fuzzers.
 -}
 map5 : (a -> b -> c -> d -> e -> f) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d -> Fuzzer e -> Fuzzer f
 map5 transform fuzzA fuzzB fuzzC fuzzD fuzzE =
-    map (\( a, b, c, d, e ) -> transform a b c d e) (tuple5 ( fuzzA, fuzzB, fuzzC, fuzzD, fuzzE ))
+    map transform fuzzA
+        |> andMap fuzzB
+        |> andMap fuzzC
+        |> andMap fuzzD
+        |> andMap fuzzE
 
 
 {-| Map over many fuzzers. This can act as mapN for N > 5.
-
 The argument order is meant to accommodate chaining:
-
-    map f aFuzzer
-        |> andMap anotherFuzzer
-        |> andMap aThirdFuzzer
-
+map f aFuzzer
+|> andMap anotherFuzzer
+|> andMap aThirdFuzzer
 Note that shrinking may be better using mapN.
-
 -}
 andMap : Fuzzer a -> Fuzzer (a -> b) -> Fuzzer b
 andMap =
@@ -714,65 +543,8 @@ andMap =
 {-| Create a fuzzer based on the result of another fuzzer.
 -}
 andThen : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
-andThen transform (Internal.Fuzzer baseFuzzer) =
-    Internal.Fuzzer
-        (\noShrink ->
-            case baseFuzzer noShrink of
-                Gen genVal ->
-                    Gen <| Random.andThen (transform >> Internal.unpackGenVal) genVal
-
-                Shrink genTree ->
-                    Shrink <| andThenRoseTrees transform genTree
-
-                InvalidFuzzer reason ->
-                    InvalidFuzzer reason
-        )
-
-
-andThenRoseTrees : (a -> Fuzzer b) -> Generator (RoseTree a) -> Generator (RoseTree b)
-andThenRoseTrees transform genTree =
-    genTree
-        |> Random.andThen
-            (\(Rose root branches) ->
-                let
-                    genOtherChildren : Generator (LazyList (RoseTree b))
-                    genOtherChildren =
-                        branches
-                            |> Lazy.List.map (\rt -> RoseTree.map (transform >> Internal.unpackGenTree) rt |> unwindRoseTree)
-                            |> unwindLazyList
-                            |> Random.map (Lazy.List.map RoseTree.flatten)
-                in
-                Random.map2
-                    (\(Rose trueRoot rootsChildren) otherChildren ->
-                        Rose trueRoot (Lazy.List.append rootsChildren otherChildren)
-                    )
-                    (Internal.unpackGenTree (transform root))
-                    genOtherChildren
-            )
-
-
-unwindRoseTree : RoseTree (Generator a) -> Generator (RoseTree a)
-unwindRoseTree (Rose genRoot lazyListOfRoseTreesOfGenerators) =
-    case Lazy.List.headAndTail lazyListOfRoseTreesOfGenerators of
-        Nothing ->
-            Random.map RoseTree.singleton genRoot
-
-        Just ( Rose gen children, moreList ) ->
-            Random.map4 (\a b c d -> Rose a (Lazy.List.cons (Rose b c) d))
-                genRoot
-                gen
-                (Lazy.List.map unwindRoseTree children |> unwindLazyList)
-                (Lazy.List.map unwindRoseTree moreList |> unwindLazyList)
-
-
-unwindLazyList : LazyList (Generator a) -> Generator (LazyList a)
-unwindLazyList lazyListOfGenerators =
-    case Lazy.List.headAndTail lazyListOfGenerators of
-        Nothing ->
-            Random.constant Lazy.List.empty
-
-        Just ( head, tail ) ->
-            Random.map2 Lazy.List.cons head (unwindLazyList tail)
+andThen =
+    Internal.andThen
 
 
 {-| Conditionally filter a fuzzer to remove occasional undesirable
@@ -780,10 +552,8 @@ input. Takes a limit for how many retries to attempt, and a fallback
 function to, if no acceptable input can be found, create one from an
 unacceptable one. Also takes a condition to determine if the input is
 acceptable or not, and finally the fuzzer itself.
-
 A good number of max retires is ten. A large number of retries might
 blow the stack.
-
 -}
 conditional : { retries : Int, fallback : a -> a, condition : a -> Bool } -> Fuzzer a -> Fuzzer a
 conditional { retries, fallback, condition } fuzzer =
@@ -791,7 +561,7 @@ conditional { retries, fallback, condition } fuzzer =
         map fallback fuzzer
     else
         fuzzer
-            |> andThen
+            |> Internal.andThenNoHistory
                 (\val ->
                     if condition val then
                         constant val
@@ -802,41 +572,35 @@ conditional { retries, fallback, condition } fuzzer =
 
 {-| Create a new `Fuzzer` by providing a list of probabilistic weights to use
 with other fuzzers.
-
 For example, to create a `Fuzzer` that has a 1/4 chance of generating an int
 between -1 and -100, and a 3/4 chance of generating one between 1 and 100,
 you could do this:
-
-    Fuzz.frequency
-        [ ( 1, Fuzz.intRange -100 -1 )
-        , ( 3, Fuzz.intRange 1 100 )
-        ]
-
+Fuzz.frequency
+[ ( 1, Fuzz.intRange -100 -1 )
+, ( 3, Fuzz.intRange 1 100 )
+]
 There are a few circumstances in which this function will return an invalid
 fuzzer, which causes it to fail any test that uses it:
 
   - If you provide an empty list of frequencies
   - If any of the weights are less than 0
   - If the weights sum to 0
-
-Be careful recursively using this fuzzer in its arguments. Often using `map`
-is a better way to do what you want. If you are fuzzing a tree-like data
-structure, you should include a depth limit so to avoid infinite recursion, like
-so:
-
+    Be careful recursively using this fuzzer in its arguments. Often using `map`
+    is a better way to do what you want. If you are fuzzing a tree-like data
+    structure, you should include a depth limit so to avoid infinite recursion, like
+    so:
     type Tree
-        = Leaf
-        | Branch Tree Tree
-
+    = Leaf
+    | Branch Tree Tree
     tree : Int -> Fuzzer Tree
     tree i =
-        if i <= 0 then
-            Fuzz.constant Leaf
-        else
-            Fuzz.frequency
-                [ ( 1, Fuzz.constant Leaf )
-                , ( 2, Fuzz.map2 Branch (tree (i - 1)) (tree (i - 1)) )
-                ]
+    if i <= 0 then
+    Fuzz.constant Leaf
+    else
+    Fuzz.frequency
+    [ ( 1, Fuzz.constant Leaf )
+    , ( 2, Fuzz.map2 Branch (tree (i - 1)) (tree (i - 1)) )
+    ]
 
 -}
 frequency : List ( Float, Fuzzer a ) -> Fuzzer a
@@ -848,18 +612,15 @@ frequency list =
     else if List.sum (List.map Tuple.first list) <= 0 then
         invalid "Frequency weights must sum to more than 0."
     else
-        Internal.Fuzzer <|
-            \noShrink ->
-                if noShrink then
-                    list
-                        |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenVal fuzzer ))
-                        |> Random.frequency
-                        |> Gen
-                else
-                    list
-                        |> List.map (\( weight, fuzzer ) -> ( weight, Internal.unpackGenTree fuzzer ))
-                        |> Random.frequency
-                        |> Shrink
+        list
+            |> List.map extractValid
+            |> combineValid
+            |> Result.map Random.frequency
+
+
+extractValid : ( a, Valid b ) -> Valid ( a, b )
+extractValid ( a, valid ) =
+    Result.map ((,) a) valid
 
 
 {-| Choose one of the given fuzzers at random. Each fuzzer has an equal chance
@@ -886,4 +647,4 @@ are also invalid. Any tests using an invalid fuzzer fail.
 -}
 invalid : String -> Fuzzer a
 invalid reason =
-    Internal.Fuzzer (\_ -> InvalidFuzzer reason)
+    Err reason

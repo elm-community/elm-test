@@ -2,7 +2,6 @@ module FuzzerTests exposing (fuzzerTests)
 
 import Expect
 import Fuzz exposing (..)
-import Fuzz.Internal
 import Helpers exposing (..)
 import Random.Pcg as Random
 import RoseTree
@@ -77,10 +76,10 @@ fuzzerTests =
                                 )
 
                         valNoShrink =
-                            aFuzzer |> Fuzz.Internal.unpackGenVal |> step |> Tuple.first
+                            aFuzzer |> Result.map (Random.map RoseTree.root >> step >> Tuple.first)
 
                         valWithShrink =
-                            aFuzzer |> Fuzz.Internal.unpackGenTree |> step |> Tuple.first |> RoseTree.root
+                            aFuzzer |> Result.map (step >> Tuple.first >> RoseTree.root)
                     in
                     Expect.equal valNoShrink valWithShrink
             , shrinkingTests
@@ -161,7 +160,14 @@ manualFuzzerTests =
                         n % 2 == 0
 
                     pair =
-                        Random.step (Test.Runner.fuzz fuzzer) seed |> Tuple.first
+                        case fuzzer of
+                            Ok validFuzzer ->
+                                Random.step (Test.Runner.fuzz validFuzzer) seed
+                                    |> Tuple.first
+                                    |> Just
+
+                            Err _ ->
+                                Nothing
 
                     unfold acc maybePair =
                         case maybePair of
@@ -174,13 +180,13 @@ manualFuzzerTests =
                             Nothing ->
                                 acc
                 in
-                unfold [] (Just pair)
+                unfold [] pair
                     |> Expect.all
                         [ List.all failsTest >> Expect.true "Not all elements were even"
                         , List.head
                             >> Maybe.map (Expect.all [ Expect.lessThan 5, Expect.atLeast 0 ])
                             >> Maybe.withDefault (Expect.fail "Did not cause failure")
-                        , List.reverse >> List.head >> Expect.equal (Just (Tuple.first pair))
+                        , List.reverse >> List.head >> Expect.equal (Maybe.map Tuple.first pair)
                         ]
         , fuzz randomSeedFuzzer "No strings contain the letter e" <|
             \seed ->
@@ -193,7 +199,14 @@ manualFuzzerTests =
                         String.contains "e"
 
                     pair =
-                        Random.step (Test.Runner.fuzz fuzzer) seed |> Tuple.first
+                        case fuzzer of
+                            Ok validFuzzer ->
+                                Random.step (Test.Runner.fuzz validFuzzer) seed
+                                    |> Tuple.first
+                                    |> Just
+
+                            Err _ ->
+                                Nothing
 
                     unfold acc maybePair =
                         case maybePair of
@@ -206,10 +219,10 @@ manualFuzzerTests =
                             Nothing ->
                                 acc
                 in
-                unfold [] (Just pair)
+                unfold [] pair
                     |> Expect.all
                         [ List.all failsTest >> Expect.true "Not all contained the letter e"
                         , List.head >> Expect.equal (Just "e")
-                        , List.reverse >> List.head >> Expect.equal (Just (Tuple.first pair))
+                        , List.reverse >> List.head >> Expect.equal (Maybe.map Tuple.first pair)
                         ]
         ]

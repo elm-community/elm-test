@@ -1,83 +1,121 @@
-module Fuzz.Internal exposing (Fuzz(..), Fuzzer(Fuzzer), invalidReason, unpackGenTree, unpackGenVal)
+module Fuzz.Internal exposing (Fuzzer, Valid, ValidFuzzer, andThen, andThenNoHistory, combineValid, invalidReason, map)
 
-import Random.Pcg exposing (Generator)
-import RoseTree exposing (RoseTree)
-
-
-{- Fuzzers as opt-in RoseTrees
-
-   In the beginning, a Fuzzer was a record of a random generator and a shrinker.
-   And it was bad, because that makes it impossible to shrink any value created by
-   mapping over other values. But at least it was fast, and shrinking worked well.
-
-   On the second branch, we created RoseTrees, where every randomly-generated value
-   also kept a lazy list of shrunken values, which also keep shrunken forms of
-   themselves. This allows for advanced maps to be implemented, but it was slow.
-
-   On the third branch, we realized that we shouldn't have to pay for shrinking in
-   the common case of a passing test. So Fuzzers became a function from a boolean
-   to either another union type. If the function is passed True, it returns a
-   Generator of a single value; if False, a Generator of a RoseTree of values.
-   (This is almost certainly dependent types leaning on Debug.crash.) The root of
-   the RoseTree must equal the single value. Thus the testing harness "opts-in" to
-   producing a rosetree, doing so only after the single-value generator has caused
-   a test to fail.
-
-   These two optimizations make the Fuzzer code rather hard to understand, but
-   allow it to offer a full mapping API, be fast for passing tests, and provide
-   shrunken values for failing tests.
-
-   Much later it was decided that fuzzers should carry the possibility of being
-   invalid. An invalid fuzzer fails all tests. All fuzzers derived from one are
-   also invalid.
--}
+import Lazy.List exposing ((:::), LazyList)
+import Random.Pcg as Random exposing (Generator)
+import RoseTree exposing (RoseTree(Rose))
 
 
-{-| Passing True to any fuzzer should never return Shrink. Passing False should
-never return a Gen. If a fuzzer returns InvalidFuzzer for one bool, it must do
-so for the other.
--}
-type Fuzzer a
-    = Fuzzer (Bool -> Fuzz a)
+type alias Fuzzer a =
+    Valid (ValidFuzzer a)
 
 
-type Fuzz a
-    = Gen (Generator a)
-    | Shrink (Generator (RoseTree a))
-    | InvalidFuzzer String
+type alias Valid a =
+    Result String a
 
 
-
-{- These unpack functions are only safe to use once you know that the Fuzzer is
-   not invalid.
--}
+type alias ValidFuzzer a =
+    Generator (RoseTree a)
 
 
-unpackGenVal : Fuzzer a -> Generator a
-unpackGenVal (Fuzzer g) =
-    case g True of
-        Gen genVal ->
-            genVal
+combineValid : List (Valid a) -> Valid (List a)
+combineValid valids =
+    case valids of
+        [] ->
+            Ok []
 
-        err ->
-            Debug.crash "This shouldn't happen: Fuzz.Internal.unpackGenVal" err
+        (Ok x) :: rest ->
+            Result.map ((::) x) (combineValid rest)
 
-
-unpackGenTree : Fuzzer a -> Generator (RoseTree a)
-unpackGenTree (Fuzzer g) =
-    case g False of
-        Shrink genTree ->
-            genTree
-
-        err ->
-            Debug.crash "This shouldn't happen: Fuzz.Internal.unpackGenTree" err
+        (Err reason) :: _ ->
+            Err reason
 
 
-invalidReason : Fuzz a -> Maybe String
-invalidReason fuzz =
-    case fuzz of
-        InvalidFuzzer reason ->
-            Just reason
+map : (a -> b) -> Fuzzer a -> Fuzzer b
+map fn fuzzer =
+    (Result.map << Random.map << RoseTree.map) fn fuzzer
 
-        _ ->
+
+andThen : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
+andThen fn fuzzer =
+    let
+        helper : (a -> Fuzzer b) -> RoseTree a -> ValidFuzzer b
+        helper fn xs =
+            RoseTree.map fn xs
+                |> removeInvalid
+                |> sequenceRoseTree
+                |> Random.map RoseTree.flatten
+    in
+    Result.map (Random.andThen (helper fn)) fuzzer
+
+
+andThenNoHistory : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
+andThenNoHistory fn fuzzer =
+    let
+        helper : (a -> Fuzzer b) -> RoseTree a -> ValidFuzzer b
+        helper fn (Rose root _) =
+            case fn root of
+                Ok validFuzzer ->
+                    validFuzzer
+
+                Err _ ->
+                    Debug.crash "Returning an invalid fuzzer from `andThen` is currently unsupported"
+    in
+    Result.map (Random.andThen (helper fn)) fuzzer
+
+
+removeInvalid : RoseTree (Valid a) -> RoseTree a
+removeInvalid tree =
+    case RoseTree.filterMap getValid tree of
+        Just newTree ->
+            newTree
+
+        Nothing ->
+            Debug.crash "Returning an invalid fuzzer from `andThen` is currently unsupported"
+
+
+sequenceRoseTree : RoseTree (Generator a) -> Generator (RoseTree a)
+sequenceRoseTree (Rose root branches) =
+    Random.map2
+        Rose
+        root
+        (Lazy.List.map sequenceRoseTree branches |> sequenceLazyList)
+
+
+sequenceLazyList : LazyList (Generator a) -> Generator (LazyList a)
+sequenceLazyList xs =
+    Random.independentSeed
+        |> Random.map (runAll xs)
+
+
+runAll : LazyList (Generator a) -> Random.Seed -> LazyList a
+runAll xs initialSeed =
+    let
+        foldHelper generator ( xs, seed ) =
+            let
+                ( x, newSeed ) =
+                    Random.step generator seed
+            in
+            ( x ::: xs, newSeed )
+    in
+    Lazy.List.foldl foldHelper ( Lazy.List.empty, initialSeed ) xs
+        |> Tuple.first
+
+
+getValid : Valid a -> Maybe a
+getValid valid =
+    case valid of
+        Ok x ->
+            Just x
+
+        Err _ ->
             Nothing
+
+
+invalidReason : Valid a -> Maybe String
+invalidReason valid =
+    case valid of
+        Ok _ ->
+            Nothing
+
+        Err reason ->
+            Just reason
