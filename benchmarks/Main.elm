@@ -2,10 +2,11 @@ module Main exposing (..)
 
 import Benchmark exposing (..)
 import Benchmark.Runner as Runner
-import Expect
-import Fuzz
+import Expect exposing (Expectation)
 import Random.Pcg
-import Test.Fuzz exposing (getFailures)
+import Snippets.FormattedText
+import Snippets.Order
+import Test.Internal exposing (Test(Labeled, Test))
 
 
 main : Runner.BenchmarkProgram
@@ -15,42 +16,22 @@ main =
 
 suite : Benchmark
 suite =
-    let
-        mapFuzzer =
-            Fuzz.int
-                |> Fuzz.map ((+) 1)
-                |> Fuzz.map ((+) 1)
-                |> Fuzz.map ((+) 1)
-                |> Fuzz.map ((+) 1)
-
-        andMapFuzzer =
-            Fuzz.constant (,,,)
-                |> Fuzz.andMap Fuzz.int
-                |> Fuzz.andMap Fuzz.int
-                |> Fuzz.andMap Fuzz.int
-                |> Fuzz.andMap Fuzz.int
-
-        andThenFuzzer =
-            Fuzz.bool
-                |> Fuzz.andThen (\_ -> Fuzz.bool)
-                |> Fuzz.andThen (\_ -> Fuzz.bool)
-                |> Fuzz.andThen (\_ -> Fuzz.bool)
-                |> Fuzz.andThen (\_ -> Fuzz.bool)
-
-        seed =
-            Random.Pcg.initialSeed 0
-
-        pass _ =
-            Expect.pass
-
-        fail _ =
-            Expect.fail "Oops"
-    in
     describe "Fuzz"
-        [ benchmark4 "map - generating" getFailures mapFuzzer pass seed 100
-        , benchmark4 "map - shrinking" getFailures mapFuzzer fail seed 100
-        , benchmark4 "andMap - generating" getFailures andMapFuzzer pass seed 100
-        , benchmark4 "andMap - shrinking" getFailures andMapFuzzer fail seed 100
-        , benchmark4 "andThen - generating" getFailures andThenFuzzer pass seed 100
-        , benchmark4 "andThen - shrinking" getFailures andThenFuzzer fail seed 100
+        [ benchmark "Passing test using a fuzzed list" (benchTest Snippets.Order.test1)
+        , benchmark "Failing test using a fuzzed list" (benchTest Snippets.Order.test2)
+        , benchmark "Passing test using a fuzzer mapping" (benchTest Snippets.FormattedText.test1)
+        , benchmark "Failing test using a fuzzer mapping" (benchTest Snippets.FormattedText.test2)
         ]
+
+
+benchTest : Test -> (() -> List Expectation)
+benchTest test =
+    case test of
+        Test fn ->
+            \_ -> fn (Random.Pcg.initialSeed 0) 10
+
+        Labeled _ test ->
+            benchTest test
+
+        test ->
+            Debug.crash <| "No support for benchmarking this type of test: " ++ toString test
