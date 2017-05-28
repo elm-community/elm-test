@@ -552,8 +552,10 @@ input. Takes a limit for how many retries to attempt, and a fallback
 function to, if no acceptable input can be found, create one from an
 unacceptable one. Also takes a condition to determine if the input is
 acceptable or not, and finally the fuzzer itself.
+
 A good number of max retires is ten. A large number of retries might
 blow the stack.
+
 -}
 conditional : { retries : Int, fallback : a -> a, condition : a -> Bool } -> Fuzzer a -> Fuzzer a
 conditional { retries, fallback, condition } fuzzer =
@@ -575,32 +577,37 @@ with other fuzzers.
 For example, to create a `Fuzzer` that has a 1/4 chance of generating an int
 between -1 and -100, and a 3/4 chance of generating one between 1 and 100,
 you could do this:
-Fuzz.frequency
-[ ( 1, Fuzz.intRange -100 -1 )
-, ( 3, Fuzz.intRange 1 100 )
-]
+
+    Fuzz.frequency
+    [ ( 1, Fuzz.intRange -100 -1 )
+    , ( 3, Fuzz.intRange 1 100 )
+    ]
+
 There are a few circumstances in which this function will return an invalid
 fuzzer, which causes it to fail any test that uses it:
 
   - If you provide an empty list of frequencies
   - If any of the weights are less than 0
   - If the weights sum to 0
-    Be careful recursively using this fuzzer in its arguments. Often using `map`
-    is a better way to do what you want. If you are fuzzing a tree-like data
-    structure, you should include a depth limit so to avoid infinite recursion, like
-    so:
+
+Be careful recursively using this fuzzer in its arguments. Often using `map`
+is a better way to do what you want. If you are fuzzing a tree-like data
+structure, you should include a depth limit so to avoid infinite recursion, like
+so:
+
     type Tree
-    = Leaf
-    | Branch Tree Tree
+        = Leaf
+        | Branch Tree Tree
+
     tree : Int -> Fuzzer Tree
     tree i =
-    if i <= 0 then
-    Fuzz.constant Leaf
-    else
-    Fuzz.frequency
-    [ ( 1, Fuzz.constant Leaf )
-    , ( 2, Fuzz.map2 Branch (tree (i - 1)) (tree (i - 1)) )
-    ]
+        if i <= 0 then
+            Fuzz.constant Leaf
+        else
+            Fuzz.frequency
+                [ ( 1, Fuzz.constant Leaf )
+                , ( 2, Fuzz.map2 Branch (tree (i - 1)) (tree (i - 1)) )
+                ]
 
 -}
 frequency : List ( Float, Fuzzer a ) -> Fuzzer a
