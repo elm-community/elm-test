@@ -12,7 +12,7 @@ suite =
     describe "The String module"
         [ describe "String.reverse" -- Nest as many descriptions as you like.
             [ test "has no effect on a palindrome" <|
-                \() ->
+                \_ ->
                     let
                         palindrome =
                             "hannah"
@@ -21,7 +21,7 @@ suite =
 
             -- Expect.equal is designed to be used in pipeline style, like this.
             , test "reverses a known string" <|
-                \() ->
+                \_ ->
                     "ABCDEFG"
                         |> String.reverse
                         |> Expect.equal "GFEDCBA"
@@ -83,12 +83,12 @@ wipSuite =
     describe "skip, only, and todo"
         [ only <| describe "Marking this test as `only` means no other tests will be run!"
             [ test "This test will be run" <|
-                  \() -> 1 + 1 |> Expect.equal 2
+                  \_ -> 1 + 1 |> Expect.equal 2
             , skip <| "This test will be skipped, even though it's in an only!" <|
-                  \() -> 2 + 3 |> Expect.equal 4
+                  \_ -> 2 + 3 |> Expect.equal 4
             ]
         , test "This test will be skipped because it has no only" <|
-            \() -> "left" |> Expect.equal "right"
+            \_ -> "left" |> Expect.equal "right"
         , todo "Make sure all splines are reticulated"
         ]
 ```

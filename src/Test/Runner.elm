@@ -147,7 +147,7 @@ fromRunnableTreeHelp labels runner =
     case runner of
         Runnable runnable ->
             [ { labels = labels
-              , run = \() -> run runnable
+              , run = \_ -> run runnable
               }
             ]
 
@@ -218,7 +218,7 @@ distributeSeeds runs seed test =
                     Random.Pcg.step Random.Pcg.independentSeed seed
             in
             { seed = nextSeed
-            , all = [ Runnable (Thunk (\() -> run firstSeed runs)) ]
+            , all = [ Runnable (Thunk (\_ -> run firstSeed runs)) ]
             , only = []
             , skipped = []
             }
