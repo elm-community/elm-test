@@ -336,17 +336,47 @@ which argument is which:
 
 -}
 within : FloatingPointTolerance -> Float -> Float -> Expectation
-within tolerance =
-    compareWith ("Expect.within " ++ toString tolerance)
-        (withinCompare tolerance)
+within tolerance a b =
+    nonNegativeToleranceError tolerance "notWithin" <|
+        compareWith ("Expect.within " ++ toString tolerance)
+            (withinCompare tolerance)
+            a
+            b
 
 
 {-| Passes if (and only if) a call to `within` with the same arguments would have failed.
 -}
 notWithin : FloatingPointTolerance -> Float -> Float -> Expectation
-notWithin tolerance =
-    compareWith ("Expect.notWithin " ++ toString tolerance)
-        (\a b -> not <| withinCompare tolerance a b)
+notWithin tolerance a b =
+    nonNegativeToleranceError tolerance "notWithin" <|
+        compareWith ("Expect.notWithin " ++ toString tolerance)
+            (\a b -> not <| withinCompare tolerance a b)
+            a
+            b
+
+
+nonNegativeToleranceError : FloatingPointTolerance -> String -> Expectation -> Expectation
+nonNegativeToleranceError tol name result =
+    let
+        ( absolute, relative ) =
+            case tol of
+                Absolute absolute ->
+                    ( absolute, 0 )
+
+                AbsoluteOrRelative absolute relative ->
+                    ( absolute, relative )
+
+                Relative relative ->
+                    ( 0, relative )
+    in
+        if absolute < 0 && relative < 0 then
+            Test.Expectation.fail { description = "Expect." ++ name ++ " was given negative absolute and relative tolerances", reason = Test.Expectation.Custom }
+        else if absolute < 0 then
+            Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative absolute tolerance", reason = Test.Expectation.Custom }
+        else if relative < 0 then
+            Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative relative tolerance", reason = Test.Expectation.Custom }
+        else
+            result
 
 
 withinCompare : FloatingPointTolerance -> Float -> Float -> Bool
@@ -355,13 +385,13 @@ withinCompare tolerance a b =
         ( absoluteTolerance, relativeTolerance ) =
             case tolerance of
                 Absolute absolute ->
-                    ( max 0 absolute, 0 )
+                    ( absolute, 0 )
 
                 AbsoluteOrRelative absolute relative ->
-                    ( max 0 absolute, max 0 relative )
+                    ( absolute, relative )
 
                 Relative relative ->
-                    ( 0, max 0 relative )
+                    ( 0, relative )
 
         withinAbsoluteTolerance =
             (a - absoluteTolerance <= b && b <= a + absoluteTolerance)
