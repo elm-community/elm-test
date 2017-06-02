@@ -18,19 +18,19 @@ fuzzTest ((Fuzz.Internal.Fuzzer baseFuzzer) as fuzzer) untrimmedDesc getExpectat
         desc =
             String.trim untrimmedDesc
     in
-    if String.isEmpty desc then
-        blankDescriptionFailure
-    else
-        case Fuzz.Internal.invalidReason (baseFuzzer True) of
-            Just reason ->
-                failNow
-                    { description = reason
-                    , reason = Test.Expectation.Invalid Test.Expectation.InvalidFuzzer
-                    }
+        if String.isEmpty desc then
+            blankDescriptionFailure
+        else
+            case Fuzz.Internal.invalidReason (baseFuzzer True) of
+                Just reason ->
+                    failNow
+                        { description = reason
+                        , reason = Test.Expectation.Invalid Test.Expectation.InvalidFuzzer
+                        }
 
-            Nothing ->
-                -- Preliminary checks passed; run the fuzz test
-                validatedFuzzTest fuzzer desc getExpectation
+                Nothing ->
+                    -- Preliminary checks passed; run the fuzz test
+                    validatedFuzzTest fuzzer desc getExpectation
 
 
 {-| Knowing that the fuzz test isn't obviously invalid, run the test and package up the results.
@@ -43,15 +43,15 @@ validatedFuzzTest fuzzer desc getExpectation =
                 failures =
                     getFailures fuzzer getExpectation seed runs
             in
-            -- Make sure if we passed, we don't do any more work.
-            if Dict.isEmpty failures then
-                [ Pass ]
-            else
-                failures
-                    |> Dict.toList
-                    |> List.map formatExpectation
+                -- Make sure if we passed, we don't do any more work.
+                if Dict.isEmpty failures then
+                    [ Pass ]
+                else
+                    failures
+                        |> Dict.toList
+                        |> List.map formatExpectation
     in
-    Labeled desc (Test run)
+        Labeled desc (Test run)
 
 
 type alias Failures =
@@ -82,16 +82,16 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
                 ( value, nextSeed ) =
                     Random.step genVal currentSeed
             in
-            let
-                newFailures =
-                    findNewFailure fuzzer getExpectation failures currentSeed value
-            in
-            if remainingRuns == 1 then
-                newFailures
-            else
-                helper nextSeed (remainingRuns - 1) newFailures
+                let
+                    newFailures =
+                        findNewFailure fuzzer getExpectation failures currentSeed value
+                in
+                    if remainingRuns == 1 then
+                        newFailures
+                    else
+                        helper nextSeed (remainingRuns - 1) newFailures
     in
-    helper initialSeed totalRuns initialFailures
+        helper initialSeed totalRuns initialFailures
 
 
 {-| Knowing that a value in not in the cache, determine if it causes the test to pass or fail.
@@ -117,7 +117,7 @@ findNewFailure fuzzer getExpectation failures currentSeed value =
                     -- nextSeed is not used here because caller function has currentSeed
                     Random.step genTree currentSeed
             in
-            shrinkAndAdd rosetree getExpectation failedExpectation failures
+                shrinkAndAdd rosetree getExpectation failedExpectation failures
 
 
 {-| Knowing that the rosetree's root already failed, finds the shrunken failure.
@@ -146,9 +146,9 @@ shrinkAndAdd rootTree getExpectation rootsExpectation failures =
                                 ( minimalValue, finalExpectation ) =
                                     shrink newExpectation rosetree
                             in
-                            ( minimalValue
-                            , finalExpectation
-                            )
+                                ( minimalValue
+                                , finalExpectation
+                                )
 
                 Nothing ->
                     ( failingValue, oldExpectation )
@@ -159,7 +159,7 @@ shrinkAndAdd rootTree getExpectation rootsExpectation failures =
         ( minimalValue, finalExpectation ) =
             shrink rootsExpectation rootTree
     in
-    Dict.insert (toString minimalValue) finalExpectation failures
+        Dict.insert (toString minimalValue) finalExpectation failures
 
 
 formatExpectation : ( String, Expectation ) -> Expectation

@@ -54,12 +54,12 @@ summarize { output, passed, failed, autoFail } =
                     Just reason ->
                         "TEST RUN FAILED because " ++ reason
     in
-    String.join "\n"
-        [ output
-        , headline ++ "\n"
-        , "Passed: " ++ toString passed
-        , "Failed: " ++ toString failed
-        ]
+        String.join "\n"
+            [ output
+            , headline ++ "\n"
+            , "Passed: " ++ toString passed
+            , "Failed: " ++ toString failed
+            ]
 
 
 logOutput : Summary -> a -> a
@@ -79,4 +79,4 @@ logOutput summary arg =
                     |> flip Debug.log 0
                     |> (\_ -> ())
     in
-    arg
+        arg

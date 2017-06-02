@@ -17,6 +17,9 @@ module Expect
         , equalSets
         , onFail
         , all
+        , within
+        , notWithin
+        , FloatingPointTolerance(Absolute, Relative, AbsoluteOrRelative)
         )
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
@@ -35,6 +38,7 @@ module Expect
   - [`within`](#within) `(float equality)`
   - [`notWithin`](#notWithin) `(float inequality)`
 
+[Floating point comparison guide](#floating-point-comparisons)
 
 ## Basic Expectations
 
@@ -47,6 +51,42 @@ module Expect
 
 
 ### Floating point comparisons
+
+#### When do I use which kind of tolerance?
+
+Let's say we want to figure out if our pi estimation is good enough.
+
+Is `3.14` within `0.01` of `pi`? Yes, because `3.13 < pi < 3.15`.
+
+What if we also want to know if our circle area estimation is close enough?
+
+#### Relative tolerance
+
+Let's say our circle has a radius of `r` meters. Is `r * 3.14` within `0.01` of `r * pi`?
+That depends, what does `r` equal? If `r` is `0.01`mm, or `0.00001` meters, we're comparing
+`0.00001 * 3.14 - 0.01 < pi < 0.00001 * 3.14 + 0.01` or `-0.0099686 < 0.0000314159 < 0.0100314`.
+That's a huge tolerance! An area that is *a thousand times* larger or smaller than we expected would pass that test!
+
+On the other hand, if `r` is very large, we're going to need many more digits of pi.
+For an absolute tolerance of `0.01` and a pi estimation of `3.14`, this expectation only passes if `r < 2*pi`.
+
+If we use a relative tolerance of `0.01` instead, the circle area comparison becomes much better:
+
+Is `r * 3.14` within `1%` of `r * pi`? Yes, always! Or rather, as long as `r` isn't [too close to zero](https://en.wikipedia.org/wiki/Denormal_number).
+
+#### Near-zero
+
+If you are adding things near zero, you probably want absolute tolerance.
+
+For example: Is `1 + 2 - 3` within `1%` of `0`? Well, if `1`, `2` and `3` have any amount of rounding error, you might not get exactly zero. What is `1%` above and below `0`? Zero. We just lost all tolerance. Even if we hard-code the numbers we might not get exactly zero; `0.1 + 0.2` rounds to a value just above `0.3`, since computers, counting in binary, cannot write down any of those three numbers using a finite number of digits, just like we cannot write `0.333...` exactly in base 10.
+
+Another example is comparing values that are on either side of zero. `0.0001` is more than `100%` away from `-0.0001`. In fact, `infinity` is closer to `0.0001` than `0.0001` is to `-0.0001`, if you are using a relative tolerance. Twice as close, actually. So even though `0.0001` and `-0.0001` are pretty much zero, they are very far apart relative to each other.
+
+#### Is there a rule of thumb?
+
+In general, if you are multiplying, you want relative tolerance, and if you're adding,
+you want absolute tolerance. If you are doing both, you want both kinds of tolerance,
+or to split the calculation into smaller parts for testing.
 
 @docs FloatingPointTolerance, within, notWithin
 
@@ -253,7 +293,7 @@ atLeast =
 
 
 {-| A type to describe how close a floating point number must be to the expected value for the test to pass. This may be
-specified as absolute or relative. If you're not deeply familiar with binary floating point, you probably want `Absolute`.
+specified as absolute or relative. If you don't know which one you should use when, have a look at [the section just above](#floating-point-comparisons).
 
 `AbsoluteOrRelative` tolerance uses a logical OR between the absolute (specified first) and relative tolerance. If you
 want a logical AND, use [`Expect.all`](#all).
@@ -293,17 +333,23 @@ which argument is which:
 
 -}
 within : FloatingPointTolerance -> Float -> Float -> Expectation
-within tolerance =
+within tolerance a b =
+    --Debug.log (toString ( "within", tolerance, a, b )) <|
     compareWith ("Expect.within " ++ toString tolerance)
         (withinCompare tolerance)
+        a
+        b
 
 
 {-| Passes if (and only if) a call to `within` with the same arguments would have failed.
 -}
 notWithin : FloatingPointTolerance -> Float -> Float -> Expectation
-notWithin tolerance =
+notWithin tolerance a b =
+    --Debug.log (toString ( "notWithin", tolerance, a, b )) <|
     compareWith ("Expect.notWithin " ++ toString tolerance)
         (\a b -> not <| withinCompare tolerance a b)
+        a
+        b
 
 
 withinCompare : FloatingPointTolerance -> Float -> Float -> Bool
@@ -324,8 +370,8 @@ withinCompare tolerance a b =
             (a - absoluteTolerance <= b && b <= a + absoluteTolerance)
 
         withinRelativeTolerance =
-            (a * (1 - relativeTolerance) <= b && b <= a * (1 + relativeTolerance))
-                || (b * (1 - relativeTolerance) <= a && a <= b * (1 + relativeTolerance))
+            (((a - b) / a) < relativeTolerance)
+                || (((b - a) / b) < relativeTolerance)
     in
         (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
 
