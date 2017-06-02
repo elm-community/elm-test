@@ -144,10 +144,10 @@ withinTests =
             , fuzz float "Negative infinity equality" <|
                 \epsilon ->
                     let
-                        infinity =
+                        negativeInfinity =
                             -1.0 / 0.0
                     in
-                        infinity |> Expect.within (Relative epsilon) infinity
+                        negativeInfinity |> Expect.within (Relative epsilon) negativeInfinity
             , fuzz3 float float float "within and notWithin should never agree on relative tolerance" <|
                 \epsilon a b ->
                     let
