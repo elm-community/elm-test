@@ -337,7 +337,7 @@ which argument is which:
 -}
 within : FloatingPointTolerance -> Float -> Float -> Expectation
 within tolerance a b =
-    nonNegativeToleranceError tolerance "notWithin" <|
+    nonNegativeToleranceError tolerance "within" <|
         compareWith ("Expect.within " ++ toString tolerance)
             (withinCompare tolerance)
             a
