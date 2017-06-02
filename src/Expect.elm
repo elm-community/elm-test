@@ -315,50 +315,57 @@ notWithin tolerance a b =
             b
 
 
+{-| Extract the absolute tolerance.
+-}
+absolute : FloatingPointTolerance -> Float
+absolute tolerance =
+    case tolerance of
+        Absolute absolute ->
+            absolute
+
+        AbsoluteOrRelative absolute _ ->
+            absolute
+
+        _ ->
+            0
+
+
+{-| Extract the relative tolerance.
+-}
+relative : FloatingPointTolerance -> Float
+relative tolerance =
+    case tolerance of
+        Relative relative ->
+            relative
+
+        AbsoluteOrRelative _ relative ->
+            relative
+
+        _ ->
+            0
+
+
 nonNegativeToleranceError : FloatingPointTolerance -> String -> Expectation -> Expectation
-nonNegativeToleranceError tol name result =
-    let
-        ( absolute, relative ) =
-            case tol of
-                Absolute absolute ->
-                    ( absolute, 0 )
-
-                AbsoluteOrRelative absolute relative ->
-                    ( absolute, relative )
-
-                Relative relative ->
-                    ( 0, relative )
-    in
-        if absolute < 0 && relative < 0 then
-            Test.Expectation.fail { description = "Expect." ++ name ++ " was given negative absolute and relative tolerances", reason = Test.Expectation.Custom }
-        else if absolute < 0 then
-            Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative absolute tolerance", reason = Test.Expectation.Custom }
-        else if relative < 0 then
-            Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative relative tolerance", reason = Test.Expectation.Custom }
-        else
-            result
+nonNegativeToleranceError tolerance name result =
+    if absolute tolerance < 0 && relative tolerance < 0 then
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given negative absolute and relative tolerances", reason = Test.Expectation.Custom }
+    else if absolute tolerance < 0 then
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative absolute tolerance", reason = Test.Expectation.Custom }
+    else if relative tolerance < 0 then
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative relative tolerance", reason = Test.Expectation.Custom }
+    else
+        result
 
 
 withinCompare : FloatingPointTolerance -> Float -> Float -> Bool
 withinCompare tolerance a b =
     let
-        ( absoluteTolerance, relativeTolerance ) =
-            case tolerance of
-                Absolute absolute ->
-                    ( absolute, 0 )
-
-                AbsoluteOrRelative absolute relative ->
-                    ( absolute, relative )
-
-                Relative relative ->
-                    ( 0, relative )
-
         withinAbsoluteTolerance =
-            (a - absoluteTolerance <= b && b <= a + absoluteTolerance)
+            (a - absolute tolerance <= b && b <= a + absolute tolerance)
 
         withinRelativeTolerance =
-            (a * (1 - relativeTolerance) <= b && b <= a * (1 + relativeTolerance))
-                || (b * (1 - relativeTolerance) <= a && a <= b * (1 + relativeTolerance))
+            (a * (1 - relative tolerance) <= b && b <= a * (1 + relative tolerance))
+                || (b * (1 - relative tolerance) <= a && a <= b * (1 + relative tolerance))
     in
         (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
 
