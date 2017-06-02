@@ -296,7 +296,7 @@ atLeast =
 
 
 {-| A type to describe how close a floating point number must be to the expected value for the test to pass. This may be
-specified as absolute or relative. If you don't know which one you should use when, have a look at [the section just above](#floating-point-comparisons).
+specified as an absolute or relative tolerance. If you don't know which one you should use when, have a look at [the section just above](#floating-point-comparisons).
 
 `AbsoluteOrRelative` tolerance uses a logical OR between the absolute (specified first) and relative tolerance. If you
 want a logical AND, use [`Expect.all`](#all).
