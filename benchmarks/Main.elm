@@ -16,7 +16,11 @@ main =
 suite : Benchmark
 suite =
     describe "Fuzz"
-        [ describe "list of int"
+        [ describe "int"
+            [ benchmark "generating" (benchTest Snippets.intPass)
+            , benchmark "shrinking" (benchTest Snippets.intFail)
+            ]
+        , describe "list of int"
             [ benchmark "generating" (benchTest Snippets.listIntPass)
             , benchmark "shrinking" (benchTest Snippets.listIntFail)
             ]

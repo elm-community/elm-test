@@ -5,6 +5,20 @@ import Fuzz exposing (Fuzzer)
 import Test exposing (Test, fuzz)
 
 
+intPass : Test
+intPass =
+    fuzz Fuzz.int "(passes) int" <|
+        \_ ->
+            Expect.pass
+
+
+intFail : Test
+intFail =
+    fuzz Fuzz.int "(fails) int" <|
+        \numbers ->
+            Expect.fail "Failed"
+
+
 listIntPass : Test
 listIntPass =
     fuzz (Fuzz.list Fuzz.int) "(passes) list of int" <|
