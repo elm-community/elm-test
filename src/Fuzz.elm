@@ -454,35 +454,6 @@ tuple5 ( fuzzerA, fuzzerB, fuzzerC, fuzzerD, fuzzerE ) =
     map5 (,,,,) fuzzerA fuzzerB fuzzerC fuzzerD fuzzerE
 
 
-tupleShrinkHelp5 : RoseTree a -> RoseTree b -> RoseTree c -> RoseTree d -> RoseTree e -> RoseTree ( a, b, c, d, e )
-tupleShrinkHelp5 rose1 rose2 rose3 rose4 rose5 =
-    let
-        root =
-            ( RoseTree.root rose1, RoseTree.root rose2, RoseTree.root rose3, RoseTree.root rose4, RoseTree.root rose5 )
-
-        shrink1 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp5 subtree rose2 rose3 rose4 rose5) (RoseTree.children rose1)
-
-        shrink2 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 subtree rose3 rose4 rose5) (RoseTree.children rose2)
-
-        shrink3 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 rose2 subtree rose4 rose5) (RoseTree.children rose3)
-
-        shrink4 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 rose2 rose3 subtree rose5) (RoseTree.children rose4)
-
-        shrink5 =
-            Lazy.List.map (\subtree -> tupleShrinkHelp5 rose1 rose2 rose3 rose4 subtree) (RoseTree.children rose5)
-    in
-    shrink5
-        |> Lazy.List.append shrink4
-        |> Lazy.List.append shrink3
-        |> Lazy.List.append shrink2
-        |> Lazy.List.append shrink1
-        |> Rose root
-
-
 {-| Create a fuzzer that only and always returns the value provided, and performs no shrinking. This is hardly random,
 and so this function is best used as a helper when creating more complicated fuzzers.
 -}
