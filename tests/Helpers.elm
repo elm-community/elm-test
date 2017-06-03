@@ -1,4 +1,4 @@
-module Helpers exposing (expectPass, expectToFail, randomSeedFuzzer, succeeded, testShrinking, testStringLengthIsPreserved)
+module Helpers exposing (expectPass, expectToFail, randomSeedFuzzer, succeeded, testShrinking, testStringLengthIsPreserved, same, different)
 
 import Expect
 import Fuzz exposing (Fuzzer)
@@ -56,15 +56,15 @@ expectFailureHelper f test =
                                 Fail record ->
                                     f record
                     in
-                    expectations
-                        |> List.filterMap goodShrink
-                        |> List.map Expect.fail
-                        |> (\list ->
-                                if List.isEmpty list then
-                                    [ Expect.pass ]
-                                else
-                                    list
-                           )
+                        expectations
+                            |> List.filterMap goodShrink
+                            |> List.map Expect.fail
+                            |> (\list ->
+                                    if List.isEmpty list then
+                                        [ Expect.pass ]
+                                    else
+                                        list
+                               )
                 )
 
         TI.Labeled desc labeledTest ->
@@ -90,17 +90,17 @@ testShrinking =
                 acceptable =
                     String.split "|" description
             in
-            case given of
-                Nothing ->
-                    Just "Expected this test to have a given value!"
+                case given of
+                    Nothing ->
+                        Just "Expected this test to have a given value!"
 
-                Just g ->
-                    if List.member g acceptable then
-                        Nothing
-                    else
-                        Just <| "Got shrunken value " ++ g ++ " but expected " ++ String.join " or " acceptable
+                    Just g ->
+                        if List.member g acceptable then
+                            Nothing
+                        else
+                            Just <| "Got shrunken value " ++ g ++ " but expected " ++ String.join " or " acceptable
     in
-    expectFailureHelper handleFailure
+        expectFailureHelper handleFailure
 
 
 {-| get a good distribution of random seeds, and don't shrink our seeds!
@@ -108,3 +108,27 @@ testShrinking =
 randomSeedFuzzer : Fuzzer Random.Seed
 randomSeedFuzzer =
     Fuzz.custom (Random.int 0 0xFFFFFFFF) Shrink.noShrink |> Fuzz.map Random.initialSeed
+
+
+same a b =
+    case ( a, b ) of
+        ( Test.Expectation.Pass, Test.Expectation.Pass ) ->
+            Test.Expectation.Pass
+
+        ( Test.Expectation.Fail _, Test.Expectation.Fail _ ) ->
+            Test.Expectation.Pass
+
+        ( a, b ) ->
+            Test.Expectation.fail { description = "expected both arguments to fail, or both to succeed", reason = Test.Expectation.Equals (toString a) (toString b) }
+
+
+different a b =
+    case ( a, b ) of
+        ( Test.Expectation.Pass, Test.Expectation.Fail _ ) ->
+            Test.Expectation.Pass
+
+        ( Test.Expectation.Fail _, Test.Expectation.Pass ) ->
+            Test.Expectation.Pass
+
+        ( a, b ) ->
+            Test.Expectation.fail { description = "expected one argument to fail", reason = Test.Expectation.Equals (toString a) (toString b) }
