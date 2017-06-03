@@ -60,5 +60,5 @@ duplicatedName =
                         Ok <| Set.insert newName oldNames
                 )
     in
-        List.concatMap names
-            >> List.foldl insertOrFail (Ok Set.empty)
+    List.concatMap names
+        >> List.foldl insertOrFail (Ok Set.empty)

@@ -1,4 +1,4 @@
-module Tests exposing (expectationTests, identicalNamesAreRejectedTests, readmeExample, regressions, testTests, withinTests)
+module Tests exposing (all)
 
 import Dict
 import Expect
@@ -16,6 +16,19 @@ import String
 import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
 import Test.Runner
+
+
+all : Test
+all =
+    Test.concat
+        [ readmeExample
+        , regressions
+        , testTests
+        , expectationTests
+        , fuzzerTests
+        , withinTests
+        , RunnerTests.all
+        ]
 
 
 readmeExample : Test
