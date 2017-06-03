@@ -4,8 +4,7 @@ import Benchmark exposing (..)
 import Benchmark.Runner as Runner
 import Expect exposing (Expectation)
 import Random.Pcg
-import Snippets.FormattedText
-import Snippets.Order
+import Snippets
 import Test.Internal exposing (Test(Labeled, Test))
 
 
@@ -17,10 +16,14 @@ main =
 suite : Benchmark
 suite =
     describe "Fuzz"
-        [ benchmark "Passing test using a fuzzed list" (benchTest Snippets.Order.test1)
-        , benchmark "Failing test using a fuzzed list" (benchTest Snippets.Order.test2)
-        , benchmark "Passing test using a fuzzer mapping" (benchTest Snippets.FormattedText.test1)
-        , benchmark "Failing test using a fuzzer mapping" (benchTest Snippets.FormattedText.test2)
+        [ describe "list of int"
+            [ benchmark "generating" (benchTest Snippets.listIntPass)
+            , benchmark "shrinking" (benchTest Snippets.listIntFail)
+            ]
+        , describe "andMap"
+            [ benchmark "generating" (benchTest Snippets.andMapPass)
+            , benchmark "shrinking" (benchTest Snippets.andMapFail)
+            ]
         ]
 
 
