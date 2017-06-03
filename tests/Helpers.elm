@@ -109,6 +109,7 @@ randomSeedFuzzer : Fuzzer Random.Seed
 randomSeedFuzzer =
     Fuzz.custom (Random.int 0 0xFFFFFFFF) Shrink.noShrink |> Fuzz.map Random.initialSeed
 
+
 same a b =
     case ( a, b ) of
         ( Test.Expectation.Pass, Test.Expectation.Pass ) ->
