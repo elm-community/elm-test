@@ -19,6 +19,76 @@ intFail =
             Expect.fail "Failed"
 
 
+intRangePass : Test
+intRangePass =
+    fuzz (Fuzz.intRange 10 100) "(passes) intRange" <|
+        \_ ->
+            Expect.pass
+
+
+intRangeFail : Test
+intRangeFail =
+    fuzz (Fuzz.intRange 10 100) "(fails) intRange" <|
+        \numbers ->
+            Expect.fail "Failed"
+
+
+stringPass : Test
+stringPass =
+    fuzz Fuzz.string "(passes) string" <|
+        \_ ->
+            Expect.pass
+
+
+stringFail : Test
+stringFail =
+    fuzz Fuzz.string "(fails) string" <|
+        \numbers ->
+            Expect.fail "Failed"
+
+
+floatPass : Test
+floatPass =
+    fuzz Fuzz.float "(passes) float" <|
+        \_ ->
+            Expect.pass
+
+
+floatFail : Test
+floatFail =
+    fuzz Fuzz.float "(fails) float" <|
+        \numbers ->
+            Expect.fail "Failed"
+
+
+boolPass : Test
+boolPass =
+    fuzz Fuzz.bool "(passes) bool" <|
+        \_ ->
+            Expect.pass
+
+
+boolFail : Test
+boolFail =
+    fuzz Fuzz.bool "(fails) bool" <|
+        \numbers ->
+            Expect.fail "Failed"
+
+
+charPass : Test
+charPass =
+    fuzz Fuzz.char "(passes) char" <|
+        \_ ->
+            Expect.pass
+
+
+charFail : Test
+charFail =
+    fuzz Fuzz.char "(fails) char" <|
+        \numbers ->
+            Expect.fail "Failed"
+
+
 listIntPass : Test
 listIntPass =
     fuzz (Fuzz.list Fuzz.int) "(passes) list of int" <|
@@ -29,6 +99,20 @@ listIntPass =
 listIntFail : Test
 listIntFail =
     fuzz (Fuzz.list Fuzz.int) "(fails) list of int" <|
+        \numbers ->
+            Expect.fail "Failed"
+
+
+maybeIntPass : Test
+maybeIntPass =
+    fuzz (Fuzz.maybe Fuzz.int) "(passes) maybe of int" <|
+        \_ ->
+            Expect.pass
+
+
+maybeIntFail : Test
+maybeIntFail =
+    fuzz (Fuzz.maybe Fuzz.int) "(fails) maybe of int" <|
         \numbers ->
             Expect.fail "Failed"
 

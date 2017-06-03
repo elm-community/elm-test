@@ -20,9 +20,33 @@ suite =
             [ benchmark "generating" (benchTest Snippets.intPass)
             , benchmark "shrinking" (benchTest Snippets.intFail)
             ]
+        , describe "intRange"
+            [ benchmark "generating" (benchTest Snippets.intRangePass)
+            , benchmark "shrinking" (benchTest Snippets.intRangeFail)
+            ]
+        , describe "string"
+            [ benchmark "generating" (benchTest Snippets.stringPass)
+            , benchmark "shrinking" (benchTest Snippets.stringFail)
+            ]
+        , describe "float"
+            [ benchmark "generating" (benchTest Snippets.floatPass)
+            , benchmark "shrinking" (benchTest Snippets.floatFail)
+            ]
+        , describe "bool"
+            [ benchmark "generating" (benchTest Snippets.boolPass)
+            , benchmark "shrinking" (benchTest Snippets.boolFail)
+            ]
+        , describe "char"
+            [ benchmark "generating" (benchTest Snippets.charPass)
+            , benchmark "shrinking" (benchTest Snippets.charFail)
+            ]
         , describe "list of int"
             [ benchmark "generating" (benchTest Snippets.listIntPass)
             , benchmark "shrinking" (benchTest Snippets.listIntFail)
+            ]
+        , describe "maybe of int"
+            [ benchmark "generating" (benchTest Snippets.maybeIntPass)
+            , benchmark "shrinking" (benchTest Snippets.maybeIntFail)
             ]
         , describe "andMap"
             [ benchmark "generating" (benchTest Snippets.andMapPass)
