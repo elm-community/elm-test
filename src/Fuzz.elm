@@ -366,17 +366,23 @@ listShrinkHelp listOfTrees =
                     Lazy.List.map (\childTree -> prefix ++ (childTree :: more) |> listShrinkHelp) shrunkenXs
 
         shrunkenVals =
-            Lazy.List.numbers
-                |> Lazy.List.map (\i -> i - 1)
-                |> Lazy.List.take n
-                |> Lazy.List.andThen
-                    (\i -> shrinkOne (List.take i listOfTrees) (List.drop i listOfTrees))
+            Lazy.lazy <|
+                \_ ->
+                    Lazy.List.numbers
+                        |> Lazy.List.map (\i -> i - 1)
+                        |> Lazy.List.take n
+                        |> Lazy.List.andThen
+                            (\i -> shrinkOne (List.take i listOfTrees) (List.drop i listOfTrees))
+                        |> Lazy.force
 
         shortened =
-            List.range 0 (n - 1)
-                |> Lazy.List.fromList
-                |> Lazy.List.map (\index -> removeOne index listOfTrees)
-                |> Lazy.List.map listShrinkHelp
+            Lazy.lazy <|
+                \_ ->
+                    List.range 0 (n - 1)
+                        |> Lazy.List.fromList
+                        |> Lazy.List.map (\index -> removeOne index listOfTrees)
+                        |> Lazy.List.map listShrinkHelp
+                        |> Lazy.force
 
         removeOne index list =
             List.append
