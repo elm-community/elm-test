@@ -5,7 +5,7 @@ import Expect
 import Expect exposing (FloatingPointTolerance(Absolute, AbsoluteOrRelative, Relative))
 import Fuzz exposing (..)
 import Fuzz.Internal
-import FuzzerTests exposing (fuzzerTests)
+import FuzzerTests
 import Helpers exposing (..)
 import Random.Pcg as Random
 import RoseTree
@@ -25,7 +25,7 @@ all =
         , regressions
         , testTests
         , expectationTests
-        , fuzzerTests
+        , FuzzerTests.fuzzerTests
         , withinTests
         , RunnerTests.all
         ]
@@ -77,6 +77,7 @@ expectationTests =
         ]
 
 
+withinTests : Test
 withinTests =
     describe "Expect.within"
         [ describe "use-cases"
