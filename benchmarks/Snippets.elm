@@ -117,15 +117,53 @@ maybeIntFail =
             Expect.fail "Failed"
 
 
+resultPass : Test
+resultPass =
+    fuzz (Fuzz.result Fuzz.string Fuzz.int) "(passes) result of string and int" <|
+        \_ ->
+            Expect.pass
+
+
+resultFail : Test
+resultFail =
+    fuzz (Fuzz.result Fuzz.string Fuzz.int) "(fails) result of string and int" <|
+        \numbers ->
+            Expect.fail "Failed"
+
+
+mapPass : Test
+mapPass =
+    fuzz even "(passes) map" <|
+        \_ -> Expect.pass
+
+
+mapFail : Test
+mapFail =
+    fuzz even "(fails) map" <|
+        \_ -> Expect.fail "Failed"
+
+
 andMapPass : Test
 andMapPass =
-    fuzz range "(passes) andMap" <|
+    fuzz person "(passes) andMap" <|
         \_ -> Expect.pass
 
 
 andMapFail : Test
 andMapFail =
-    fuzz range "(fails) andMap" <|
+    fuzz person "(fails) andMap" <|
+        \_ -> Expect.fail "Failed"
+
+
+map5Pass : Test
+map5Pass =
+    fuzz person2 "(passes) map5" <|
+        \_ -> Expect.pass
+
+
+map5Fail : Test
+map5Fail =
+    fuzz person2 "(fails) map5" <|
         \_ -> Expect.fail "Failed"
 
 
@@ -138,10 +176,25 @@ type alias Person =
     }
 
 
-range : Fuzzer Person
-range =
+person : Fuzzer Person
+person =
     Fuzz.map Person Fuzz.string
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.int
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.float
+
+
+person2 : Fuzzer Person
+person2 =
+    Fuzz.map5 Person
+        Fuzz.string
+        Fuzz.string
+        Fuzz.int
+        Fuzz.string
+        Fuzz.float
+
+
+even : Fuzzer Int
+even =
+    Fuzz.map ((*) 2) Fuzz.int

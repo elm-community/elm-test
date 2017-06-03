@@ -48,9 +48,21 @@ suite =
             [ benchmark "generating" (benchTest Snippets.maybeIntPass)
             , benchmark "shrinking" (benchTest Snippets.maybeIntFail)
             ]
+        , describe "result of string and int"
+            [ benchmark "generating" (benchTest Snippets.resultPass)
+            , benchmark "shrinking" (benchTest Snippets.resultFail)
+            ]
+        , describe "map"
+            [ benchmark "generating" (benchTest Snippets.mapPass)
+            , benchmark "shrinking" (benchTest Snippets.mapFail)
+            ]
         , describe "andMap"
             [ benchmark "generating" (benchTest Snippets.andMapPass)
             , benchmark "shrinking" (benchTest Snippets.andMapFail)
+            ]
+        , describe "map5"
+            [ benchmark "generating" (benchTest Snippets.map5Pass)
+            , benchmark "shrinking" (benchTest Snippets.map5Fail)
             ]
         ]
 
