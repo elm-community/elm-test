@@ -46,7 +46,7 @@ import Fuzz.Internal as Internal
         , invalidReason
         )
 import Lazy
-import Lazy.List exposing (LazyList)
+import Lazy.List exposing ((+++), LazyList)
 import Random.Pcg as Random exposing (Generator)
 import RoseTree exposing (RoseTree(..))
 import Shrink exposing (Shrinker)
@@ -402,36 +402,6 @@ array fuzzer =
     map Array.fromList (list fuzzer)
 
 
-{-| Map over two fuzzers.
--}
-map2 : (a -> b -> c) -> Fuzzer a -> Fuzzer b -> Fuzzer c
-map2 transform fuzzA fuzzB =
-    (Result.map2 << Random.map2) (map2ShrinkHelp transform) fuzzA fuzzB
-
-
-map2ShrinkHelp : (a -> b -> c) -> RoseTree a -> RoseTree b -> RoseTree c
-map2ShrinkHelp transform ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) =
-    {- Shrinking a pair of RoseTrees
-       Recurse on all pairs created by substituting one element for any of its shrunken values.
-       A weakness of this algorithm is that it expects that values can be shrunken independently.
-       That is, to shrink from (a,b) to (a',b'), we must go through (a',b) or (a,b').
-       "No pairs sum to zero" is a pathological predicate that cannot be shrunken this way.
-    -}
-    let
-        root =
-            transform root1 root2
-
-        shrink1 =
-            Lazy.List.map (\subtree -> map2ShrinkHelp transform subtree rose2) children1
-
-        shrink2 =
-            Lazy.List.map (\subtree -> map2ShrinkHelp transform rose1 subtree) children2
-    in
-    shrink2
-        |> Lazy.List.append shrink1
-        |> Rose root
-
-
 {-| Turn a tuple of fuzzers into a fuzzer of tuples.
 -}
 tuple : ( Fuzzer a, Fuzzer b ) -> Fuzzer ( a, b )
@@ -475,34 +445,32 @@ map =
     Internal.map
 
 
+{-| Map over two fuzzers.
+-}
+map2 : (a -> b -> c) -> Fuzzer a -> Fuzzer b -> Fuzzer c
+map2 transform fuzzA fuzzB =
+    (Result.map2 << Random.map2 << map2RoseTree) transform fuzzA fuzzB
+
+
 {-| Map over three fuzzers.
 -}
 map3 : (a -> b -> c -> d) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d
 map3 transform fuzzA fuzzB fuzzC =
-    map transform fuzzA
-        |> andMap fuzzB
-        |> andMap fuzzC
+    (Result.map3 << Random.map3 << map3RoseTree) transform fuzzA fuzzB fuzzC
 
 
 {-| Map over four fuzzers.
 -}
 map4 : (a -> b -> c -> d -> e) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d -> Fuzzer e
 map4 transform fuzzA fuzzB fuzzC fuzzD =
-    map transform fuzzA
-        |> andMap fuzzB
-        |> andMap fuzzC
-        |> andMap fuzzD
+    (Result.map4 << Random.map4 << map4RoseTree) transform fuzzA fuzzB fuzzC fuzzD
 
 
 {-| Map over five fuzzers.
 -}
 map5 : (a -> b -> c -> d -> e -> f) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d -> Fuzzer e -> Fuzzer f
 map5 transform fuzzA fuzzB fuzzC fuzzD fuzzE =
-    map transform fuzzA
-        |> andMap fuzzB
-        |> andMap fuzzC
-        |> andMap fuzzD
-        |> andMap fuzzE
+    (Result.map5 << Random.map5 << map5RoseTree) transform fuzzA fuzzB fuzzC fuzzD fuzzE
 
 
 {-| Map over many fuzzers. This can act as mapN for N > 5.
@@ -632,3 +600,92 @@ are also invalid. Any tests using an invalid fuzzer fail.
 invalid : String -> Fuzzer a
 invalid reason =
     Err reason
+
+
+map2RoseTree : (a -> b -> c) -> RoseTree a -> RoseTree b -> RoseTree c
+map2RoseTree transform ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) =
+    {- Shrinking a pair of RoseTrees
+       Recurse on all pairs created by substituting one element for any of its shrunken values.
+       A weakness of this algorithm is that it expects that values can be shrunken independently.
+       That is, to shrink from (a,b) to (a',b'), we must go through (a',b) or (a,b').
+       "No pairs sum to zero" is a pathological predicate that cannot be shrunken this way.
+    -}
+    let
+        root =
+            transform root1 root2
+
+        shrink1 =
+            Lazy.List.map (\subtree -> map2RoseTree transform subtree rose2) children1
+
+        shrink2 =
+            Lazy.List.map (\subtree -> map2RoseTree transform rose1 subtree) children2
+    in
+    Rose root (shrink1 +++ shrink2)
+
+
+
+-- The RoseTree 'mapN, n > 2' functions below follow the same strategy as map2RoseTree.
+-- They're implemented separately instead of in terms of `andMap` because this has significant perfomance benefits.
+
+
+map3RoseTree : (a -> b -> c -> d) -> RoseTree a -> RoseTree b -> RoseTree c -> RoseTree d
+map3RoseTree transform ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) ((Rose root3 children3) as rose3) =
+    let
+        root =
+            transform root1 root2 root3
+
+        shrink1 =
+            Lazy.List.map (\childOf1 -> map3RoseTree transform childOf1 rose2 rose3) children1
+
+        shrink2 =
+            Lazy.List.map (\childOf2 -> map3RoseTree transform rose1 childOf2 rose3) children2
+
+        shrink3 =
+            Lazy.List.map (\childOf3 -> map3RoseTree transform rose1 rose2 childOf3) children3
+    in
+    Rose root (shrink1 +++ shrink2 +++ shrink3)
+
+
+map4RoseTree : (a -> b -> c -> d -> e) -> RoseTree a -> RoseTree b -> RoseTree c -> RoseTree d -> RoseTree e
+map4RoseTree transform ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) ((Rose root3 children3) as rose3) ((Rose root4 children4) as rose4) =
+    let
+        root =
+            transform root1 root2 root3 root4
+
+        shrink1 =
+            Lazy.List.map (\childOf1 -> map4RoseTree transform childOf1 rose2 rose3 rose4) children1
+
+        shrink2 =
+            Lazy.List.map (\childOf2 -> map4RoseTree transform rose1 childOf2 rose3 rose4) children2
+
+        shrink3 =
+            Lazy.List.map (\childOf3 -> map4RoseTree transform rose1 rose2 childOf3 rose4) children3
+
+        shrink4 =
+            Lazy.List.map (\childOf4 -> map4RoseTree transform rose1 rose2 rose3 childOf4) children4
+    in
+    Rose root (shrink1 +++ shrink2 +++ shrink3 +++ shrink4)
+
+
+map5RoseTree : (a -> b -> c -> d -> e -> f) -> RoseTree a -> RoseTree b -> RoseTree c -> RoseTree d -> RoseTree e -> RoseTree f
+map5RoseTree transform ((Rose root1 children1) as rose1) ((Rose root2 children2) as rose2) ((Rose root3 children3) as rose3) ((Rose root4 children4) as rose4) ((Rose root5 children5) as rose5) =
+    let
+        root =
+            transform root1 root2 root3 root4 root5
+
+        shrink1 =
+            Lazy.List.map (\childOf1 -> map5RoseTree transform childOf1 rose2 rose3 rose4 rose5) children1
+
+        shrink2 =
+            Lazy.List.map (\childOf2 -> map5RoseTree transform rose1 childOf2 rose3 rose4 rose5) children2
+
+        shrink3 =
+            Lazy.List.map (\childOf3 -> map5RoseTree transform rose1 rose2 childOf3 rose4 rose5) children3
+
+        shrink4 =
+            Lazy.List.map (\childOf4 -> map5RoseTree transform rose1 rose2 rose3 childOf4 rose5) children4
+
+        shrink5 =
+            Lazy.List.map (\childOf5 -> map5RoseTree transform rose1 rose2 rose3 rose4 childOf5) children5
+    in
+    Rose root (shrink1 +++ shrink2 +++ shrink3 +++ shrink4 +++ shrink5)
