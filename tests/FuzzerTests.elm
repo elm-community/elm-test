@@ -160,14 +160,9 @@ manualFuzzerTests =
                         n % 2 == 0
 
                     pair =
-                        case fuzzer of
-                            Ok validFuzzer ->
-                                Random.step (Test.Runner.fuzz validFuzzer) seed
-                                    |> Tuple.first
-                                    |> Just
-
-                            Err _ ->
-                                Nothing
+                        Random.step (Test.Runner.fuzz fuzzer) seed
+                            |> Tuple.first
+                            |> Just
 
                     unfold acc maybePair =
                         case maybePair of
@@ -199,14 +194,9 @@ manualFuzzerTests =
                         String.contains "e"
 
                     pair =
-                        case fuzzer of
-                            Ok validFuzzer ->
-                                Random.step (Test.Runner.fuzz validFuzzer) seed
-                                    |> Tuple.first
-                                    |> Just
-
-                            Err _ ->
-                                Nothing
+                        Random.step (Test.Runner.fuzz fuzzer) seed
+                            |> Tuple.first
+                            |> Just
 
                     unfold acc maybePair =
                         case maybePair of

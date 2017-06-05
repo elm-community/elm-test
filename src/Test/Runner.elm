@@ -41,7 +41,7 @@ These functions give you the ability to run fuzzers separate of running fuzz tes
 -}
 
 import Expect exposing (Expectation)
-import Fuzz.Internal exposing (ValidFuzzer)
+import Fuzz.Internal exposing (Fuzzer)
 import Lazy.List as LazyList exposing (LazyList)
 import Random.Pcg
 import RoseTree exposing (RoseTree(Rose))
@@ -373,13 +373,18 @@ type Shrinkable a
 {-| Given a fuzzer, return a random generator to produce a value and a
 Shrinkable. The value is what a fuzz test would have received as input.
 -}
-fuzz : ValidFuzzer a -> Random.Pcg.Generator ( a, Shrinkable a )
+fuzz : Fuzzer a -> Random.Pcg.Generator ( a, Shrinkable a )
 fuzz fuzzer =
-    fuzzer
-        |> Random.Pcg.map
-            (\(Rose root children) ->
-                ( root, Shrinkable { down = children, over = LazyList.empty } )
-            )
+    case fuzzer of
+        Ok validFuzzer ->
+            validFuzzer
+                |> Random.Pcg.map
+                    (\(Rose root children) ->
+                        ( root, Shrinkable { down = children, over = LazyList.empty } )
+                    )
+
+        Err reason ->
+            Debug.crash <| "Cannot call `fuzz` with an invalid fuzzer: " ++ reason
 
 
 {-| Given a Shrinkable, attempt to shrink the value further. Pass `False` to
