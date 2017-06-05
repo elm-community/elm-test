@@ -53,6 +53,18 @@ map f (Rose a c) =
     Rose (f a) (LazyList.map (map f) c)
 
 
+filter : (a -> Bool) -> RoseTree a -> Maybe (RoseTree a)
+filter predicate tree =
+    let
+        maybeKeep x =
+            if predicate x then
+                Just x
+            else
+                Nothing
+    in
+    filterMap maybeKeep tree
+
+
 {-| filterMap a function over a rosetree
 -}
 filterMap : (a -> Maybe b) -> RoseTree a -> Maybe (RoseTree b)
@@ -63,6 +75,13 @@ filterMap f (Rose a c) =
 
         Nothing ->
             Nothing
+
+
+filterBranches : (a -> Bool) -> RoseTree a -> RoseTree a
+filterBranches predicate (Rose root branches) =
+    Rose
+        root
+        (LazyList.filterMap (filter predicate) branches)
 
 
 {-| Flatten a rosetree of rosetrees.

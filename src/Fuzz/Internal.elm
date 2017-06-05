@@ -1,4 +1,4 @@
-module Fuzz.Internal exposing (Fuzzer, Valid, ValidFuzzer, andThen, andThenNoHistory, combineValid, invalidReason, map)
+module Fuzz.Internal exposing (Fuzzer, Valid, ValidFuzzer, andThen, combineValid, invalidReason, map)
 
 import Lazy
 import Lazy.List exposing ((:::), LazyList)
@@ -45,21 +45,6 @@ andThen fn fuzzer =
                 |> removeInvalid
                 |> sequenceRoseTree
                 |> Random.map RoseTree.flatten
-    in
-    Result.map (Random.andThen (helper fn)) fuzzer
-
-
-andThenNoHistory : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
-andThenNoHistory fn fuzzer =
-    let
-        helper : (a -> Fuzzer b) -> RoseTree a -> ValidFuzzer b
-        helper fn (Rose root _) =
-            case fn root of
-                Ok validFuzzer ->
-                    validFuzzer
-
-                Err _ ->
-                    Debug.crash "Returning an invalid fuzzer from `andThen` is currently unsupported"
     in
     Result.map (Random.andThen (helper fn)) fuzzer
 

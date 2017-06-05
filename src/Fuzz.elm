@@ -498,22 +498,31 @@ function to, if no acceptable input can be found, create one from an
 unacceptable one. Also takes a condition to determine if the input is
 acceptable or not, and finally the fuzzer itself.
 
-A good number of max retires is ten. A large number of retries might
+A good number of max retries is ten. A large number of retries might
 blow the stack.
 
 -}
 conditional : { retries : Int, fallback : a -> a, condition : a -> Bool } -> Fuzzer a -> Fuzzer a
-conditional { retries, fallback, condition } fuzzer =
-    if retries <= 0 then
-        map fallback fuzzer
+conditional opts fuzzer =
+    Result.map (conditionalHelper opts) fuzzer
+
+
+conditionalHelper : { retries : Int, fallback : a -> a, condition : a -> Bool } -> ValidFuzzer a -> ValidFuzzer a
+conditionalHelper opts validFuzzer =
+    if opts.retries <= 0 then
+        Random.map
+            (RoseTree.map opts.fallback >> RoseTree.filterBranches opts.condition)
+            validFuzzer
     else
-        fuzzer
-            |> Internal.andThenNoHistory
-                (\val ->
-                    if condition val then
-                        constant val
-                    else
-                        conditional { retries = retries - 1, fallback = fallback, condition = condition } fuzzer
+        validFuzzer
+            |> Random.andThen
+                (\tree ->
+                    case RoseTree.filter opts.condition tree of
+                        Just tree ->
+                            Random.constant tree
+
+                        Nothing ->
+                            conditionalHelper { opts | retries = opts.retries - 1 } validFuzzer
                 )
 
 
