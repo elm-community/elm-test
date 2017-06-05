@@ -67,9 +67,9 @@ failureMessage { given, description, reason } =
                         "\nThese keys are missing: "
                             ++ (missing |> String.join ", " |> (\d -> "[ " ++ d ++ " ]"))
             in
-                String.join ""
-                    [ verticalBar description expected actual
-                    , "\n"
-                    , extraStr
-                    , missingStr
-                    ]
+            String.join ""
+                [ verticalBar description expected actual
+                , "\n"
+                , extraStr
+                , missingStr
+                ]

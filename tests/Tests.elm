@@ -112,28 +112,28 @@ withinTests =
                             else
                                 1
                     in
-                        value |> Expect.within (Relative (abs eps)) value
+                    value |> Expect.within (Relative (abs eps)) value
             , fuzz float "NaN equality" <|
                 \epsilon ->
                     let
                         nan =
                             0.0 / 0.0
                     in
-                        nan |> Expect.notWithin (Relative (abs epsilon)) nan
+                    nan |> Expect.notWithin (Relative (abs epsilon)) nan
             , fuzz float "Infinity equality" <|
                 \epsilon ->
                     let
                         infinity =
                             1.0 / 0.0
                     in
-                        infinity |> Expect.within (Relative (abs epsilon)) infinity
+                    infinity |> Expect.within (Relative (abs epsilon)) infinity
             , fuzz float "Negative infinity equality" <|
                 \epsilon ->
                     let
                         negativeInfinity =
                             -1.0 / 0.0
                     in
-                        negativeInfinity |> Expect.within (Relative (abs epsilon)) negativeInfinity
+                    negativeInfinity |> Expect.within (Relative (abs epsilon)) negativeInfinity
             , fuzz3 float float float "within and notWithin should never agree on relative tolerance" <|
                 \epsilon a b ->
                     let
@@ -143,7 +143,7 @@ withinTests =
                         notWithinTest =
                             a |> Expect.notWithin (Relative (abs epsilon)) b
                     in
-                        different withinTest notWithinTest
+                    different withinTest notWithinTest
             , fuzz3 float float float "within and notWithin should never agree on absolute tolerance" <|
                 \epsilon a b ->
                     let
@@ -153,7 +153,7 @@ withinTests =
                         notWithinTest =
                             a |> Expect.notWithin (Absolute (abs epsilon)) b
                     in
-                        different withinTest notWithinTest
+                    different withinTest notWithinTest
             , fuzz4 float float float float "within and notWithin should never agree on absolute or relative tolerance" <|
                 \absoluteEpsilon relativeEpsilon a b ->
                     let
@@ -163,7 +163,7 @@ withinTests =
                         notWithinTest =
                             a |> Expect.notWithin (AbsoluteOrRelative (abs absoluteEpsilon) (abs relativeEpsilon)) b
                     in
-                        different withinTest notWithinTest
+                    different withinTest notWithinTest
             , fuzz float "Zero equality" <|
                 \epsilon -> 0.0 |> Expect.within (Relative (abs epsilon)) 0.0
             , fuzz3 float float float "within absolute commutativity" <|

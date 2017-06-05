@@ -407,7 +407,7 @@ withinCompare tolerance a b =
             (a * (1 - relative tolerance) <= b && b <= a * (1 + relative tolerance))
                 || (b * (1 - relative tolerance) <= a && a <= b * (1 + relative tolerance))
     in
-        (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
+    (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
 
 
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
@@ -560,10 +560,10 @@ equalLists expected actual =
                                         (toString actual)
                                         ( index, toString e, toString a )
                             in
-                                Test.Expectation.fail
-                                    { description = "Expect.equalLists"
-                                    , reason = reason
-                                    }
+                            Test.Expectation.fail
+                                { description = "Expect.equalLists"
+                                , reason = reason
+                                }
                         )
         in
         case result of
