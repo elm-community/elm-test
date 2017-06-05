@@ -3,6 +3,7 @@ module FuzzerTests exposing (fuzzerTests)
 import Expect
 import Fuzz exposing (..)
 import Helpers exposing (..)
+import Lazy.List
 import Random.Pcg as Random
 import RoseTree
 import Test exposing (..)
@@ -12,6 +13,13 @@ import Test.Runner
 die : Fuzzer Int
 die =
     Fuzz.intRange 1 6
+
+
+seed : Fuzzer Random.Seed
+seed =
+    Fuzz.custom
+        (Random.int Random.minInt Random.maxInt |> Random.map Random.initialSeed)
+        (always Lazy.List.empty)
 
 
 fuzzerTests : Test
@@ -55,6 +63,42 @@ fuzzerTests =
           <|
             \( roll1, roll2 ) ->
                 roll1 |> Expect.notEqual roll2
+        , fuzz seed "conditional: shrunken values all pass condition" <|
+            \seed ->
+                let
+                    evenInt : Fuzzer Int
+                    evenInt =
+                        Fuzz.intRange 0 10
+                            |> Fuzz.conditional
+                                { retries = 3
+                                , fallback = (+) 1
+                                , condition = even
+                                }
+
+                    even : Int -> Bool
+                    even n =
+                        (n % 2) == 0
+
+                    shrinkable : Test.Runner.Shrinkable Int
+                    shrinkable =
+                        Test.Runner.fuzz evenInt
+                            |> flip Random.step seed
+                            |> Tuple.first
+                            |> Tuple.second
+
+                    testShrinkable : Test.Runner.Shrinkable Int -> Expect.Expectation
+                    testShrinkable shrinkable =
+                        case Test.Runner.shrink False shrinkable of
+                            Nothing ->
+                                Expect.pass
+
+                            Just ( value, next ) ->
+                                if even value then
+                                    testShrinkable next
+                                else
+                                    Expect.fail <| "Shrunken value does not pass conditional: " ++ toString value
+                in
+                testShrinkable shrinkable
         , describe "Whitebox testing using Fuzz.Internal"
             [ fuzz randomSeedFuzzer "the same value is generated with and without shrinking" <|
                 \seed ->
