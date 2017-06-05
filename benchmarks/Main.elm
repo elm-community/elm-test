@@ -68,6 +68,10 @@ suite =
             [ benchmark "generating" (benchTest Snippets.andThenPass)
             , benchmark "shrinking" (benchTest Snippets.andThenFail)
             ]
+        , describe "conditional"
+            [ benchmark "generating" (benchTest Snippets.conditionalPass)
+            , benchmark "shrinking" (benchTest Snippets.conditionalFail)
+            ]
         ]
 
 

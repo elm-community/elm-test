@@ -179,6 +179,18 @@ andThenFail =
         \_ -> Expect.fail "Failed"
 
 
+conditionalPass : Test
+conditionalPass =
+    fuzz evenWithConditional "(passes) conditional" <|
+        \_ -> Expect.pass
+
+
+conditionalFail : Test
+conditionalFail =
+    fuzz evenWithConditional "(fails) conditional" <|
+        \_ -> Expect.fail "Failed"
+
+
 type alias Person =
     { firstName : String
     , lastName : String
@@ -224,3 +236,13 @@ sequence fuzzers =
         (Fuzz.map2 (::))
         (Fuzz.constant [])
         fuzzers
+
+
+evenWithConditional : Fuzzer Int
+evenWithConditional =
+    Fuzz.intRange 1 6
+        |> Fuzz.conditional
+            { retries = 3
+            , fallback = (+) 1
+            , condition = \n -> (n % 2) == 0
+            }
