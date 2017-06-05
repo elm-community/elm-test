@@ -1,18 +1,14 @@
 module Tests exposing (all)
 
 import Dict
-import Expect
 import Expect exposing (FloatingPointTolerance(Absolute, AbsoluteOrRelative, Relative))
 import Fuzz exposing (..)
-import Fuzz.Internal
 import FuzzerTests
 import Helpers exposing (..)
 import Random.Pcg as Random
-import RoseTree
 import RunnerTests
 import Set
 import Shrink
-import String
 import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
 import Test.Runner
