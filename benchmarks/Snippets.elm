@@ -167,6 +167,18 @@ map5Fail =
         \_ -> Expect.fail "Failed"
 
 
+andThenPass : Test
+andThenPass =
+    fuzz (variableList 2 5 Fuzz.int) "(passes) andThen" <|
+        \_ -> Expect.pass
+
+
+andThenFail : Test
+andThenFail =
+    fuzz (variableList 2 5 Fuzz.int) "(fails) andThen" <|
+        \_ -> Expect.fail "Failed"
+
+
 type alias Person =
     { firstName : String
     , lastName : String
@@ -198,3 +210,17 @@ person2 =
 even : Fuzzer Int
 even =
     Fuzz.map ((*) 2) Fuzz.int
+
+
+variableList : Int -> Int -> Fuzzer a -> Fuzzer (List a)
+variableList min max item =
+    Fuzz.intRange min max
+        |> Fuzz.andThen (\length -> List.repeat length item |> sequence)
+
+
+sequence : List (Fuzzer a) -> Fuzzer (List a)
+sequence fuzzers =
+    List.foldl
+        (Fuzz.map2 (::))
+        (Fuzz.constant [])
+        fuzzers
