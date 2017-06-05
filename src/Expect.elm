@@ -1,6 +1,7 @@
 module Expect
     exposing
         ( Expectation
+        , FloatingPointTolerance(Relative, Absolute, AbsoluteOrRelative)
         , all
         , atLeast
         , atMost
@@ -14,9 +15,11 @@ module Expect
         , greaterThan
         , lessThan
         , notEqual
+        , notWithin
         , onFail
         , pass
         , true
+        , within
         )
 
 {-| A library to create `Expectation`s, which describe a claim to be tested.
@@ -32,8 +35,10 @@ module Expect
   - [`atLeast`](#atLeast) `(arg2 >= arg1)`
   - [`true`](#true) `(arg == True)`
   - [`false`](#false) `(arg == False)`
+  - [`within`](#within) `(float equality)`
   - [`notWithin`](#notWithin) `(float inequality)`
 
+[Floating point comparison guide](#floating-point-comparisons)
 
 ## Basic Expectations
 
@@ -43,6 +48,50 @@ module Expect
 ## Comparisons
 
 @docs lessThan, atMost, greaterThan, atLeast
+
+
+### Floating point comparisons
+
+#### When do I use which kind of tolerance?
+
+Let's say we want to figure out if our pi estimation is good enough.
+
+Is `3.14` within `0.01` of `pi`? Yes, because `3.13 < pi < 3.15`.
+
+What if we also want to know if our circle circumference estimation is close enough?
+
+### Relative tolerance
+
+Let's say our circle has a radius of `r` meters. The formula for circle circumference is `C=2*r*pi`.
+To make the calculations a bit easier, we'll look at half the circumference; `C/2=r*pi`.
+Is `r * 3.14` within `0.01` of `r * pi`?
+That depends, what does `r` equal? If `r` is `0.01`mm, or `0.00001` meters, we're comparing
+`0.00001 * 3.14 - 0.01 < r * pi < 0.00001 * 3.14 + 0.01` or `-0.0099686 < 0.0000314159 < 0.0100314`.
+That's a huge tolerance! A circumference that is *a thousand times longer* than we expected would pass that test!
+
+On the other hand, if `r` is very large, we're going to need many more digits of pi.
+For an absolute tolerance of `0.01` and a pi estimation of `3.14`, this expectation only passes if `r < 2*pi`.
+
+If we use a relative tolerance of `0.01` instead, the circle area comparison becomes much better:
+
+Is `r * 3.14` within `1%` of `r * pi`? Yes, always! Or rather, as long as `r` isn't [too close to zero](https://en.wikipedia.org/wiki/Denormal_number).
+In fact, 3 digits of pi approximation is good enough for a 0.1% relative tolerance!
+
+### Near-zero
+
+If you are adding things near zero, you probably want absolute tolerance. If you're comparing values between `-1` and `1`, you should consider using absolute tolerance.
+
+For example: Is `1 + 2 - 3` within `1%` of `0`? Well, if `1`, `2` and `3` have any amount of rounding error, you might not get exactly zero. What is `1%` above and below `0`? Zero. We just lost all tolerance. Even if we hard-code the numbers, we might not get exactly zero; `0.1 + 0.2` rounds to a value just above `0.3`, since computers, counting in binary, cannot write down any of those three numbers using a finite number of digits, just like we cannot write `0.333...` exactly in base 10.
+
+Another example is comparing values that are on either side of zero. `0.0001` is more than `100%` away from `-0.0001`. In fact, `infinity` is closer to `0.0001` than `0.0001` is to `-0.0001`, if you are using a relative tolerance. Twice as close, actually. So even though both `0.0001` and `-0.0001` could be considered very close to zero, they are very far apart relative to each other. The same argument applies for any number of zeroes.
+
+### Is there a rule of thumb?
+
+In general, if you are multiplying, you want relative tolerance, and if you're adding,
+you want absolute tolerance. If you are doing both, you want both kinds of tolerance,
+or to split the calculation into smaller parts for testing.
+
+@docs FloatingPointTolerance, within, notWithin
 
 
 ## Booleans
@@ -246,6 +295,121 @@ atLeast =
     compareWith "Expect.atLeast" (>=)
 
 
+{-| A type to describe how close a floating point number must be to the expected value for the test to pass. This may be
+specified as absolute or relative. If you don't know which one you should use when, have a look at [the section just above](#floating-point-comparisons).
+
+`AbsoluteOrRelative` tolerance uses a logical OR between the absolute (specified first) and relative tolerance. If you
+want a logical AND, use [`Expect.all`](#all).
+
+-}
+type FloatingPointTolerance
+    = Absolute Float
+    | Relative Float
+    | AbsoluteOrRelative Float Float
+
+
+{-| Passes if the second and third arguments are equal within a tolerance
+specified by the first argument. This is intended to avoid failing because of
+minor inaccuracies introduced by floating point arithmetic.
+
+    -- Fails because 0.1 + 0.2 == 0.30000000000000004 (0.1 is non-terminating in base 2)
+    0.1 + 0.2 |> Expect.equal 0.3
+
+    -- So instead write this test, which passes
+    0.1 + 0.2 |> Expect.within (Absolute 0.000000001) 0.3
+
+Failures resemble code written in pipeline style, so you can tell
+which argument is which:
+
+    -- Fails because 3.14 is not close enough to pi
+    3.14 |> Expect.within (Absolute 0.0001) pi
+
+    {-
+
+    3.14
+    ╷
+    │ Expect.within Absolute 0.0001
+    ╵
+    3.141592653589793
+
+    -}
+
+-}
+within : FloatingPointTolerance -> Float -> Float -> Expectation
+within tolerance a b =
+    nonNegativeToleranceError tolerance "within" <|
+        compareWith ("Expect.within " ++ toString tolerance)
+            (withinCompare tolerance)
+            a
+            b
+
+
+{-| Passes if (and only if) a call to `within` with the same arguments would have failed.
+-}
+notWithin : FloatingPointTolerance -> Float -> Float -> Expectation
+notWithin tolerance a b =
+    nonNegativeToleranceError tolerance "notWithin" <|
+        compareWith ("Expect.notWithin " ++ toString tolerance)
+            (\a b -> not <| withinCompare tolerance a b)
+            a
+            b
+
+
+{-| Extract the absolute tolerance.
+-}
+absolute : FloatingPointTolerance -> Float
+absolute tolerance =
+    case tolerance of
+        Absolute absolute ->
+            absolute
+
+        AbsoluteOrRelative absolute _ ->
+            absolute
+
+        _ ->
+            0
+
+
+{-| Extract the relative tolerance.
+-}
+relative : FloatingPointTolerance -> Float
+relative tolerance =
+    case tolerance of
+        Relative relative ->
+            relative
+
+        AbsoluteOrRelative _ relative ->
+            relative
+
+        _ ->
+            0
+
+
+nonNegativeToleranceError : FloatingPointTolerance -> String -> Expectation -> Expectation
+nonNegativeToleranceError tolerance name result =
+    if absolute tolerance < 0 && relative tolerance < 0 then
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given negative absolute and relative tolerances", reason = Test.Expectation.Custom }
+    else if absolute tolerance < 0 then
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative absolute tolerance", reason = Test.Expectation.Custom }
+    else if relative tolerance < 0 then
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative relative tolerance", reason = Test.Expectation.Custom }
+    else
+        result
+
+
+withinCompare : FloatingPointTolerance -> Float -> Float -> Bool
+withinCompare tolerance a b =
+    let
+        withinAbsoluteTolerance =
+            (a - absolute tolerance <= b && b <= a + absolute tolerance)
+
+        withinRelativeTolerance =
+            (a * (1 - relative tolerance) <= b && b <= a * (1 + relative tolerance))
+                || (b * (1 - relative tolerance) <= a && a <= b * (1 + relative tolerance))
+    in
+        (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
+
+
 {-| Passes if the argument is 'True', and otherwise fails with the given message.
 
     Expect.true "Expected the list to be empty." (List.isEmpty [])
@@ -396,10 +560,10 @@ equalLists expected actual =
                                         (toString actual)
                                         ( index, toString e, toString a )
                             in
-                            Test.Expectation.fail
-                                { description = "Expect.equalLists"
-                                , reason = reason
-                                }
+                                Test.Expectation.fail
+                                    { description = "Expect.equalLists"
+                                    , reason = reason
+                                    }
                         )
         in
         case result of
