@@ -1,5 +1,6 @@
 module Fuzz.Internal exposing (Fuzzer, Valid, ValidFuzzer, andThen, andThenNoHistory, combineValid, invalidReason, map)
 
+import Lazy
 import Lazy.List exposing ((:::), LazyList)
 import Random.Pcg as Random exposing (Generator)
 import RoseTree exposing (RoseTree(Rose))
@@ -88,17 +89,19 @@ sequenceLazyList xs =
 
 
 runAll : LazyList (Generator a) -> Random.Seed -> LazyList a
-runAll xs initialSeed =
-    let
-        foldHelper generator ( xs, seed ) =
-            let
-                ( x, newSeed ) =
-                    Random.step generator seed
-            in
-            ( x ::: xs, newSeed )
-    in
-    Lazy.List.foldl foldHelper ( Lazy.List.empty, initialSeed ) xs
-        |> Tuple.first
+runAll xs seed =
+    Lazy.lazy <|
+        \_ ->
+            case Lazy.force xs of
+                Lazy.List.Nil ->
+                    Lazy.List.Nil
+
+                Lazy.List.Cons firstGenerator rest ->
+                    let
+                        ( x, newSeed ) =
+                            Random.step firstGenerator seed
+                    in
+                    Lazy.List.Cons x (runAll rest newSeed)
 
 
 getValid : Valid a -> Maybe a
