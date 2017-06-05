@@ -75,7 +75,7 @@ Here are some examples of running tests on CI servers:
 
 ### Not running tests
 
-During development, you'll often want to focus on a specific tests, silence a failing tests, or jot down many ideas for tests that you can't implement all at once. We've got you covered with `skip`, `only`, and `todo`:
+During development, you'll often want to focus on specific tests, silence failing tests, or jot down many ideas for tests that you can't implement all at once. We've got you covered with `skip`, `only`, and `todo`:
 
 ```elm
 wipSuite : Test
