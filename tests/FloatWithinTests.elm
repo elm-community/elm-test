@@ -48,13 +48,20 @@ floatWithinTests =
                                 1
                     in
                     value |> Expect.within (Relative (abs eps)) value
-            , fuzz float "NaN equality" <|
+            , fuzz float "NaN inequality" <|
                 \epsilon ->
                     let
                         nan =
                             0.0 / 0.0
                     in
                     nan |> Expect.notWithin (Relative (abs epsilon)) nan
+            , fuzz2 float float "NaN does not equal anything" <|
+                \epsilon a ->
+                    let
+                        nan =
+                            0.0 / 0.0
+                    in
+                    nan |> Expect.notWithin (Relative (abs epsilon)) a
             , fuzz float "Infinity equality" <|
                 \epsilon ->
                     let

@@ -48,7 +48,7 @@ module Expect
 @docs lessThan, atMost, greaterThan, atLeast
 
 
-### Floating Point Comparisons
+## Floating Point Comparisons
 
 These functions allow you to compare `Float` values up to a specified rounding error, which may be relative, absolute,
 or both. For an in-depth look, see our [Guide to Floating Point Comparison](#guide-to-floating-point-comparison).
@@ -91,7 +91,7 @@ Is `3.14` within `0.01` of `pi`? Yes, because `3.13 < pi < 3.15`.
 What if we also want to know if our circle circumference estimation is close enough?
 
 Let's say our circle has a radius of `r` meters. The formula for circle circumference is `C=2*r*pi`.
-To make the calculations a bit easier ([ahem](http://tauday.com/tau-manifesto)), we'll look at half the circumference; `C/2=r*pi`.
+To make the calculations a bit easier ([ahem](https://tauday.com/tau-manifesto)), we'll look at half the circumference; `C/2=r*pi`.
 Is `r * 3.14` within `0.01` of `r * pi`?
 That depends, what does `r` equal? If `r` is `0.01`mm, or `0.00001` meters, we're comparing
 `0.00001 * 3.14 - 0.01 < r * pi < 0.00001 * 3.14 + 0.01` or `-0.0099686 < 0.0000314159 < 0.0100314`.
