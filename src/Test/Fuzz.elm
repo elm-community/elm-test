@@ -2,7 +2,7 @@ module Test.Fuzz exposing (fuzzTest)
 
 import Dict exposing (Dict)
 import Fuzz exposing (Fuzzer)
-import Fuzz.Internal exposing (unpackGenTree, unpackGenVal)
+import Fuzz.Internal exposing (ValidFuzzer)
 import Lazy.List
 import Random.Pcg as Random exposing (Generator)
 import RoseTree exposing (RoseTree(..))
@@ -13,7 +13,7 @@ import Test.Internal exposing (Test(..), blankDescriptionFailure, failNow)
 {-| Reject always-failing tests because of bad names or invalid fuzzers.
 -}
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest ((Fuzz.Internal.Fuzzer baseFuzzer) as fuzzer) untrimmedDesc getExpectation =
+fuzzTest fuzzer untrimmedDesc getExpectation =
     let
         desc =
             String.trim untrimmedDesc
@@ -21,21 +21,21 @@ fuzzTest ((Fuzz.Internal.Fuzzer baseFuzzer) as fuzzer) untrimmedDesc getExpectat
     if String.isEmpty desc then
         blankDescriptionFailure
     else
-        case Fuzz.Internal.invalidReason (baseFuzzer True) of
-            Just reason ->
+        case fuzzer of
+            Err reason ->
                 failNow
                     { description = reason
                     , reason = Test.Expectation.Invalid Test.Expectation.InvalidFuzzer
                     }
 
-            Nothing ->
+            Ok validFuzzer ->
                 -- Preliminary checks passed; run the fuzz test
-                validatedFuzzTest fuzzer desc getExpectation
+                validatedFuzzTest validFuzzer desc getExpectation
 
 
 {-| Knowing that the fuzz test isn't obviously invalid, run the test and package up the results.
 -}
-validatedFuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
+validatedFuzzTest : ValidFuzzer a -> String -> (a -> Expectation) -> Test
 validatedFuzzTest fuzzer desc getExpectation =
     let
         run seed runs =
@@ -58,7 +58,7 @@ type alias Failures =
     Dict String Expectation
 
 
-getFailures : Fuzzer a -> (a -> Expectation) -> Random.Seed -> Int -> Dict String Expectation
+getFailures : ValidFuzzer a -> (a -> Expectation) -> Random.Seed -> Int -> Dict String Expectation
 getFailures fuzzer getExpectation initialSeed totalRuns =
     {- Fuzz test algorithm with memoization and opt-in RoseTrees:
        Generate a single value from the fuzzer's genVal random generator
@@ -72,7 +72,7 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
     -}
     let
         genVal =
-            unpackGenVal fuzzer
+            Random.map RoseTree.root fuzzer
 
         initialFailures =
             Dict.empty
@@ -81,12 +81,11 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
             let
                 ( value, nextSeed ) =
                     Random.step genVal currentSeed
-            in
-            let
+
                 newFailures =
                     findNewFailure fuzzer getExpectation failures currentSeed value
             in
-            if remainingRuns == 1 then
+            if remainingRuns <= 1 then
                 newFailures
             else
                 helper nextSeed (remainingRuns - 1) newFailures
@@ -97,7 +96,7 @@ getFailures fuzzer getExpectation initialSeed totalRuns =
 {-| Knowing that a value in not in the cache, determine if it causes the test to pass or fail.
 -}
 findNewFailure :
-    Fuzzer a
+    ValidFuzzer a
     -> (a -> Expectation)
     -> Failures
     -> Random.Seed
@@ -110,12 +109,9 @@ findNewFailure fuzzer getExpectation failures currentSeed value =
 
         failedExpectation ->
             let
-                genTree =
-                    unpackGenTree fuzzer
-
                 ( rosetree, nextSeed ) =
                     -- nextSeed is not used here because caller function has currentSeed
-                    Random.step genTree currentSeed
+                    Random.step fuzzer currentSeed
             in
             shrinkAndAdd rosetree getExpectation failedExpectation failures
 
