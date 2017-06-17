@@ -51,7 +51,7 @@ Check out [a large real-world test suite](https://github.com/rtfeldman/elm-css/t
 There are several ways you can run tests locally:
 
 * [from your terminal](https://github.com/rtfeldman/node-test-runner) via `npm install -g elm-test`
-* [from your browser](https://github.com/rtfeldman/html-test-runner)
+* [from your browser](https://github.com/elm-community/html-test-runner)
 
 Here's how to set up and run your tests using the CLI test runner:
 
