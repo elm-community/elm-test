@@ -41,7 +41,7 @@ These functions give you the ability to run fuzzers separate of running fuzz tes
 -}
 
 import Expect exposing (Expectation)
-import Fuzz.Internal exposing (Fuzzer)
+import Fuzz exposing (Fuzzer)
 import Lazy.List as LazyList exposing (LazyList)
 import Random.Pcg
 import RoseTree exposing (RoseTree(Rose))
