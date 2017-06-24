@@ -1,7 +1,8 @@
 module Tests exposing (all)
 
 import Dict
-import Expect
+import Expect exposing (FloatingPointTolerance(Absolute, AbsoluteOrRelative, Relative))
+import FloatWithinTests exposing (floatWithinTests)
 import Fuzz exposing (..)
 import FuzzerTests exposing (fuzzerTests)
 import Helpers exposing (..)
@@ -22,6 +23,7 @@ all =
         , testTests
         , expectationTests
         , fuzzerTests
+        , floatWithinTests
         , RunnerTests.all
         ]
 
