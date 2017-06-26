@@ -131,7 +131,7 @@ We now forbid tests and suites to have descriptions that are blank, or that are 
 ### From 0.17
 You will need to delete `elm-stuff` and `tests/elm-stuff`.
 
-If you are using the Node runner, you will need to install the latest version (`npm update -g elm-test`) and pull down the new `Main.elm`: `curl -o tests/Main.elm https://raw.githubusercontent.com/rtfeldman/node-test-runner/master/templates/Main.elm`
+If you are using the Node runner, you will need to install the latest version (`npm update -g elm-test`) and pull down the new `Main.elm`: `curl -o tests/Main.elm https://raw.githubusercontent.com/rtfeldman/node-test-runner/3.0.1/templates/Main.elm`
 
 ### From 1.x and elm-check
 [`legacy-elm-test`](http://package.elm-lang.org/packages/rtfeldman/legacy-elm-test/latest) provides a
