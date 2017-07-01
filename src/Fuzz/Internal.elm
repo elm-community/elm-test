@@ -1,4 +1,4 @@
-module Fuzz.Internal exposing (Fuzzer, Valid, ValidFuzzer, andThen, combineValid, invalidReason, map)
+module Fuzz.Internal exposing (Fuzzer(Fuzzer), Valid, ValidFuzzer, andThen, combineValid, invalidReason, map)
 
 import Lazy
 import Lazy.List exposing ((:::), LazyList)
@@ -6,8 +6,8 @@ import Random.Pcg as Random exposing (Generator)
 import RoseTree exposing (RoseTree(Rose))
 
 
-type alias Fuzzer a =
-    Valid (ValidFuzzer a)
+type Fuzzer a
+    = Fuzzer (Valid (ValidFuzzer a))
 
 
 type alias Valid a =
@@ -32,21 +32,23 @@ combineValid valids =
 
 
 map : (a -> b) -> Fuzzer a -> Fuzzer b
-map fn fuzzer =
+map fn (Fuzzer fuzzer) =
     (Result.map << Random.map << RoseTree.map) fn fuzzer
+        |> Fuzzer
 
 
 andThen : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
-andThen fn fuzzer =
+andThen fn (Fuzzer fuzzer) =
     let
         helper : (a -> Fuzzer b) -> RoseTree a -> ValidFuzzer b
         helper fn xs =
-            RoseTree.map fn xs
+            RoseTree.map (fn >> (\(Fuzzer f) -> f)) xs
                 |> removeInvalid
                 |> sequenceRoseTree
                 |> Random.map RoseTree.flatten
     in
     Result.map (Random.andThen (helper fn)) fuzzer
+        |> Fuzzer
 
 
 removeInvalid : RoseTree (Valid a) -> RoseTree a

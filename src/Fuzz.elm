@@ -39,7 +39,7 @@ import Array exposing (Array)
 import Char
 import Fuzz.Internal as Internal
     exposing
-        ( Fuzzer
+        ( Fuzzer(Fuzzer)
         , Valid
         , ValidFuzzer
         , combineValid
@@ -117,8 +117,9 @@ custom generator shrinker =
         shrinkTree a =
             Rose a (Lazy.lazy <| \_ -> Lazy.force <| Lazy.List.map shrinkTree (shrinker a))
     in
-    Ok <|
-        Random.map shrinkTree generator
+    Random.map shrinkTree generator
+        |> Ok
+        |> Fuzzer
 
 
 {-| A fuzzer for the unit value. Unit is a type with only one value, commonly
@@ -129,6 +130,7 @@ unit =
     RoseTree.singleton ()
         |> Random.constant
         |> Ok
+        |> Fuzzer
 
 
 {-| A fuzzer for bool values.
@@ -185,7 +187,7 @@ the ints x or bigger.
 intRange : Int -> Int -> Fuzzer Int
 intRange lo hi =
     if hi < lo then
-        Err <| "Fuzz.intRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
+        invalid <| "Fuzz.intRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
     else
         custom
             (Random.frequency
@@ -224,7 +226,7 @@ value, inclusive. Shrunken values will also be within the range.
 floatRange : Float -> Float -> Fuzzer Float
 floatRange lo hi =
     if hi < lo then
-        Err <| "Fuzz.floatRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
+        invalid <| "Fuzz.floatRange was given a lower bound of " ++ toString lo ++ " which is greater than the upper bound, " ++ toString hi ++ "."
     else
         custom
             (Random.frequency
@@ -289,7 +291,7 @@ string =
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
 -}
 maybe : Fuzzer a -> Fuzzer (Maybe a)
-maybe fuzzer =
+maybe (Fuzzer fuzzer) =
     let
         toMaybe : Bool -> RoseTree a -> RoseTree (Maybe a)
         toMaybe useNothing tree =
@@ -299,13 +301,14 @@ maybe fuzzer =
                 RoseTree.map Just tree |> RoseTree.addChild (RoseTree.singleton Nothing)
     in
     (Result.map << Random.map2 toMaybe) (Random.oneIn 4) fuzzer
+        |> Fuzzer
 
 
 {-| Given fuzzers for an error type and a success type, create a fuzzer for
 a result.
 -}
 result : Fuzzer error -> Fuzzer value -> Fuzzer (Result error value)
-result fuzzerError fuzzerValue =
+result (Fuzzer fuzzerError) (Fuzzer fuzzerValue) =
     let
         toResult : Bool -> RoseTree error -> RoseTree value -> RoseTree (Result error value)
         toResult useError errorTree valueTree =
@@ -315,13 +318,14 @@ result fuzzerError fuzzerValue =
                 RoseTree.map Ok valueTree
     in
     (Result.map2 <| Random.map3 toResult (Random.oneIn 4)) fuzzerError fuzzerValue
+        |> Fuzzer
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a list of that type.
 Generates random lists of varying length, favoring shorter lists.
 -}
 list : Fuzzer a -> Fuzzer (List a)
-list fuzzer =
+list (Fuzzer fuzzer) =
     let
         genLength =
             Random.frequency
@@ -339,6 +343,7 @@ list fuzzer =
                     |> Random.andThen (flip Random.list validFuzzer)
                     |> Random.map listShrinkHelp
             )
+        |> Fuzzer
 
 
 listShrinkHelp : List (RoseTree a) -> RoseTree (List a)
@@ -435,7 +440,9 @@ and so this function is best used as a helper when creating more complicated fuz
 -}
 constant : a -> Fuzzer a
 constant x =
-    Ok <| Random.constant (RoseTree.singleton x)
+    Random.constant (RoseTree.singleton x)
+        |> Ok
+        |> Fuzzer
 
 
 {-| Map a function over a fuzzer. This applies to both the generated and the shrunken values.
@@ -448,29 +455,33 @@ map =
 {-| Map over two fuzzers.
 -}
 map2 : (a -> b -> c) -> Fuzzer a -> Fuzzer b -> Fuzzer c
-map2 transform fuzzA fuzzB =
+map2 transform (Fuzzer fuzzA) (Fuzzer fuzzB) =
     (Result.map2 << Random.map2 << map2RoseTree) transform fuzzA fuzzB
+        |> Fuzzer
 
 
 {-| Map over three fuzzers.
 -}
 map3 : (a -> b -> c -> d) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d
-map3 transform fuzzA fuzzB fuzzC =
+map3 transform (Fuzzer fuzzA) (Fuzzer fuzzB) (Fuzzer fuzzC) =
     (Result.map3 << Random.map3 << map3RoseTree) transform fuzzA fuzzB fuzzC
+        |> Fuzzer
 
 
 {-| Map over four fuzzers.
 -}
 map4 : (a -> b -> c -> d -> e) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d -> Fuzzer e
-map4 transform fuzzA fuzzB fuzzC fuzzD =
+map4 transform (Fuzzer fuzzA) (Fuzzer fuzzB) (Fuzzer fuzzC) (Fuzzer fuzzD) =
     (Result.map4 << Random.map4 << map4RoseTree) transform fuzzA fuzzB fuzzC fuzzD
+        |> Fuzzer
 
 
 {-| Map over five fuzzers.
 -}
 map5 : (a -> b -> c -> d -> e -> f) -> Fuzzer a -> Fuzzer b -> Fuzzer c -> Fuzzer d -> Fuzzer e -> Fuzzer f
-map5 transform fuzzA fuzzB fuzzC fuzzD fuzzE =
+map5 transform (Fuzzer fuzzA) (Fuzzer fuzzB) (Fuzzer fuzzC) (Fuzzer fuzzD) (Fuzzer fuzzE) =
     (Result.map5 << Random.map5 << map5RoseTree) transform fuzzA fuzzB fuzzC fuzzD fuzzE
+        |> Fuzzer
 
 
 {-| Map over many fuzzers. This can act as mapN for N > 5.
@@ -503,8 +514,9 @@ blow the stack.
 
 -}
 conditional : { retries : Int, fallback : a -> a, condition : a -> Bool } -> Fuzzer a -> Fuzzer a
-conditional opts fuzzer =
+conditional opts (Fuzzer fuzzer) =
     Result.map (conditionalHelper opts) fuzzer
+        |> Fuzzer
 
 
 conditionalHelper : { retries : Int, fallback : a -> a, condition : a -> Bool } -> ValidFuzzer a -> ValidFuzzer a
@@ -574,9 +586,11 @@ frequency list =
         invalid "Frequency weights must sum to more than 0."
     else
         list
+            |> List.map (Tuple.mapSecond (\(Fuzzer f) -> f))
             |> List.map extractValid
             |> combineValid
             |> Result.map Random.frequency
+            |> Fuzzer
 
 
 extractValid : ( a, Valid b ) -> Valid ( a, b )
@@ -608,7 +622,7 @@ are also invalid. Any tests using an invalid fuzzer fail.
 -}
 invalid : String -> Fuzzer a
 invalid reason =
-    Err reason
+    Fuzzer (Err reason)
 
 
 map2RoseTree : (a -> b -> c) -> RoseTree a -> RoseTree b -> RoseTree c
