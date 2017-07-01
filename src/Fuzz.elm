@@ -36,14 +36,7 @@ Instead of using a tuple, consider using `fuzzN`.
 
 import Array exposing (Array)
 import Char
-import Fuzz.Internal as Internal
-    exposing
-        ( Fuzzer(Fuzzer)
-        , Valid
-        , ValidFuzzer
-        , combineValid
-        , invalidReason
-        )
+import Fuzz.Internal as Internal exposing (Fuzzer(Fuzzer), Valid, ValidFuzzer)
 import Lazy
 import Lazy.List exposing ((+++), LazyList)
 import Random.Pcg as Random exposing (Generator)
@@ -447,8 +440,9 @@ constant x =
 {-| Map a function over a fuzzer. This applies to both the generated and the shrunken values.
 -}
 map : (a -> b) -> Fuzzer a -> Fuzzer b
-map =
-    Internal.map
+map fn (Fuzzer fuzzer) =
+    (Result.map << Random.map << RoseTree.map) fn fuzzer
+        |> Fuzzer
 
 
 {-| Map over two fuzzers.
@@ -583,6 +577,19 @@ frequency list =
             |> combineValid
             |> Result.map Random.frequency
             |> Fuzzer
+
+
+combineValid : List (Valid a) -> Valid (List a)
+combineValid valids =
+    case valids of
+        [] ->
+            Ok []
+
+        (Ok x) :: rest ->
+            Result.map ((::) x) (combineValid rest)
+
+        (Err reason) :: _ ->
+            Err reason
 
 
 extractValid : ( a, Valid b ) -> Valid ( a, b )
