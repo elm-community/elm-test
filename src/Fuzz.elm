@@ -1,4 +1,4 @@
-module Fuzz exposing (Fuzzer, andMap, andThen, array, bool, char, conditional, constant, custom, float, floatRange, frequency, int, intRange, invalid, list, map, map2, map3, map4, map5, maybe, oneOf, order, percentage, result, string, tuple, tuple3, tuple4, tuple5, unit)
+module Fuzz exposing (Fuzzer, andMap, array, bool, char, conditional, constant, custom, float, floatRange, frequency, int, intRange, invalid, list, map, map2, map3, map4, map5, maybe, oneOf, order, percentage, result, string, tuple, tuple3, tuple4, tuple5, unit)
 
 {-| This is a library of _fuzzers_ you can use to supply values to your fuzz
 tests. You can typically pick out which ones you need according to their types.
@@ -19,8 +19,7 @@ reproduces a bug.
 
 ## Working with Fuzzers
 
-@docs Fuzzer, constant, map, map2, map3, map4, map5, andMap, andThen, frequency, conditional
-@docs Fuzzer, oneOf, constant, map, map2, map3, map4, map5, andMap, andThen, frequency, conditional
+@docs Fuzzer, oneOf, constant, map, map2, map3, map4, map5, andMap, frequency, conditional
 
 
 ## Tuple Fuzzers
@@ -494,13 +493,6 @@ Note that shrinking may be better using mapN.
 andMap : Fuzzer a -> Fuzzer (a -> b) -> Fuzzer b
 andMap =
     map2 (|>)
-
-
-{-| Create a fuzzer based on the result of another fuzzer.
--}
-andThen : (a -> Fuzzer b) -> Fuzzer a -> Fuzzer b
-andThen =
-    Internal.andThen
 
 
 {-| Conditionally filter a fuzzer to remove occasional undesirable

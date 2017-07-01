@@ -49,9 +49,6 @@ fuzzerTests =
             "Fuzz.frequency"
             (Expect.greaterThan 0)
         , fuzz (result string int) "Fuzz.result" <| \r -> Expect.pass
-        , fuzz (andThen (\i -> intRange 0 (2 ^ i)) (intRange 1 8))
-            "Fuzz.andThen"
-            (Expect.atMost 256)
         , fuzz
             (map2 (,) die die
                 |> conditional
@@ -178,9 +175,6 @@ shrinkingTests =
                                     True
                     in
                         checkPair aList |> Expect.true "[1,0]|[0,-1]"
-            , fuzz (intRange 1 8 |> andThen (\i -> intRange 0 (2 ^ i))) "Fuzz.andThen shrinks a number" <|
-                \i ->
-                    i <= 2 |> Expect.true "3"
             ]
 
 
