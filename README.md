@@ -84,7 +84,7 @@ wipSuite =
         [ only <| describe "Marking this test as `only` means no other tests will be run!"
             [ test "This test will be run" <|
                   \_ -> 1 + 1 |> Expect.equal 2
-            , skip <| "This test will be skipped, even though it's in an only!" <|
+            , skip <| test "This test will be skipped, even though it's in an only!" <|
                   \_ -> 2 + 3 |> Expect.equal 4
             ]
         , test "This test will be skipped because it has no only" <|
