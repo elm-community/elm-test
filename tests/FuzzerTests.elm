@@ -2,6 +2,7 @@ module FuzzerTests exposing (fuzzerTests)
 
 import Expect
 import Fuzz exposing (..)
+import Fuzz.Internal as Internal
 import Helpers exposing (..)
 import Lazy.List
 import Random.Pcg as Random
@@ -24,7 +25,7 @@ seed =
 
 fuzzerTests : Test
 fuzzerTests =
-    describe "Fuzzer methods that use Debug.crash don't call it"
+    describe "Fuzzer methods"
         [ describe "FuzzN (uses tupleN) testing string length properties"
             [ fuzz2 string string "fuzz2" <|
                 \a b ->
@@ -48,9 +49,6 @@ fuzzerTests =
             "Fuzz.frequency"
             (Expect.greaterThan 0)
         , fuzz (result string int) "Fuzz.result" <| \r -> Expect.pass
-        , fuzz (andThen (\i -> intRange 0 (2 ^ i)) (intRange 1 8))
-            "Fuzz.andThen"
-            (Expect.atMost 256)
         , fuzz
             (map2 (,) die die
                 |> conditional
@@ -79,12 +77,15 @@ fuzzerTests =
                     even n =
                         (n % 2) == 0
 
-                    shrinkable : Test.Runner.Shrinkable Int
+                    shrinkable : Result String (Test.Runner.Shrinkable Int)
                     shrinkable =
                         Test.Runner.fuzz evenInt
-                            |> flip Random.step seed
-                            |> Tuple.first
-                            |> Tuple.second
+                            |> Result.map
+                                (\validFuzzer ->
+                                    Random.step validFuzzer seed
+                                        |> Tuple.first
+                                        |> Tuple.second
+                                )
 
                     testShrinkable : Test.Runner.Shrinkable Int -> Expect.Expectation
                     testShrinkable shrinkable =
@@ -98,7 +99,12 @@ fuzzerTests =
                                 else
                                     Expect.fail <| "Shrunken value does not pass conditional: " ++ toString value
                 in
-                testShrinkable shrinkable
+                case shrinkable of
+                    Ok shrinkable_ ->
+                        testShrinkable shrinkable_
+
+                    Err failure ->
+                        Expect.fail failure
         , describe "Whitebox testing using Fuzz.Internal"
             [ fuzz randomSeedFuzzer "the same value is generated with and without shrinking" <|
                 \seed ->
@@ -106,7 +112,7 @@ fuzzerTests =
                         step gen =
                             Random.step gen seed
 
-                        aFuzzer =
+                        (Internal.Fuzzer aFuzzer) =
                             tuple5
                                 ( tuple ( list int, array float )
                                 , maybe bool
@@ -177,9 +183,6 @@ shrinkingTests =
                                     True
                     in
                     checkPair aList |> Expect.true "[1,0]|[0,-1]"
-            , fuzz (intRange 1 8 |> andThen (\i -> intRange 0 (2 ^ i))) "Fuzz.andThen shrinks a number" <|
-                \i ->
-                    i <= 2 |> Expect.true "3"
             ]
 
 
@@ -190,6 +193,7 @@ manualFuzzerTests =
             \seed ->
                 let
                     -- fuzzer is guaranteed to produce an even number
+                    fuzzer : Fuzzer Int
                     fuzzer =
                         Fuzz.intRange 2 10000
                             |> Fuzz.map
@@ -200,13 +204,18 @@ manualFuzzerTests =
                                         n + 1
                                 )
 
+                    failsTest : Int -> Bool
                     failsTest n =
                         n % 2 == 0
 
-                    pair =
-                        Random.step (Test.Runner.fuzz fuzzer) seed
-                            |> Tuple.first
-                            |> Just
+                    fuzzedValue : Result String ( Int, Test.Runner.Shrinkable Int )
+                    fuzzedValue =
+                        Test.Runner.fuzz fuzzer
+                            |> Result.map
+                                (\validFuzzer ->
+                                    Random.step validFuzzer seed
+                                        |> Tuple.first
+                                )
 
                     unfold acc maybePair =
                         case maybePair of
@@ -219,28 +228,39 @@ manualFuzzerTests =
                             Nothing ->
                                 acc
                 in
-                unfold [] pair
-                    |> Expect.all
-                        [ List.all failsTest >> Expect.true "Not all elements were even"
-                        , List.head
-                            >> Maybe.map (Expect.all [ Expect.lessThan 5, Expect.atLeast 0 ])
-                            >> Maybe.withDefault (Expect.fail "Did not cause failure")
-                        , List.reverse >> List.head >> Expect.equal (Maybe.map Tuple.first pair)
-                        ]
+                case fuzzedValue of
+                    Ok pair ->
+                        unfold [] (Just pair)
+                            |> Expect.all
+                                [ List.all failsTest >> Expect.true "Not all elements were even"
+                                , List.head
+                                    >> Maybe.map (Expect.all [ Expect.lessThan 5, Expect.atLeast 0 ])
+                                    >> Maybe.withDefault (Expect.fail "Did not cause failure")
+                                , List.reverse >> List.head >> Expect.equal (Tuple.first pair |> Just)
+                                ]
+
+                    Err failure ->
+                        Expect.fail failure
         , fuzz randomSeedFuzzer "No strings contain the letter e" <|
             \seed ->
                 let
                     -- fuzzer is guaranteed to produce a string with the letter e
+                    fuzzer : Fuzzer String
                     fuzzer =
                         map2 (\pre suf -> pre ++ "e" ++ suf) string string
 
+                    failsTest : String -> Bool
                     failsTest =
                         String.contains "e"
 
-                    pair =
-                        Random.step (Test.Runner.fuzz fuzzer) seed
-                            |> Tuple.first
-                            |> Just
+                    fuzzedValue : Result String ( String, Test.Runner.Shrinkable String )
+                    fuzzedValue =
+                        Test.Runner.fuzz fuzzer
+                            |> Result.map
+                                (\validFuzzer ->
+                                    Random.step validFuzzer seed
+                                        |> Tuple.first
+                                )
 
                     unfold acc maybePair =
                         case maybePair of
@@ -253,10 +273,15 @@ manualFuzzerTests =
                             Nothing ->
                                 acc
                 in
-                unfold [] pair
-                    |> Expect.all
-                        [ List.all failsTest >> Expect.true "Not all contained the letter e"
-                        , List.head >> Expect.equal (Just "e")
-                        , List.reverse >> List.head >> Expect.equal (Maybe.map Tuple.first pair)
-                        ]
+                case fuzzedValue of
+                    Ok pair ->
+                        unfold [] (Just pair)
+                            |> Expect.all
+                                [ List.all failsTest >> Expect.true "Not all contained the letter e"
+                                , List.head >> Expect.equal (Just "e")
+                                , List.reverse >> List.head >> Expect.equal (Tuple.first pair |> Just)
+                                ]
+
+                    Err failure ->
+                        Expect.fail failure
         ]

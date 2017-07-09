@@ -1,8 +1,7 @@
 module Test.Fuzz exposing (fuzzTest)
 
 import Dict exposing (Dict)
-import Fuzz exposing (Fuzzer)
-import Fuzz.Internal exposing (ValidFuzzer)
+import Fuzz.Internal exposing (Fuzzer(Fuzzer), ValidFuzzer)
 import Lazy.List
 import Random.Pcg as Random exposing (Generator)
 import RoseTree exposing (RoseTree(..))
@@ -13,7 +12,7 @@ import Test.Internal exposing (Test(..), blankDescriptionFailure, failNow)
 {-| Reject always-failing tests because of bad names or invalid fuzzers.
 -}
 fuzzTest : Fuzzer a -> String -> (a -> Expectation) -> Test
-fuzzTest fuzzer untrimmedDesc getExpectation =
+fuzzTest (Fuzzer fuzzer) untrimmedDesc getExpectation =
     let
         desc =
             String.trim untrimmedDesc
