@@ -371,8 +371,11 @@ type Shrinkable a
     = Shrinkable (Shrunken a)
 
 
-{-| Given a fuzzer, return a random generator to produce a value and a
+{-| Given a valid fuzzer, return a random generator to produce a value and a
 Shrinkable. The value is what a fuzz test would have received as input.
+
+Given an invalid fuzzer return an error.
+
 -}
 fuzz : Fuzzer a -> Result String (Random.Pcg.Generator ( a, Shrinkable a ))
 fuzz (FuzzInternal.Fuzzer fuzzer) =
