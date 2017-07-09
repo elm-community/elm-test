@@ -374,18 +374,15 @@ type Shrinkable a
 {-| Given a fuzzer, return a random generator to produce a value and a
 Shrinkable. The value is what a fuzz test would have received as input.
 -}
-fuzz : Fuzzer a -> Random.Pcg.Generator ( a, Shrinkable a )
+fuzz : Fuzzer a -> Result String (Random.Pcg.Generator ( a, Shrinkable a ))
 fuzz (FuzzInternal.Fuzzer fuzzer) =
-    case fuzzer of
-        Ok validFuzzer ->
-            validFuzzer
-                |> Random.Pcg.map
-                    (\(Rose root children) ->
-                        ( root, Shrinkable { down = children, over = LazyList.empty } )
-                    )
-
-        Err reason ->
-            Debug.crash <| "Cannot call `fuzz` with an invalid fuzzer: " ++ reason
+    fuzzer
+        |> Result.map
+            (Random.Pcg.map
+                (\(Rose root children) ->
+                    ( root, Shrinkable { down = children, over = LazyList.empty } )
+                )
+            )
 
 
 {-| Given a Shrinkable, attempt to shrink the value further. Pass `False` to
