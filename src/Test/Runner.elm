@@ -43,7 +43,7 @@ These functions give you the ability to run fuzzers separate of running fuzz tes
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
 import Lazy.List as LazyList exposing (LazyList)
-import Random.Pcg
+import Random.Pcg as Random
 import RoseTree exposing (RoseTree(Rose))
 import String
 import Test exposing (Test)
@@ -83,13 +83,13 @@ type RunnableTree
 {-| Convert a `Test` into `SeededRunners`.
 
 In order to run any fuzz tests that the `Test` may have, it requires a default run count as well
-as an initial `Random.Pcg.Seed`. `100` is a good run count. To obtain a good random seed, pass a
-random 32-bit integer to `Random.Pcg.initialSeed`. You can obtain such an integer by running
+as an initial `Random.Seed`. `100` is a good run count. To obtain a good random seed, pass a
+random 32-bit integer to `Random.initialSeed`. You can obtain such an integer by running
 `Math.floor(Math.random()*0xFFFFFFFF)` in Node. It's typically fine to hard-code this value into
 your Elm code; it's easy and makes your tests reproducible.
 
 -}
-fromTest : Int -> Random.Pcg.Seed -> Test -> SeededRunners
+fromTest : Int -> Random.Seed -> Test -> SeededRunners
 fromTest runs seed test =
     if runs < 1 then
         Invalid ("Test runner run count must be at least 1, not " ++ toString runs)
@@ -158,7 +158,7 @@ fromRunnableTreeHelp labels runner =
 
 
 type alias Distribution =
-    { seed : Random.Pcg.Seed
+    { seed : Random.Seed
     , only : List RunnableTree
     , all : List RunnableTree
     , skipped : List RunnableTree
@@ -173,7 +173,7 @@ type SeededRunners
     | Invalid String
 
 
-emptyDistribution : Random.Pcg.Seed -> Distribution
+emptyDistribution : Random.Seed -> Distribution
 emptyDistribution seed =
     { seed = seed
     , all = []
@@ -208,13 +208,13 @@ Some design notes:
     which would presumably require some absurdly deeply nested `describe` calls.
 
 -}
-distributeSeeds : Int -> Random.Pcg.Seed -> Test -> Distribution
+distributeSeeds : Int -> Random.Seed -> Test -> Distribution
 distributeSeeds runs seed test =
     case test of
         Internal.Test run ->
             let
                 ( firstSeed, nextSeed ) =
-                    Random.Pcg.step Random.Pcg.independentSeed seed
+                    Random.step Random.independentSeed seed
             in
             { seed = nextSeed
             , all = [ Runnable (Thunk (\_ -> run firstSeed runs)) ]
@@ -373,12 +373,12 @@ type Shrinkable a
 {-| Given a fuzzer, return a random generator to produce a value and a
 Shrinkable. The value is what a fuzz test would have received as input.
 -}
-fuzz : Fuzzer a -> Random.Pcg.Generator ( a, Shrinkable a )
+fuzz : Fuzzer a -> Random.Generator ( a, Shrinkable a )
 fuzz fuzzer =
     case fuzzer of
         Ok validFuzzer ->
             validFuzzer
-                |> Random.Pcg.map
+                |> Random.map
                     (\(Rose root children) ->
                         ( root, Shrinkable { down = children, over = LazyList.empty } )
                     )
