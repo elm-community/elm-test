@@ -41,6 +41,7 @@ These functions give you the ability to run fuzzers separate of running fuzz tes
 -}
 
 import Expect exposing (Expectation)
+import FNV
 import Fuzz exposing (Fuzzer)
 import Lazy.List as LazyList exposing (LazyList)
 import Random.Pcg as Random
@@ -209,7 +210,12 @@ Some design notes:
 
 -}
 distributeSeeds : Int -> Random.Seed -> Test -> Distribution
-distributeSeeds runs seed test =
+distributeSeeds =
+    distributeSeedsHelp False
+
+
+distributeSeedsHelp : Bool -> Int -> Random.Seed -> Test -> Distribution
+distributeSeedsHelp hashed runs seed test =
     case test of
         Internal.UnitTest run ->
             { seed = seed
@@ -230,22 +236,62 @@ distributeSeeds runs seed test =
             }
 
         Internal.Labeled description subTest ->
-            let
-                next =
-                    distributeSeeds runs seed subTest
-            in
-            { seed = next.seed
-            , all = List.map (Labeled description) next.all
-            , only = List.map (Labeled description) next.only
-            , skipped = List.map (Labeled description) next.skipped
-            }
+            -- This fixes https://github.com/elm-community/elm-test/issues/192
+            -- The first time we hit a Labeled, we want to use the hash of
+            -- that label, along with the original seed, as our starting
+            -- point for distribution. Repeating this process more than
+            -- once would be a waste.
+            if hashed then
+                let
+                    next =
+                        distributeSeedsHelp True runs seed subTest
+                in
+                { seed = next.seed
+                , all = List.map (Labeled description) next.all
+                , only = List.map (Labeled description) next.only
+                , skipped = List.map (Labeled description) next.skipped
+                }
+            else
+                let
+                    intFromSeed =
+                        -- At this point, this seed will be the original
+                        -- one passed into distributeSeeds. We know this
+                        -- because the only other branch that does a
+                        -- Random.step on that seed is the Internal.Test
+                        -- branch, and you can't have a Labeled inside a
+                        -- Test, so that couldn't have come up yet.
+                        seed
+                            -- Convert the Seed back to an Int
+                            |> Random.step (Random.int 0 Random.maxInt)
+                            |> Tuple.first
+
+                    hashedSeed =
+                        -- Incorporate the originally passed-in seed
+                        (toString intFromSeed ++ description)
+                            -- Hash from String to Int
+                            |> FNV.hashString
+                            -- Convert Int back to Seed
+                            |> Random.initialSeed
+
+                    next =
+                        distributeSeedsHelp True runs hashedSeed subTest
+                in
+                -- Using seed instead of next.seed fixes https://github.com/elm-community/elm-test/issues/192
+                -- by making it so that all the tests underneath this Label begin
+                -- with the hashed seed, but subsequent sibling tests in this Batch
+                -- get the same seed as before.
+                { seed = seed
+                , all = List.map (Labeled description) next.all
+                , only = List.map (Labeled description) next.only
+                , skipped = List.map (Labeled description) next.skipped
+                }
 
         Internal.Skipped subTest ->
             let
                 -- Go through the motions in order to obtain the seed, but then
                 -- move everything to skipped.
                 next =
-                    distributeSeeds runs seed subTest
+                    distributeSeedsHelp hashed runs seed subTest
             in
             { seed = next.seed
             , all = []
@@ -256,20 +302,20 @@ distributeSeeds runs seed test =
         Internal.Only subTest ->
             let
                 next =
-                    distributeSeeds runs seed subTest
+                    distributeSeedsHelp hashed runs seed subTest
             in
             -- `only` all the things!
             { next | only = next.all }
 
         Internal.Batch tests ->
-            List.foldl (batchDistribute runs) (emptyDistribution seed) tests
+            List.foldl (batchDistribute hashed runs) (emptyDistribution seed) tests
 
 
-batchDistribute : Int -> Test -> Distribution -> Distribution
-batchDistribute runs test prev =
+batchDistribute : Bool -> Int -> Test -> Distribution -> Distribution
+batchDistribute hashed runs test prev =
     let
         next =
-            distributeSeeds runs prev.seed test
+            distributeSeedsHelp hashed runs prev.seed test
     in
     { seed = next.seed
     , all = prev.all ++ next.all
