@@ -122,7 +122,6 @@ For example: Is `1 + 2 - 3` within `1%` of `0`? Well, if `1`, `2` and `3` have a
 
 Another example is comparing values that are on either side of zero. `0.0001` is more than `100%` away from `-0.0001`. In fact, `infinity` is closer to `0.0001` than `0.0001` is to `-0.0001`, if you are using a relative tolerance. Twice as close, actually. So even though both `0.0001` and `-0.0001` could be considered very close to zero, they are very far apart relative to each other. The same argument applies for any number of zeroes.
 
-
 -}
 
 import Dict exposing (Dict)

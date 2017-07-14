@@ -6,7 +6,8 @@ import Test.Expectation exposing (Expectation(..))
 
 
 type Test
-    = Test (Random.Seed -> Int -> List Expectation)
+    = UnitTest (() -> List Expectation)
+    | FuzzTest (Random.Seed -> Int -> List Expectation)
     | Labeled String Test
     | Skipped Test
     | Only Test
@@ -17,8 +18,8 @@ type Test
 -}
 failNow : { description : String, reason : Test.Expectation.Reason } -> Test
 failNow record =
-    Test
-        (\_ _ -> [ Test.Expectation.fail record ])
+    UnitTest
+        (\() -> [ Test.Expectation.fail record ])
 
 
 blankDescriptionFailure : Test
@@ -41,7 +42,10 @@ duplicatedName =
                 Batch subtests ->
                     List.concatMap names subtests
 
-                Test _ ->
+                UnitTest _ ->
+                    []
+
+                FuzzTest _ ->
                     []
 
                 Skipped subTest ->

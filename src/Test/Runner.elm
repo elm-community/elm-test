@@ -211,7 +211,14 @@ Some design notes:
 distributeSeeds : Int -> Random.Seed -> Test -> Distribution
 distributeSeeds runs seed test =
     case test of
-        Internal.Test run ->
+        Internal.UnitTest run ->
+            { seed = seed
+            , all = [ Runnable (Thunk (\_ -> run ())) ]
+            , only = []
+            , skipped = []
+            }
+
+        Internal.FuzzTest run ->
             let
                 ( firstSeed, nextSeed ) =
                     Random.step Random.independentSeed seed

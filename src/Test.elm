@@ -138,7 +138,7 @@ test untrimmedDesc thunk =
     if String.isEmpty desc then
         Internal.blankDescriptionFailure
     else
-        Internal.Labeled desc (Internal.Test (\_ _ -> [ thunk () ]))
+        Internal.Labeled desc (Internal.UnitTest (\() -> [ thunk () ]))
 
 
 {-| Returns a [`Test`](#Test) that is "TODO" (not yet implemented). These tests
@@ -304,8 +304,11 @@ fuzzWith options fuzzer desc getTest =
 fuzzWithHelp : FuzzOptions -> Test -> Test
 fuzzWithHelp options test =
     case test of
-        Internal.Test run ->
-            Internal.Test (\seed _ -> run seed options.runs)
+        Internal.UnitTest _ ->
+            test
+
+        Internal.FuzzTest run ->
+            Internal.FuzzTest (\seed _ -> run seed options.runs)
 
         Internal.Labeled label subTest ->
             Internal.Labeled label (fuzzWithHelp options subTest)
