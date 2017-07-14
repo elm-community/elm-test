@@ -1,4 +1,4 @@
-module Helpers exposing (expectPass, expectToFail, randomSeedFuzzer, succeeded, testShrinking, testStringLengthIsPreserved, same, different)
+module Helpers exposing (different, expectPass, expectToFail, randomSeedFuzzer, same, succeeded, testShrinking, testStringLengthIsPreserved)
 
 import Expect
 import Fuzz exposing (Fuzzer)
