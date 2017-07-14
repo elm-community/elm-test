@@ -13,12 +13,12 @@ fixedSeed =
 
 expectedNum : Int
 expectedNum =
-    1083264770
+    -2287493601
 
 
 oneSeedAlreadyDistributed : Int
 oneSeedAlreadyDistributed =
-    1463443676
+    27
 
 
 {-| Most of the tests will use this, but we won't run it directly.
@@ -87,6 +87,23 @@ tests =
             [ fuzzTest
             , fuzzTestAfterOneDistributed
             ]
+        ]
+    , Test.concat
+        [ fuzz int "top-level fuzz tests don't affect subsequent top-level fuzz tests, since they use their labels to get different seeds" <|
+            \num ->
+                Expect.equal num -68743824
+        , describe "Seed test"
+            [ fuzzTest ]
+        , describe "another top-level fuzz test"
+            [ fuzz int "it still gets different values, due to computing the seed as a hash of the label, and these labels must be unique" <|
+                \num ->
+                    Expect.equal num -797247838
+            ]
+        ]
+    , describe "Fuzz tests with different outer describe texts get different seeds"
+        [ fuzz int "It receives the expected number" <|
+            \num ->
+                Expect.equal num -3255451976
         ]
     ]
 
