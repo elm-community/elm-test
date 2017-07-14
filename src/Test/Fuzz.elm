@@ -51,7 +51,7 @@ validatedFuzzTest fuzzer desc getExpectation =
                     |> Dict.toList
                     |> List.map formatExpectation
     in
-    Labeled desc (Test run)
+    Labeled desc (FuzzTest run)
 
 
 type alias Failures =

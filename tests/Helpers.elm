@@ -1,4 +1,4 @@
-module Helpers exposing (expectPass, expectToFail, randomSeedFuzzer, succeeded, testShrinking, testStringLengthIsPreserved, same, different)
+module Helpers exposing (different, expectPass, expectToFail, randomSeedFuzzer, same, succeeded, testShrinking, testStringLengthIsPreserved)
 
 import Expect
 import Fuzz exposing (Fuzzer)
@@ -7,7 +7,7 @@ import Shrink
 import String
 import Test exposing (Test)
 import Test.Expectation exposing (Expectation(..))
-import Test.Internal as TI
+import Test.Internal as Internal
 
 
 expectPass : a -> Expectation
@@ -38,48 +38,71 @@ succeeded expectation =
             False
 
 
+passesToFails :
+    ({ reason : Test.Expectation.Reason
+     , description : String
+     , given : Maybe String
+     }
+     -> Maybe String
+    )
+    -> List Expectation
+    -> List Expectation
+passesToFails f expectations =
+    expectations
+        |> List.filterMap (passToFail f)
+        |> List.map Expect.fail
+        |> (\list ->
+                if List.isEmpty list then
+                    [ Expect.pass ]
+                else
+                    list
+           )
+
+
+passToFail :
+    ({ reason : Test.Expectation.Reason
+     , description : String
+     , given : Maybe String
+     }
+     -> Maybe String
+    )
+    -> Expectation
+    -> Maybe String
+passToFail f expectation =
+    case expectation of
+        Pass ->
+            Just "Expected this test to fail, but it passed!"
+
+        Fail record ->
+            f record
+
+
 expectFailureHelper : ({ description : String, given : Maybe String, reason : Test.Expectation.Reason } -> Maybe String) -> Test -> Test
 expectFailureHelper f test =
     case test of
-        TI.Test runTest ->
-            TI.Test
-                (\seed runs ->
-                    let
-                        expectations =
-                            runTest seed runs
+        Internal.UnitTest runTest ->
+            Internal.UnitTest <|
+                \() ->
+                    passesToFails f (runTest ())
 
-                        goodShrink expectation =
-                            case expectation of
-                                Pass ->
-                                    Just "Expected this test to fail, but it passed!"
+        Internal.FuzzTest runTest ->
+            Internal.FuzzTest <|
+                \seed runs ->
+                    passesToFails f (runTest seed runs)
 
-                                Fail record ->
-                                    f record
-                    in
-                    expectations
-                        |> List.filterMap goodShrink
-                        |> List.map Expect.fail
-                        |> (\list ->
-                                if List.isEmpty list then
-                                    [ Expect.pass ]
-                                else
-                                    list
-                           )
-                )
+        Internal.Labeled desc labeledTest ->
+            Internal.Labeled desc (expectFailureHelper f labeledTest)
 
-        TI.Labeled desc labeledTest ->
-            TI.Labeled desc (expectFailureHelper f labeledTest)
+        Internal.Batch tests ->
+            Internal.Batch (List.map (expectFailureHelper f) tests)
 
-        TI.Batch tests ->
-            TI.Batch (List.map (expectFailureHelper f) tests)
-
-        TI.Skipped subTest ->
+        Internal.Skipped subTest ->
             expectFailureHelper f subTest
-                |> TI.Skipped
+                |> Internal.Skipped
 
-        TI.Only subTest ->
+        Internal.Only subTest ->
             expectFailureHelper f subTest
-                |> TI.Only
+                |> Internal.Only
 
 
 testShrinking : Test -> Test
@@ -110,6 +133,7 @@ randomSeedFuzzer =
     Fuzz.custom (Random.int 0 0xFFFFFFFF) Shrink.noShrink |> Fuzz.map Random.initialSeed
 
 
+same : Expectation -> Expectation -> Expectation
 same a b =
     case ( a, b ) of
         ( Test.Expectation.Pass, Test.Expectation.Pass ) ->
@@ -122,6 +146,7 @@ same a b =
             Test.Expectation.fail { description = "expected both arguments to fail, or both to succeed", reason = Test.Expectation.Equals (toString a) (toString b) }
 
 
+different : Expectation -> Expectation -> Expectation
 different a b =
     case ( a, b ) of
         ( Test.Expectation.Pass, Test.Expectation.Fail _ ) ->
