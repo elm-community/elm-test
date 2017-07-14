@@ -1,19 +1,22 @@
-var compiler = require("node-elm-compiler")
+var compiler = require("node-elm-compiler");
 
-testFile = "Main.elm"
+testFile = "Main.elm";
 
-compiler.compileToString([testFile], {}).then(function(str) {
-  try {
-    eval(str);
+compiler
+  .compileToString([testFile], {})
+  .then(function(str) {
+    try {
+      eval(str);
 
-    process.exit(0)
-  } catch (err) {
+      process.exit(0);
+    } catch (err) {
+      console.error(err);
+
+      process.exit(1);
+    }
+  })
+  .catch(function(err) {
     console.error(err);
 
-    process.exit(1)
-  }
-}).catch(function(err) {
-  console.error(err);
-
-  process.exit(1)
-});
+    process.exit(1);
+  });

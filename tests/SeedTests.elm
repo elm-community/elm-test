@@ -1,4 +1,4 @@
-module SeedTests exposing (fixedSeed, tests)
+module SeedTests exposing (fixedSeed, noAutoFail, tests)
 
 import Expect exposing (FloatingPointTolerance(Absolute, AbsoluteOrRelative, Relative))
 import Fuzz exposing (..)
@@ -16,6 +16,11 @@ expectedNum =
     1083264770
 
 
+oneSeedAlreadyDistributed : Int
+oneSeedAlreadyDistributed =
+    1463443676
+
+
 {-| Most of the tests will use this, but we won't run it directly.
 
 When these tests are run using fixedSeed and a run count of 1, this is the
@@ -28,6 +33,13 @@ fuzzTest =
     fuzz int "It receives the expected number" <|
         \num ->
             Expect.equal num expectedNum
+
+
+fuzzTestAfterOneDistributed : Test
+fuzzTestAfterOneDistributed =
+    fuzz int "This should be different than expectedNum, because there is a fuzz test before it." <|
+        \num ->
+            Expect.equal num oneSeedAlreadyDistributed
 
 
 tests : List Test
@@ -68,5 +80,91 @@ tests =
                 \_ ->
                     Expect.pass
             ]
+        ]
+    , -- Putting a fuzz test before it, within a second label, *should* change things
+      Test.concat
+        [ describe "Seed test"
+            [ fuzzTest
+            , fuzzTestAfterOneDistributed
+            ]
+        ]
+    ]
+
+
+noAutoFail : List Test
+noAutoFail =
+    [ -- Test.skip does not affect seed distribution
+      Test.concat
+        [ describe "Seed test"
+            [ skip fuzzTest
+            , fuzzTestAfterOneDistributed
+            ]
+        ]
+    , -- Test.only does not affect seed distribution
+      Test.concat
+        [ describe "Seed test"
+            [ only fuzzTest ]
+        ]
+    , -- Test.only skips the other tests in question
+      Test.concat
+        [ describe "Seed test"
+            [ skip <|
+                test "Autofail" <|
+                    \_ ->
+                        Expect.fail "Test.skip is broken! This should not have been run."
+            , fuzzTest
+            ]
+        ]
+    , -- Test.only skips the other tests.
+      Test.concat
+        [ describe "Seed test"
+            [ only <|
+                fuzz int "No Autofail here" <|
+                    \num ->
+                        Expect.equal num expectedNum
+            , test "This should never get run" <|
+                \() ->
+                    Expect.fail "Test.only is broken! This should not have been run."
+            ]
+        ]
+    , -- Test.skip skips the test in question
+      describe "Seed test"
+        [ skip <|
+            fuzz int "Skip test sanity check" <|
+                \_ ->
+                    Expect.fail "Test.skip is broken! This should not have been run."
+        , fuzzTestAfterOneDistributed
+        ]
+    , -- the previous test gets the same answer if Test.skip is removed
+      describe "Seed test"
+        [ fuzz int "Skip test sanity check" <|
+            \_ ->
+                Expect.pass
+        , fuzzTestAfterOneDistributed
+        ]
+    , -- Test.only skips the other tests.
+      describe "Seed test"
+        [ only <|
+            fuzz int "No Autofail here" <|
+                \num ->
+                    Expect.equal num expectedNum
+        , test "this should never get run" <|
+            \() ->
+                Expect.fail "Test.only is broken! This should not have been run."
+        ]
+    , -- Test.only does not affect seed distribution
+      describe "Seed test"
+        [ test "Autofail" <|
+            \_ -> Expect.fail "Test.only is broken! This should not have been run."
+        , fuzzTest
+        , only <|
+            fuzzTestAfterOneDistributed
+        ]
+    , -- the previous test gets the same answer if Test.only is removed
+      describe "Seed test"
+        [ test "Autofail" <|
+            \_ -> Expect.pass
+        , fuzzTest
+        , fuzzTestAfterOneDistributed
         ]
     ]

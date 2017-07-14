@@ -26,7 +26,7 @@ import Test exposing (Test)
 
 {-| Run the test using the default `Test.Runner.String` options.
 -}
-run : Test -> a -> a
+run : Test -> ()
 run test =
     Runner.String.run test
         |> logOutput
@@ -34,7 +34,7 @@ run test =
 
 {-| Run the test using the provided options.
 -}
-runWithOptions : Int -> Random.Seed -> Test -> a -> a
+runWithOptions : Int -> Random.Seed -> Test -> ()
 runWithOptions runs seed test =
     Runner.String.runWithOptions runs seed test
         |> logOutput
@@ -62,8 +62,8 @@ summarize { output, passed, failed, autoFail } =
         ]
 
 
-logOutput : Summary -> a -> a
-logOutput summary arg =
+logOutput : Summary -> ()
+logOutput summary =
     let
         output =
             summarize summary ++ "\n\nExit code"
@@ -79,4 +79,4 @@ logOutput summary arg =
                     |> flip Debug.log 0
                     |> (\_ -> ())
     in
-    arg
+    ()
