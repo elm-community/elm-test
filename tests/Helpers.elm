@@ -110,6 +110,7 @@ randomSeedFuzzer =
     Fuzz.custom (Random.int 0 0xFFFFFFFF) Shrink.noShrink |> Fuzz.map Random.initialSeed
 
 
+same : Expectation -> Expectation -> Expectation
 same a b =
     case ( a, b ) of
         ( Test.Expectation.Pass, Test.Expectation.Pass ) ->
@@ -122,6 +123,7 @@ same a b =
             Test.Expectation.fail { description = "expected both arguments to fail, or both to succeed", reason = Test.Expectation.Equals (toString a) (toString b) }
 
 
+different : Expectation -> Expectation -> Expectation
 different a b =
     case ( a, b ) of
         ( Test.Expectation.Pass, Test.Expectation.Fail _ ) ->
