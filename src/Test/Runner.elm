@@ -40,6 +40,7 @@ These functions give you the ability to run fuzzers separate of running fuzz tes
 
 -}
 
+import Bitwise
 import Expect exposing (Expectation)
 import FNV
 import Fuzz exposing (Fuzzer)
@@ -266,10 +267,11 @@ distributeSeedsHelp hashed runs seed test =
                             |> Tuple.first
 
                     hashedSeed =
-                        -- Incorporate the originally passed-in seed
-                        (toString intFromSeed ++ description)
+                        description
                             -- Hash from String to Int
                             |> FNV.hashString
+                            -- Incorporate the originally passed-in seed
+                            |> Bitwise.xor intFromSeed
                             -- Convert Int back to Seed
                             |> Random.initialSeed
 
