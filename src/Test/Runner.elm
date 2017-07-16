@@ -41,8 +41,8 @@ These functions give you the ability to run fuzzers separate of running fuzz tes
 -}
 
 import Bitwise
+import Char
 import Expect exposing (Expectation)
-import FNV
 import Fuzz exposing (Fuzzer)
 import Lazy.List as LazyList exposing (LazyList)
 import Random.Pcg as Random
@@ -269,9 +269,9 @@ distributeSeedsHelp hashed runs seed test =
                     hashedSeed =
                         description
                             -- Hash from String to Int
-                            |> FNV.hashString
+                            |> fnvHashString fnvInit
                             -- Incorporate the originally passed-in seed
-                            |> Bitwise.xor intFromSeed
+                            |> fnvHash intFromSeed
                             -- Convert Int back to Seed
                             |> Random.initialSeed
 
@@ -325,6 +325,19 @@ batchDistribute hashed runs test prev =
     , skipped = prev.skipped ++ next.skipped
     }
 
+
+{-| FNV-1a initial hash value -}
+fnvInit = 2166136261
+
+{-| FNV-1a helper for strings, using Char.toCode -}
+fnvHashString : Int -> String -> Int
+fnvHashString hash str =
+  str |> String.toList |> List.map Char.toCode |> List.foldl fnvHash hash
+
+{-| FNV-1a implementation. -}
+fnvHash : Int -> Int -> Int
+fnvHash a b =
+  (Bitwise.xor a b) * (16777619) |> Bitwise.shiftRightZfBy 0
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
 

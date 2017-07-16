@@ -11,14 +11,19 @@ fixedSeed =
     Random.initialSeed 133742
 
 
+{- This is the expected first int output when running this file with a constant seed.
+
+    (\intFromSeed -> fnvHashString fnvInit "Seed test" |> fnvHash intFromSeed)
+
+-}
 expectedNum : Int
 expectedNum =
-    2800615587
+    -3954212174
 
 
 oneSeedAlreadyDistributed : Int
 oneSeedAlreadyDistributed =
-    1762317316
+    198384431
 
 
 {-| Most of the tests will use this, but we won't run it directly.
@@ -91,19 +96,19 @@ tests =
     , Test.concat
         [ fuzz int "top-level fuzz tests don't affect subsequent top-level fuzz tests, since they use their labels to get different seeds" <|
             \num ->
-                Expect.equal num -32
+                Expect.equal num 409469537
         , describe "Seed test"
             [ fuzzTest ]
         , describe "another top-level fuzz test"
             [ fuzz int "it still gets different values, due to computing the seed as a hash of the label, and these labels must be unique" <|
                 \num ->
-                    Expect.equal num 827294661
+                    Expect.equal num 0
             ]
         ]
     , describe "Fuzz tests with different outer describe texts get different seeds"
         [ fuzz int "It receives the expected number" <|
             \num ->
-                Expect.equal num 27
+                Expect.equal num 2049737128
         ]
     ]
 
