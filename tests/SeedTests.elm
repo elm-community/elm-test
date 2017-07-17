@@ -6,16 +6,9 @@ import Random.Pcg as Random
 import Test exposing (..)
 
 
-fixedSeed : Random.Seed
-fixedSeed =
-    Random.initialSeed 133742
+-- NOTE: These tests are only here so that we can watch out for regressions. All constants in this file are what the implementation happened to output, not what we expected the implementation to output.
 
 
-{- This is the expected first int output when running this file with a constant seed.
-
-    (\intFromSeed -> fnvHashString fnvInit "Seed test" |> fnvHash intFromSeed)
-
--}
 expectedNum : Int
 expectedNum =
     -3954212174
@@ -24,6 +17,11 @@ expectedNum =
 oneSeedAlreadyDistributed : Int
 oneSeedAlreadyDistributed =
     198384431
+
+
+fixedSeed : Random.Seed
+fixedSeed =
+    Random.initialSeed 133742
 
 
 {-| Most of the tests will use this, but we won't run it directly.
