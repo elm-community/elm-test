@@ -365,6 +365,26 @@ listShrinkRecurse listOfTrees =
         root =
             List.map RoseTree.root listOfTrees
 
+        dropFirstHalf : List (RoseTree a) -> RoseTree (List a)
+        dropFirstHalf list_ =
+            List.drop (List.length list_ // 2) list_
+                |> listShrinkRecurse
+
+        dropSecondHalf : List (RoseTree a) -> RoseTree (List a)
+        dropSecondHalf list_ =
+            List.take (List.length list_ // 2) list_
+                |> listShrinkRecurse
+
+        halved : LazyList (RoseTree (List a))
+        halved =
+            if n >= 4 then
+                Lazy.lazy <|
+                    \_ ->
+                        Lazy.List.fromList [ dropFirstHalf listOfTrees, dropSecondHalf listOfTrees ]
+                            |> Lazy.force
+            else
+                Lazy.List.empty
+
         shrinkOne prefix list =
             case list of
                 [] ->
@@ -397,8 +417,7 @@ listShrinkRecurse listOfTrees =
                 (List.take index list)
                 (List.drop (index + 1) list)
     in
-    Lazy.List.append shortened shrunkenVals
-        |> Rose root
+    Rose root (halved +++ shortened +++ shrunkenVals)
 
 
 {-| Given a fuzzer of a type, create a fuzzer of an array of that type.
