@@ -100,7 +100,15 @@ listIntFail : Test
 listIntFail =
     fuzz (Fuzz.list Fuzz.int) "(fails) list of int" <|
         \numbers ->
-            Expect.fail "Failed"
+            case numbers of
+                [] ->
+                    {- The empty list is the first value the list shrinker will try.
+                       If we immediately fail on that example than we're not doing a lot of shrinking.
+                    -}
+                    Expect.pass
+
+                _ ->
+                    Expect.fail "Failed"
 
 
 maybeIntPass : Test
