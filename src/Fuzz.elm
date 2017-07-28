@@ -383,6 +383,8 @@ listShrinkRecurse listOfTrees =
                         Lazy.List.fromList [ dropFirstHalf listOfTrees, dropSecondHalf listOfTrees ]
                             |> Lazy.force
             else
+                -- For lists of three elements or less, halving and removing a single element is often going to be the same thing.
+                -- To prevent us from attempting the same shrunken value twice, we're disabling the halving strategy for these small lists.
                 Lazy.List.empty
 
         shrinkOne prefix list =
