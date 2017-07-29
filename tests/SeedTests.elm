@@ -6,19 +6,22 @@ import Random.Pcg as Random
 import Test exposing (..)
 
 
-fixedSeed : Random.Seed
-fixedSeed =
-    Random.initialSeed 133742
+-- NOTE: These tests are only here so that we can watch out for regressions. All constants in this file are what the implementation happened to output, not what we expected the implementation to output.
 
 
 expectedNum : Int
 expectedNum =
-    2800615587
+    -3954212174
 
 
 oneSeedAlreadyDistributed : Int
 oneSeedAlreadyDistributed =
-    1762317316
+    198384431
+
+
+fixedSeed : Random.Seed
+fixedSeed =
+    Random.initialSeed 133742
 
 
 {-| Most of the tests will use this, but we won't run it directly.
@@ -91,19 +94,19 @@ tests =
     , Test.concat
         [ fuzz int "top-level fuzz tests don't affect subsequent top-level fuzz tests, since they use their labels to get different seeds" <|
             \num ->
-                Expect.equal num -32
+                Expect.equal num 409469537
         , describe "Seed test"
             [ fuzzTest ]
         , describe "another top-level fuzz test"
             [ fuzz int "it still gets different values, due to computing the seed as a hash of the label, and these labels must be unique" <|
                 \num ->
-                    Expect.equal num 827294661
+                    Expect.equal num 0
             ]
         ]
     , describe "Fuzz tests with different outer describe texts get different seeds"
         [ fuzz int "It receives the expected number" <|
             \num ->
-                Expect.equal num 27
+                Expect.equal num 2049737128
         ]
     ]
 
