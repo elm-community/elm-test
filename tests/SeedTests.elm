@@ -1,5 +1,6 @@
 module SeedTests exposing (fixedSeed, noAutoFail, tests)
 
+import Bitwise
 import Expect exposing (FloatingPointTolerance(Absolute, AbsoluteOrRelative, Relative))
 import Fuzz exposing (..)
 import Random.Pcg as Random
@@ -7,21 +8,26 @@ import Test exposing (..)
 
 
 -- NOTE: These tests are only here so that we can watch out for regressions. All constants in this file are what the implementation happened to output, not what we expected the implementation to output.
+--  "-3954212174" "340755122"
 
 
 expectedNum : Int
 expectedNum =
-    -3954212174
+    fx -3954212174
 
 
 oneSeedAlreadyDistributed : Int
 oneSeedAlreadyDistributed =
-    198384431
+    fx -18
 
 
 fixedSeed : Random.Seed
 fixedSeed =
     Random.initialSeed 133742
+
+
+fx =
+    Bitwise.shiftRightZfBy 0
 
 
 {-| Most of the tests will use this, but we won't run it directly.
@@ -35,14 +41,14 @@ fuzzTest : Test
 fuzzTest =
     fuzz int "It receives the expected number" <|
         \num ->
-            Expect.equal num expectedNum
+            expectedNum |> Expect.equal (fx num)
 
 
 fuzzTestAfterOneDistributed : Test
 fuzzTestAfterOneDistributed =
     fuzz int "This should be different than expectedNum, because there is a fuzz test before it." <|
         \num ->
-            Expect.equal num oneSeedAlreadyDistributed
+            oneSeedAlreadyDistributed |> Expect.equal (fx num) |> Debug.log "potato"
 
 
 tests : List Test
@@ -52,7 +58,7 @@ tests =
     , describe "Seed test"
         [ fuzz int "It receives the expected number even though this text is different" <|
             \num ->
-                Expect.equal num expectedNum
+                expectedNum |> Expect.equal (fx num)
         ]
     , describe "Seed test"
         [ describe "Nested describes shouldn't affect seed distribution"
@@ -94,19 +100,19 @@ tests =
     , Test.concat
         [ fuzz int "top-level fuzz tests don't affect subsequent top-level fuzz tests, since they use their labels to get different seeds" <|
             \num ->
-                Expect.equal num 409469537
+                409469537 |> Expect.equal (fx num)
         , describe "Seed test"
             [ fuzzTest ]
         , describe "another top-level fuzz test"
             [ fuzz int "it still gets different values, due to computing the seed as a hash of the label, and these labels must be unique" <|
                 \num ->
-                    Expect.equal num 0
+                    0 |> Expect.equal (fx num)
             ]
         ]
     , describe "Fuzz tests with different outer describe texts get different seeds"
         [ fuzz int "It receives the expected number" <|
             \num ->
-                Expect.equal num 2049737128
+                2049737128 |> Expect.equal (fx num)
         ]
     ]
 
@@ -141,7 +147,7 @@ noAutoFail =
             [ only <|
                 fuzz int "No Autofail here" <|
                     \num ->
-                        Expect.equal num expectedNum
+                        expectedNum |> Expect.equal (fx num)
             , test "This should never get run" <|
                 \() ->
                     Expect.fail "Test.only is broken! This should not have been run."
@@ -167,7 +173,7 @@ noAutoFail =
         [ only <|
             fuzz int "No Autofail here" <|
                 \num ->
-                    Expect.equal num expectedNum
+                    expectedNum |> Expect.equal (fx num)
         , test "this should never get run" <|
             \() ->
                 Expect.fail "Test.only is broken! This should not have been run."

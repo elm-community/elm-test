@@ -326,18 +326,25 @@ batchDistribute hashed runs test prev =
     }
 
 
-{-| FNV-1a initial hash value -}
-fnvInit = 2166136261
+{-| FNV-1a initial hash value
+-}
+fnvInit =
+    2166136261
 
-{-| FNV-1a helper for strings, using Char.toCode -}
+
+{-| FNV-1a helper for strings, using Char.toCode
+-}
 fnvHashString : Int -> String -> Int
 fnvHashString hash str =
-  str |> String.toList |> List.map Char.toCode |> List.foldl fnvHash hash
+    str |> String.toList |> List.map Char.toCode |> List.foldl fnvHash hash
 
-{-| FNV-1a implementation. -}
+
+{-| FNV-1a implementation.
+-}
 fnvHash : Int -> Int -> Int
 fnvHash a b =
-  (Bitwise.xor a b) * (16777619) |> Bitwise.shiftRightZfBy 0
+    Bitwise.xor a b * 16777619 |> Bitwise.shiftRightZfBy 0
+
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
 
