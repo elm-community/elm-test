@@ -253,7 +253,7 @@ percentage =
 
 
 {-| A fuzzer for char values. Generates random ascii chars disregarding the control
-characters and the extended character set. Generates whitespace characters about 10% of the time.
+characters and the extended character set.
 -}
 char : Fuzzer Char
 char =
@@ -262,10 +262,12 @@ char =
 
 asciiCharGenerator : Generator Char
 asciiCharGenerator =
-    Random.frequency
-        [ ( 1, Random.sample [ ' ', '\t', '\n' ] |> Random.map (Maybe.withDefault ' ') )
-        , ( 9, Random.map Char.fromCode (Random.int 33 126) )
-        ]
+    Random.map Char.fromCode (Random.int 32 126)
+
+
+whitespaceCharGenerator : Generator Char
+whitespaceCharGenerator =
+    Random.sample [ ' ', '\t', '\n' ] |> Random.map (Maybe.withDefault ' ')
 
 
 {-| Generates random printable ASCII strings of up to 1000 characters.
@@ -285,8 +287,19 @@ string =
                 , ( 1, Random.int 50 1000 )
                 ]
                 |> Random.andThen (lengthString asciiCharGenerator)
+
+        whitespaceGenerator : Generator String
+        whitespaceGenerator =
+            Random.int 1 10
+                |> Random.andThen (lengthString whitespaceCharGenerator)
     in
-    custom generator Shrink.string
+    custom
+        (Random.frequency
+            [ ( 9, generator )
+            , ( 1, whitespaceGenerator )
+            ]
+        )
+        Shrink.string
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
