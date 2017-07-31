@@ -19,9 +19,9 @@ module Test exposing (FuzzOptions, Test, concat, describe, fuzz, fuzz2, fuzz3, f
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
 import Set
-import Test.Expectation
 import Test.Fuzz
 import Test.Internal as Internal
+import Test.Runner.Reason exposing (InvalidReason(..), Reason(..))
 
 
 {-| A test which has yet to be evaluated. When evaluated, it produces one
@@ -44,14 +44,14 @@ concat tests =
     if List.isEmpty tests then
         Internal.failNow
             { description = "This `concat` has no tests in it. Let's give it some!"
-            , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
+            , reason = Invalid EmptyList
             }
     else
         case Internal.duplicatedName tests of
             Err duped ->
                 Internal.failNow
                     { description = "A test group contains multiple tests named '" ++ duped ++ "'. Do some renaming so that tests have unique names."
-                    , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                    , reason = Invalid DuplicatedName
                     }
 
             Ok _ ->
@@ -91,26 +91,26 @@ describe untrimmedDesc tests =
     if String.isEmpty desc then
         Internal.failNow
             { description = "This `describe` has a blank description. Let's give it a useful one!"
-            , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+            , reason = Invalid BadDescription
             }
     else if List.isEmpty tests then
         Internal.failNow
             { description = "This `describe " ++ toString desc ++ "` has no tests in it. Let's give it some!"
-            , reason = Test.Expectation.Invalid Test.Expectation.EmptyList
+            , reason = Invalid EmptyList
             }
     else
         case Internal.duplicatedName tests of
             Err duped ->
                 Internal.failNow
                     { description = "The tests '" ++ desc ++ "' contain multiple tests named '" ++ duped ++ "'. Let's rename them so we know which is which."
-                    , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                    , reason = Invalid DuplicatedName
                     }
 
             Ok childrenNames ->
                 if Set.member desc childrenNames then
                     Internal.failNow
                         { description = "The test '" ++ desc ++ "' contains a child test of the same name. Let's rename them so we know which is which."
-                        , reason = Test.Expectation.Invalid Test.Expectation.DuplicatedName
+                        , reason = Invalid DuplicatedName
                         }
                 else
                     Internal.Labeled desc (Internal.Batch tests)
@@ -165,7 +165,7 @@ todo : String -> Test
 todo desc =
     Internal.failNow
         { description = desc
-        , reason = Test.Expectation.TODO
+        , reason = TODO
         }
 
 
@@ -295,7 +295,7 @@ fuzzWith options fuzzer desc getTest =
     if options.runs < 1 then
         Internal.failNow
             { description = "Fuzz tests must have a run count of at least 1, not " ++ toString options.runs ++ "."
-            , reason = Test.Expectation.Invalid Test.Expectation.NonpositiveFuzzCount
+            , reason = Invalid NonpositiveFuzzCount
             }
     else
         fuzzWithHelp options (fuzz fuzzer desc getTest)

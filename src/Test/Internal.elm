@@ -3,6 +3,7 @@ module Test.Internal exposing (Test(..), blankDescriptionFailure, duplicatedName
 import Random.Pcg as Random exposing (Generator)
 import Set exposing (Set)
 import Test.Expectation exposing (Expectation(..))
+import Test.Runner.Reason exposing (InvalidReason(..), Reason(..))
 
 
 type Test
@@ -16,7 +17,7 @@ type Test
 
 {-| Create a test that always fails for the given reason and description.
 -}
-failNow : { description : String, reason : Test.Expectation.Reason } -> Test
+failNow : { description : String, reason : Reason } -> Test
 failNow record =
     UnitTest
         (\() -> [ Test.Expectation.fail record ])
@@ -26,7 +27,7 @@ blankDescriptionFailure : Test
 blankDescriptionFailure =
     failNow
         { description = "This test has a blank description. Let's give it a useful one!"
-        , reason = Test.Expectation.Invalid Test.Expectation.BadDescription
+        , reason = Invalid BadDescription
         }
 
 

@@ -13,6 +13,7 @@ import Shrink
 import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
 import Test.Runner
+import Test.Runner.Failure exposing (Reason(..))
 
 
 all : Test
@@ -121,7 +122,7 @@ testTests =
                     Expect.fail "reason" |> Test.Runner.isTodo |> Expect.false "was true"
             , test "Failures with TODO reason are TODO" <|
                 \_ ->
-                    Test.Expectation.fail { description = "", reason = Test.Expectation.TODO }
+                    Test.Expectation.fail { description = "", reason = TODO }
                         |> Test.Runner.isTodo
                         |> Expect.true "was false"
             ]

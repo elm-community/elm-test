@@ -1,10 +1,8 @@
 module Test.Runner
     exposing
-        ( Reason
-        , Runner
+        ( Runner
         , SeededRunners(..)
         , Shrinkable
-        , failureMessage
         , formatLabels
         , fromTest
         , fuzz
@@ -31,7 +29,7 @@ can be found in the `README`.
 
 ## Formatting
 
-@docs Reason, failureMessage, formatLabels
+@docs formatLabels
 
 
 ## Fuzzers
@@ -53,7 +51,7 @@ import String
 import Test exposing (Test)
 import Test.Expectation
 import Test.Internal as Internal
-import Test.Message
+import Test.Runner.Reason exposing (Reason(..))
 
 
 {-| An unevaluated test. Run it with [`run`](#run) to evaluate it into a
@@ -61,20 +59,6 @@ list of `Expectation`s.
 -}
 type Runnable
     = Thunk (() -> List Expectation)
-
-
-type alias Reason =
-    Test.Expectation.Reason
-
-
-failureMessage :
-    { description : String
-    , given : Maybe String
-    , reason : Test.Expectation.Reason
-    }
-    -> String
-failureMessage =
-    Test.Message.failureMessage
 
 
 {-| A function which, when evaluated, produces a list of expectations. Also a
@@ -399,7 +383,7 @@ isTodo expectation =
             False
 
         Test.Expectation.Fail { reason } ->
-            reason == Test.Expectation.TODO
+            reason == TODO
 
 
 {-| A standard way to format descriptions and test labels, to keep things

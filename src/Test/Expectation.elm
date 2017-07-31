@@ -1,36 +1,11 @@
-module Test.Expectation exposing (Expectation(..), InvalidReason(..), Reason(..), fail, withGiven)
+module Test.Expectation exposing (Expectation(..), fail, withGiven)
+
+import Test.Runner.Reason exposing (Reason)
 
 
 type Expectation
     = Pass
     | Fail { given : Maybe String, description : String, reason : Reason }
-
-
-type Reason
-    = Custom
-    | Equals String String
-    | Comparison String String
-      -- Expected, actual, (index of problem, expected element, actual element)
-    | ListDiff String String ( Int, String, String )
-      {- I don't think we need to show the diff twice with + and - reversed. Just show it after the main vertical bar.
-         "Extra" and "missing" are relative to the actual value.
-      -}
-    | CollectionDiff
-        { expected : String
-        , actual : String
-        , extra : List String
-        , missing : List String
-        }
-    | TODO
-    | Invalid InvalidReason
-
-
-type InvalidReason
-    = EmptyList
-    | NonpositiveFuzzCount
-    | InvalidFuzzer
-    | BadDescription
-    | DuplicatedName
 
 
 {-| Create a failure without specifying the given.

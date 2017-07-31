@@ -1,7 +1,39 @@
-module Test.Message exposing (failureMessage)
+module Test.Runner.Reason exposing (InvalidReason(..), Reason(..), formatFailure)
 
-import String
-import Test.Expectation exposing (InvalidReason(..), Reason(..))
+{-| The reason a test failed.
+
+@docs Reason, InvalidReason, formatFailure
+
+-}
+
+
+{-| -}
+type Reason
+    = Custom
+    | Equals String String
+    | Comparison String String
+      -- Expected, actual, (index of problem, expected element, actual element)
+    | ListDiff String String ( Int, String, String )
+      {- I don't think we need to show the diff twice with + and - reversed. Just show it after the main vertical bar.
+         "Extra" and "missing" are relative to the actual value.
+      -}
+    | CollectionDiff
+        { expected : String
+        , actual : String
+        , extra : List String
+        , missing : List String
+        }
+    | TODO
+    | Invalid InvalidReason
+
+
+{-| -}
+type InvalidReason
+    = EmptyList
+    | NonpositiveFuzzCount
+    | InvalidFuzzer
+    | BadDescription
+    | DuplicatedName
 
 
 verticalBar : String -> String -> String -> String
@@ -15,8 +47,14 @@ verticalBar comparison expected actual =
         |> String.join "\n"
 
 
-failureMessage : { given : Maybe String, description : String, reason : Reason } -> String
-failureMessage { given, description, reason } =
+{-| -}
+formatFailure :
+    { description : String
+    , given : Maybe String
+    , reason : Reason
+    }
+    -> String
+formatFailure { description, given, reason } =
     case reason of
         Custom ->
             description

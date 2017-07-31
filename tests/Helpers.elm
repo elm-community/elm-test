@@ -4,10 +4,10 @@ import Expect
 import Fuzz exposing (Fuzzer)
 import Random.Pcg as Random
 import Shrink
-import String
 import Test exposing (Test)
 import Test.Expectation exposing (Expectation(..))
 import Test.Internal as Internal
+import Test.Runner.Failure exposing (Reason(..))
 
 
 expectPass : a -> Expectation
@@ -39,7 +39,7 @@ succeeded expectation =
 
 
 passesToFails :
-    ({ reason : Test.Expectation.Reason
+    ({ reason : Reason
      , description : String
      , given : Maybe String
      }
@@ -60,7 +60,7 @@ passesToFails f expectations =
 
 
 passToFail :
-    ({ reason : Test.Expectation.Reason
+    ({ reason : Reason
      , description : String
      , given : Maybe String
      }
@@ -77,7 +77,7 @@ passToFail f expectation =
             f record
 
 
-expectFailureHelper : ({ description : String, given : Maybe String, reason : Test.Expectation.Reason } -> Maybe String) -> Test -> Test
+expectFailureHelper : ({ description : String, given : Maybe String, reason : Reason } -> Maybe String) -> Test -> Test
 expectFailureHelper f test =
     case test of
         Internal.UnitTest runTest ->
@@ -143,7 +143,7 @@ same a b =
             Test.Expectation.Pass
 
         ( a, b ) ->
-            Test.Expectation.fail { description = "expected both arguments to fail, or both to succeed", reason = Test.Expectation.Equals (toString a) (toString b) }
+            Test.Expectation.fail { description = "expected both arguments to fail, or both to succeed", reason = Equals (toString a) (toString b) }
 
 
 different : Expectation -> Expectation -> Expectation
@@ -156,4 +156,4 @@ different a b =
             Test.Expectation.Pass
 
         ( a, b ) ->
-            Test.Expectation.fail { description = "expected one argument to fail", reason = Test.Expectation.Equals (toString a) (toString b) }
+            Test.Expectation.fail { description = "expected one argument to fail", reason = Equals (toString a) (toString b) }
