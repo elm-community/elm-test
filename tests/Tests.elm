@@ -1,6 +1,5 @@
 module Tests exposing (all)
 
-import Dict
 import Expect exposing (FloatingPointTolerance(Absolute, AbsoluteOrRelative, Relative))
 import FloatWithinTests exposing (floatWithinTests)
 import Fuzz exposing (..)
@@ -8,7 +7,6 @@ import FuzzerTests exposing (fuzzerTests)
 import Helpers exposing (..)
 import Random.Pcg as Random
 import RunnerTests
-import Set
 import Shrink
 import Test exposing (..)
 import Test.Expectation exposing (Expectation(..))
