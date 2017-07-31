@@ -9,7 +9,7 @@
     "exposed-modules": [
         "Test",
         "Test.Runner",
-        "Test.Runner.Reason",
+        "Test.Runner.Failure",
         "Expect",
         "Fuzz"
     ],

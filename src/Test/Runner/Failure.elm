@@ -1,8 +1,8 @@
-module Test.Runner.Reason exposing (InvalidReason(..), Reason(..), formatFailure)
+module Test.Runner.Failure exposing (InvalidReason(..), Reason(..), format)
 
 {-| The reason a test failed.
 
-@docs Reason, InvalidReason, formatFailure
+@docs Reason, InvalidReason, format
 
 -}
 
@@ -48,13 +48,13 @@ verticalBar comparison expected actual =
 
 
 {-| -}
-formatFailure :
+format :
     { description : String
     , given : Maybe String
     , reason : Reason
     }
     -> String
-formatFailure { description, given, reason } =
+format { description, given, reason } =
     case reason of
         Custom ->
             description

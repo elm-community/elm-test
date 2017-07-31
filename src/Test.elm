@@ -21,7 +21,7 @@ import Fuzz exposing (Fuzzer)
 import Set
 import Test.Fuzz
 import Test.Internal as Internal
-import Test.Runner.Reason exposing (InvalidReason(..), Reason(..))
+import Test.Runner.Failure exposing (InvalidReason(..), Reason(..))
 
 
 {-| A test which has yet to be evaluated. When evaluated, it produces one

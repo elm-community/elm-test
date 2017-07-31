@@ -3,7 +3,7 @@ module Test.Internal exposing (Test(..), blankDescriptionFailure, duplicatedName
 import Random.Pcg as Random exposing (Generator)
 import Set exposing (Set)
 import Test.Expectation exposing (Expectation(..))
-import Test.Runner.Reason exposing (InvalidReason(..), Reason(..))
+import Test.Runner.Failure exposing (InvalidReason(..), Reason(..))
 
 
 type Test

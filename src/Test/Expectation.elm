@@ -1,6 +1,6 @@
 module Test.Expectation exposing (Expectation(..), fail, withGiven)
 
-import Test.Runner.Reason exposing (Reason)
+import Test.Runner.Failure exposing (Reason)
 
 
 type Expectation

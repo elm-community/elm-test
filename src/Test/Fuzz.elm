@@ -8,7 +8,7 @@ import Random.Pcg as Random exposing (Generator)
 import RoseTree exposing (RoseTree(..))
 import Test.Expectation exposing (Expectation(..))
 import Test.Internal exposing (Test(..), blankDescriptionFailure, failNow)
-import Test.Runner.Reason exposing (InvalidReason(..), Reason(..))
+import Test.Runner.Failure exposing (InvalidReason(..), Reason(..))
 
 
 {-| Reject always-failing tests because of bad names or invalid fuzzers.

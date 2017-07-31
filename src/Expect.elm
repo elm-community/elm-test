@@ -127,7 +127,7 @@ Another example is comparing values that are on either side of zero. `0.0001` is
 import Dict exposing (Dict)
 import Set exposing (Set)
 import Test.Expectation
-import Test.Runner.Reason exposing (InvalidReason(..), Reason(..))
+import Test.Runner.Failure exposing (InvalidReason(..), Reason(..))
 
 
 {-| The result of a single test run: either a [`pass`](#pass) or a

@@ -51,7 +51,7 @@ import String
 import Test exposing (Test)
 import Test.Expectation
 import Test.Internal as Internal
-import Test.Runner.Reason exposing (Reason(..))
+import Test.Runner.Failure exposing (Reason(..))
 
 
 {-| An unevaluated test. Run it with [`run`](#run) to evaluate it into a
@@ -363,8 +363,37 @@ For example, if a fuzz test generates random integers, this might return
     -- Nothing
 
 -}
-getFailure : Expectation -> Maybe { given : Maybe String, description : String, reason : Reason }
+getFailure : Expectation -> Maybe { given : Maybe String, message : String }
 getFailure expectation =
+    case expectation of
+        Test.Expectation.Pass ->
+            Nothing
+
+        Test.Expectation.Fail record ->
+            Just
+                { given = record.given
+                , message = Test.Runner.Failure.format record
+                }
+
+
+{-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
+
+If it is a [`fail`](#fail), return a record containing the failure message,
+along with the given inputs if it was a fuzz test. (If no inputs were involved,
+the record's `given` field will be `Nothing`).
+
+For example, if a fuzz test generates random integers, this might return
+`{ message = "it was supposed to be positive", given = "-1" }`
+
+    getFailure (Expect.fail "this failed")
+    -- Just { message = "this failed", given = "" }
+
+    getFailure (Expect.pass)
+    -- Nothing
+
+-}
+getFailureReason : Expectation -> Maybe { given : Maybe String, description : String, reason : Reason }
+getFailureReason expectation =
     case expectation of
         Test.Expectation.Pass ->
             Nothing
