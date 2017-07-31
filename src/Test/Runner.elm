@@ -7,6 +7,7 @@ module Test.Runner
         , fromTest
         , fuzz
         , getFailure
+        , getFailureReason
         , isTodo
         , shrink
         )
@@ -24,7 +25,7 @@ can be found in the `README`.
 
 ## Expectations
 
-@docs getFailure, isTodo
+@docs getFailure, getFailureReason, isTodo
 
 
 ## Formatting
@@ -347,7 +348,10 @@ fnvHash a b =
     Bitwise.xor a b * 16777619 |> Bitwise.shiftRightZfBy 0
 
 
-{-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
+{-| **DEPRECATED.** Please use [`getFailureReason`](#getFailureReason) instead.
+This function will be removed in the next major version.
+
+Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
 
 If it is a [`fail`](#fail), return a record containing the failure message,
 along with the given inputs if it was a fuzz test. (If no inputs were involved,
