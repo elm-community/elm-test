@@ -499,47 +499,35 @@ equalLists expected actual =
     if expected == actual then
         pass
     else
-        let
-            result =
-                List.map2 (,) expected actual
-                    |> List.indexedMap (,)
-                    |> List.filterMap
-                        (\( index, ( e, a ) ) ->
-                            if e == a then
-                                Nothing
-                            else
-                                Just ( index, e, a )
-                        )
-                    |> List.head
-                    |> Maybe.map
-                        (\( index, e, a ) ->
-                            let
-                                reason =
-                                    ListDiff
-                                        (toString expected)
-                                        (toString actual)
-                                        ( index, toString e, toString a )
-                            in
-                            Test.Expectation.fail
-                                { description = "Expect.equalLists"
-                                , reason = reason
-                                }
-                        )
-        in
-        case result of
-            Just failure ->
-                failure
+        equalListsHelp 0 expected actual
 
-            Nothing ->
-                case compare (List.length actual) (List.length expected) of
-                    GT ->
-                        reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
 
-                    LT ->
-                        reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
+equalListsHelp : Int -> List a -> List a -> Expectation
+equalListsHelp index expected actual =
+    case ( expected, actual ) of
+        ( [], [] ) ->
+            pass
 
-                    _ ->
-                        pass
+        ( first :: _, [] ) ->
+            reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
+
+        ( [], first :: _ ) ->
+            reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
+
+        ( firstExpected :: restExpected, firstActual :: restActual ) ->
+            if firstExpected == firstActual then
+                -- They're still the same so far; keep going.
+                equalListsHelp (index + 1) restExpected restActual
+            else
+                -- We found elements that differ; fail!
+                Test.Expectation.fail
+                    { description = "Expect.equalLists"
+                    , reason =
+                        ListDiff
+                            (toString expected)
+                            (toString actual)
+                            ( index, toString firstExpected, toString firstActual )
+                    }
 
 
 {-| Passes if the arguments are equal dicts.
