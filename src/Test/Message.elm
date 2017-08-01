@@ -42,7 +42,7 @@ failureMessage { given, description, reason } =
         ListDiff e a ( i, itemE, itemA ) ->
             String.join ""
                 [ verticalBar description e a
-                , "\n\nThe first diff is at index index "
+                , "\n\nThe first diff is at index "
                 , toString i
                 , ": it was `"
                 , itemA
