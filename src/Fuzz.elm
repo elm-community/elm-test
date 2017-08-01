@@ -278,8 +278,8 @@ Shorter strings are more common, especially the empty string.
 string : Fuzzer String
 string =
     let
-        generator : Generator String
-        generator =
+        asciiGenerator : Generator String
+        asciiGenerator =
             Random.frequency
                 [ ( 3, Random.int 1 10 )
                 , ( 0.2, Random.constant 0 )
@@ -295,7 +295,7 @@ string =
     in
     custom
         (Random.frequency
-            [ ( 9, generator )
+            [ ( 9, asciiGenerator )
             , ( 1, whitespaceGenerator )
             ]
         )
