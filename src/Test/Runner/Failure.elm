@@ -10,7 +10,7 @@ module Test.Runner.Failure exposing (InvalidReason(..), Reason(..), format)
 {-| -}
 type Reason
     = Custom
-    | Equals String String
+    | Equality String String
     | Comparison String String
       -- Expected, actual, (index of problem, expected element, actual element)
     | ListDiff String String ( Int, String, String )
@@ -59,7 +59,7 @@ format { description, given, reason } =
         Custom ->
             description
 
-        Equals e a ->
+        Equality e a ->
             verticalBar description e a
 
         Comparison e a ->

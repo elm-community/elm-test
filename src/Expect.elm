@@ -782,7 +782,7 @@ reportCollectionFailure comparison expected actual missingKeys extraKeys =
 -}
 equateWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
 equateWith =
-    testWith Equals
+    testWith Equality
 
 
 compareWith : String -> (a -> b -> Bool) -> b -> a -> Expectation

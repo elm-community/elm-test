@@ -143,7 +143,7 @@ same a b =
             Test.Expectation.Pass
 
         ( a, b ) ->
-            Test.Expectation.fail { description = "expected both arguments to fail, or both to succeed", reason = Equals (toString a) (toString b) }
+            Test.Expectation.fail { description = "expected both arguments to fail, or both to succeed", reason = Equality (toString a) (toString b) }
 
 
 different : Expectation -> Expectation -> Expectation
@@ -156,4 +156,4 @@ different a b =
             Test.Expectation.Pass
 
         ( a, b ) ->
-            Test.Expectation.fail { description = "expected one argument to fail", reason = Equals (toString a) (toString b) }
+            Test.Expectation.fail { description = "expected one argument to fail", reason = Equality (toString a) (toString b) }
