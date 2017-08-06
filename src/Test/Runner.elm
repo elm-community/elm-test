@@ -168,7 +168,15 @@ type alias Distribution =
     }
 
 
-{-| -}
+{-| Test Runners which have had seeds distributed to them, and which are now
+either invalid or are ready to run. Seeded runners include some metadata:
+
+  - `Invalid` runners had a problem (e.g. two sibling tests had the same description) making them un-runnable.
+  - `Only` runners can be run, but `Test.only` was used somewhere, so ultimately they will lead to a failed test run even if each test that gets run passes.
+  - `Skipping` runners can be run, but `Test.skip` was used somewhere, so ultimately they will lead to a failed test run even if each test that gets run passes.
+  - `Plain` runners are ready to run, and have none of these issues.
+
+-}
 type SeededRunners
     = Plain (List Runner)
     | Only (List Runner)
