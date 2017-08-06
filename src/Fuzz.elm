@@ -265,12 +265,38 @@ asciiCharGenerator =
     Random.map Char.fromCode (Random.int 32 126)
 
 
-whitespaceCharGenerator : Generator Char
-whitespaceCharGenerator =
-    Random.sample [ ' ', '\t', '\n' ] |> Random.map (Maybe.withDefault ' ')
+unicodeCharGeneratorFrequencyList : List ( Float, Generator Char )
+unicodeCharGeneratorFrequencyList =
+    let
+        ascii =
+            asciiCharGenerator
+
+        whitespace =
+            Random.sample [ ' ', '\t', '\n' ] |> Random.map (Maybe.withDefault ' ')
+
+        tilde =
+            '̃'
+
+        circumflex =
+            '̂'
+
+        diaeresis =
+            '̈'
+
+        combiningDiacriticalMarks =
+            Random.sample [ circumflex, tilde, diaeresis ] |> Random.map (Maybe.withDefault circumflex)
+
+        emoji =
+            Random.sample [ '🌈', '❤', '🔥' ] |> Random.map (Maybe.withDefault '❤')
+    in
+    [ ( 4, ascii )
+    , ( 1, whitespace )
+    , ( 1, combiningDiacriticalMarks )
+    , ( 1, emoji )
+    ]
 
 
-{-| Generates random printable ASCII strings of up to 1000 characters.
+{-| Generates random printable unicode strings of up to 1000 characters.
 
 Shorter strings are more common, especially the empty string.
 
@@ -278,28 +304,20 @@ Shorter strings are more common, especially the empty string.
 string : Fuzzer String
 string =
     let
-        asciiGenerator : Generator String
-        asciiGenerator =
-            Random.frequency
-                [ ( 3, Random.int 1 10 )
-                , ( 0.2, Random.constant 0 )
-                , ( 1, Random.int 11 50 )
-                , ( 1, Random.int 50 1000 )
-                ]
-                |> Random.andThen (lengthString asciiCharGenerator)
-
-        whitespaceGenerator : Generator String
-        whitespaceGenerator =
-            Random.int 1 10
-                |> Random.andThen (lengthString whitespaceCharGenerator)
+        unicodeGenerator : Generator String
+        unicodeGenerator =
+            frequencyList
+                (Random.frequency
+                    [ ( 0.2, Random.constant 0 )
+                    , ( 3, Random.int 1 10 )
+                    , ( 1, Random.int 11 50 )
+                    , ( 1, Random.int 50 1000 )
+                    ]
+                )
+                unicodeCharGeneratorFrequencyList
+                |> Random.map String.fromList
     in
-    custom
-        (Random.frequency
-            [ ( 9, asciiGenerator )
-            , ( 1, whitespaceGenerator )
-            ]
-        )
-        Shrink.string
+    custom unicodeGenerator Shrink.string
 
 
 {-| Given a fuzzer of a type, create a fuzzer of a maybe for that type.
