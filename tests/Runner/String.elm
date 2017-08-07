@@ -13,6 +13,7 @@ Note that this always uses an initial seed of 902101337, since it can't do effec
 
 import Expect exposing (Expectation)
 import Random.Pcg as Random
+import Runner.String.Format
 import Test exposing (Test)
 import Test.Runner exposing (Runner, SeededRunners(..))
 
@@ -52,12 +53,15 @@ toOutputHelp labels runner summary =
 
 fromExpectation : Expectation -> Summary -> Summary
 fromExpectation expectation summary =
-    case Test.Runner.getFailure expectation of
+    case Test.Runner.getFailureReason expectation of
         Nothing ->
             { summary | passed = summary.passed + 1 }
 
-        Just { given, message } ->
+        Just { given, description, reason } ->
             let
+                message =
+                    Runner.String.Format.format description reason
+
                 prefix =
                     case given of
                         Nothing ->
