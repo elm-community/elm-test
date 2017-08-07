@@ -7,7 +7,12 @@ module Test.Runner.Failure exposing (InvalidReason(..), Reason(..), format)
 -}
 
 
-{-| -}
+{-| The reason a test failed.
+
+Test runners can use this to provide nice output, e.g. by doing diffs on the
+two parts of an `Expect.equal` failure.
+
+-}
 type Reason
     = Custom
     | Equality String String
@@ -27,7 +32,11 @@ type Reason
     | Invalid InvalidReason
 
 
-{-| -}
+{-| The reason a test run was invalid.
+
+Test runners should report these to the user in whatever format is appropriate.
+
+-}
 type InvalidReason
     = EmptyList
     | NonpositiveFuzzCount
