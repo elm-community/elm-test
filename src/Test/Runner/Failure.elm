@@ -129,11 +129,15 @@ listDiffToString :
 listDiffToString index description { expected, actual } originals =
     case ( expected, actual ) of
         ( [], [] ) ->
-            -- This should never happen! Recurse into oblivion.
-            listDiffToString (index + 1)
-                description
-                { expected = [], actual = [] }
-                originals
+            [ "Two lists were unequal previously, yet ended up equal later."
+            , "This should never happen!"
+            , "Please report this bug to https://github.com/elm-community/elm-test/issues - and include these lists: "
+            , "\n"
+            , toString originals.originalExpected
+            , "\n"
+            , toString originals.originalActual
+            ]
+                |> String.join ""
 
         ( first :: _, [] ) ->
             verticalBar (description ++ " was shorter than")
