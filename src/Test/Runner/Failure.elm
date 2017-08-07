@@ -18,7 +18,7 @@ type Reason
     | Equality String String
     | Comparison String String
       -- Expected, actual, (index of problem, expected element, actual element)
-    | ListDiff String String ( Int, String, String )
+    | ListDiff (List String) (List String)
       {- I don't think we need to show the diff twice with + and - reversed. Just show it after the main vertical bar.
          "Extra" and "missing" are relative to the actual value.
       -}
@@ -91,17 +91,15 @@ format { description, given, reason } =
         Invalid _ ->
             description
 
-        ListDiff e a ( i, itemE, itemA ) ->
-            String.join ""
-                [ verticalBar description e a
-                , "\n\nThe first diff is at index "
-                , toString i
-                , ": it was `"
-                , itemA
-                , "`, but `"
-                , itemE
-                , "` was expected."
-                ]
+        ListDiff expected actual ->
+            listDiffToString 0
+                description
+                { expected = expected
+                , actual = actual
+                }
+                { originalExpected = expected
+                , originalActual = actual
+                }
 
         CollectionDiff { expected, actual, extra, missing } ->
             let
@@ -125,3 +123,53 @@ format { description, given, reason } =
                 , extraStr
                 , missingStr
                 ]
+
+
+listDiffToString :
+    Int
+    -> String
+    -> { expected : List String, actual : List String }
+    -> { originalExpected : List String, originalActual : List String }
+    -> String
+listDiffToString index description { expected, actual } originals =
+    case ( expected, actual ) of
+        ( [], [] ) ->
+            -- This should never happen! Recurse into oblivion.
+            listDiffToString (index + 1)
+                description
+                { expected = [], actual = [] }
+                originals
+
+        ( first :: _, [] ) ->
+            verticalBar (description ++ " was shorter than")
+                (toString originals.originalExpected)
+                (toString originals.originalActual)
+
+        ( [], first :: _ ) ->
+            verticalBar (description ++ " was longer than")
+                (toString originals.originalExpected)
+                (toString originals.originalActual)
+
+        ( firstExpected :: restExpected, firstActual :: restActual ) ->
+            if firstExpected == firstActual then
+                -- They're still the same so far; keep going.
+                listDiffToString (index + 1)
+                    description
+                    { expected = restExpected
+                    , actual = restActual
+                    }
+                    originals
+            else
+                -- We found elements that differ; fail!
+                String.join ""
+                    [ verticalBar description
+                        (toString originals.originalExpected)
+                        (toString originals.originalActual)
+                    , "\n\nThe first diff is at index "
+                    , toString index
+                    , ": it was `"
+                    , firstActual
+                    , "`, but `"
+                    , firstExpected
+                    , "` was expected."
+                    ]

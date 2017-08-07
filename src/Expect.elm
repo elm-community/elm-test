@@ -499,35 +499,6 @@ equalLists expected actual =
     if expected == actual then
         pass
     else
-        equalListsHelp 0 expected actual
-
-
-equalListsHelp : Int -> List a -> List a -> Expectation
-equalListsHelp index expected actual =
-    case ( expected, actual ) of
-        ( [], [] ) ->
-            pass
-
-        ( first :: _, [] ) ->
-            reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
-
-        ( [], first :: _ ) ->
-            reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
-
-        ( firstExpected :: restExpected, firstActual :: restActual ) ->
-            if firstExpected == firstActual then
-                -- They're still the same so far; keep going.
-                equalListsHelp (index + 1) restExpected restActual
-            else
-                -- We found elements that differ; fail!
-                Test.Expectation.fail
-                    { description = "Expect.equalLists"
-                    , reason =
-                        ListDiff
-                            (toString expected)
-                            (toString actual)
-                            ( index, toString firstExpected, toString firstActual )
-                    }
 
 
 {-| Passes if the arguments are equal dicts.
