@@ -499,6 +499,10 @@ equalLists expected actual =
     if expected == actual then
         pass
     else
+        { description = "Expect.equalLists"
+        , reason = ListDiff (List.map toString expected) (List.map toString actual)
+        }
+            |> Test.Expectation.fail
 
 
 {-| Passes if the arguments are equal dicts.

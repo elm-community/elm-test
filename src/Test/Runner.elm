@@ -381,10 +381,10 @@ getFailure expectation =
         Test.Expectation.Pass ->
             Nothing
 
-        Test.Expectation.Fail record ->
+        Test.Expectation.Fail { given, description, reason } ->
             Just
-                { given = record.given
-                , message = Test.Runner.Failure.format record
+                { given = given
+                , message = Test.Runner.Failure.format description reason
                 }
 
 

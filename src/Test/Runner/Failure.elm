@@ -62,13 +62,8 @@ that make sense for their own environments.
 Format test run failures in a reasonable way.
 
 -}
-format :
-    { description : String
-    , given : Maybe String
-    , reason : Reason
-    }
-    -> String
-format { description, given, reason } =
+format : String -> Reason -> String
+format description reason =
     case reason of
         Custom ->
             description
