@@ -3,9 +3,7 @@ module FloatWithinTests exposing (floatWithinTests)
 import Expect exposing (FloatingPointTolerance(Absolute, AbsoluteOrRelative, Relative))
 import Fuzz exposing (..)
 import Helpers exposing (..)
-import Random.Pcg as Random
 import Test exposing (..)
-import Test.Expectation exposing (Expectation(..))
 
 
 floatWithinTests : Test
