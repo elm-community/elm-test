@@ -127,6 +127,7 @@ Another example is comparing values that are on either side of zero. `0.0001` is
 import Dict exposing (Dict)
 import Set exposing (Set)
 import Test.Expectation
+import Test.Runner.Failure exposing (InvalidReason(..), Reason(..))
 
 
 {-| The result of a single test run: either a [`pass`](#pass) or a
@@ -458,7 +459,7 @@ err result =
     case result of
         Ok _ ->
             { description = "Expect.err"
-            , reason = Test.Expectation.Comparison "Err _" (toString result)
+            , reason = Comparison "Err _" (toString result)
             }
                 |> Test.Expectation.fail
 
@@ -498,47 +499,10 @@ equalLists expected actual =
     if expected == actual then
         pass
     else
-        let
-            result =
-                List.map2 (,) expected actual
-                    |> List.indexedMap (,)
-                    |> List.filterMap
-                        (\( index, ( e, a ) ) ->
-                            if e == a then
-                                Nothing
-                            else
-                                Just ( index, e, a )
-                        )
-                    |> List.head
-                    |> Maybe.map
-                        (\( index, e, a ) ->
-                            let
-                                reason =
-                                    Test.Expectation.ListDiff
-                                        (toString expected)
-                                        (toString actual)
-                                        ( index, toString e, toString a )
-                            in
-                            Test.Expectation.fail
-                                { description = "Expect.equalLists"
-                                , reason = reason
-                                }
-                        )
-        in
-        case result of
-            Just failure ->
-                failure
-
-            Nothing ->
-                case compare (List.length actual) (List.length expected) of
-                    GT ->
-                        reportFailure "Expect.equalLists was longer than" (toString expected) (toString actual)
-
-                    LT ->
-                        reportFailure "Expect.equalLists was shorter than" (toString expected) (toString actual)
-
-                    _ ->
-                        pass
+        { description = "Expect.equalLists"
+        , reason = ListDiff (List.map toString expected) (List.map toString actual)
+        }
+            |> Test.Expectation.fail
 
 
 {-| Passes if the arguments are equal dicts.
@@ -674,7 +638,7 @@ pass =
 -}
 fail : String -> Expectation
 fail str =
-    Test.Expectation.fail { description = str, reason = Test.Expectation.Custom }
+    Test.Expectation.fail { description = str, reason = Custom }
 
 
 {-| If the given expectation fails, replace its failure message with a custom one.
@@ -691,7 +655,7 @@ onFail str expectation =
             expectation
 
         Test.Expectation.Fail failure ->
-            Test.Expectation.Fail { failure | description = str, reason = Test.Expectation.Custom }
+            Test.Expectation.Fail { failure | description = str, reason = Custom }
 
 
 {-| Passes if each of the given functions passes when applied to the subject.
@@ -729,7 +693,7 @@ all : List (subject -> Expectation) -> subject -> Expectation
 all list query =
     if List.isEmpty list then
         Test.Expectation.fail
-            { reason = Test.Expectation.Invalid Test.Expectation.EmptyList
+            { reason = Invalid EmptyList
             , description = "Expect.all was given an empty list. You must make at least one expectation to have a valid test!"
             }
     else
@@ -758,7 +722,7 @@ allHelp list query =
 reportFailure : String -> String -> String -> Expectation
 reportFailure comparison expected actual =
     { description = comparison
-    , reason = Test.Expectation.Comparison (toString expected) (toString actual)
+    , reason = Comparison (toString expected) (toString actual)
     }
         |> Test.Expectation.fail
 
@@ -772,7 +736,7 @@ reportCollectionFailure comparison expected actual missingKeys extraKeys =
         , extra = List.map toString extraKeys
         , missing = List.map toString missingKeys
         }
-            |> Test.Expectation.CollectionDiff
+            |> CollectionDiff
     }
         |> Test.Expectation.fail
 
@@ -781,15 +745,15 @@ reportCollectionFailure comparison expected actual missingKeys extraKeys =
 -}
 equateWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
 equateWith =
-    testWith Test.Expectation.Equals
+    testWith Equality
 
 
 compareWith : String -> (a -> b -> Bool) -> b -> a -> Expectation
 compareWith =
-    testWith Test.Expectation.Comparison
+    testWith Comparison
 
 
-testWith : (String -> String -> Test.Expectation.Reason) -> String -> (a -> b -> Bool) -> b -> a -> Expectation
+testWith : (String -> String -> Reason) -> String -> (a -> b -> Bool) -> b -> a -> Expectation
 testWith makeReason label runTest expected actual =
     if runTest actual expected then
         pass
@@ -833,11 +797,11 @@ relative tolerance =
 nonNegativeToleranceError : FloatingPointTolerance -> String -> Expectation -> Expectation
 nonNegativeToleranceError tolerance name result =
     if absolute tolerance < 0 && relative tolerance < 0 then
-        Test.Expectation.fail { description = "Expect." ++ name ++ " was given negative absolute and relative tolerances", reason = Test.Expectation.Custom }
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given negative absolute and relative tolerances", reason = Custom }
     else if absolute tolerance < 0 then
-        Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative absolute tolerance", reason = Test.Expectation.Custom }
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative absolute tolerance", reason = Custom }
     else if relative tolerance < 0 then
-        Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative relative tolerance", reason = Test.Expectation.Custom }
+        Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative relative tolerance", reason = Custom }
     else
         result
 

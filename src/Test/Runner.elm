@@ -7,6 +7,7 @@ module Test.Runner
         , fromTest
         , fuzz
         , getFailure
+        , getFailureReason
         , isTodo
         , shrink
         )
@@ -24,7 +25,7 @@ can be found in the `README`.
 
 ## Expectations
 
-@docs getFailure, isTodo
+@docs getFailure, getFailureReason, isTodo
 
 
 ## Formatting
@@ -51,7 +52,7 @@ import String
 import Test exposing (Test)
 import Test.Expectation
 import Test.Internal as Internal
-import Test.Message exposing (failureMessage)
+import Test.Runner.Failure exposing (Reason(..))
 
 
 {-| An unevaluated test. Run it with [`run`](#run) to evaluate it into a
@@ -167,7 +168,15 @@ type alias Distribution =
     }
 
 
-{-| -}
+{-| Test Runners which have had seeds distributed to them, and which are now
+either invalid or are ready to run. Seeded runners include some metadata:
+
+  - `Invalid` runners had a problem (e.g. two sibling tests had the same description) making them un-runnable.
+  - `Only` runners can be run, but `Test.only` was used somewhere, so ultimately they will lead to a failed test run even if each test that gets run passes.
+  - `Skipping` runners can be run, but `Test.skip` was used somewhere, so ultimately they will lead to a failed test run even if each test that gets run passes.
+  - `Plain` runners are ready to run, and have none of these issues.
+
+-}
 type SeededRunners
     = Plain (List Runner)
     | Only (List Runner)
@@ -347,7 +356,10 @@ fnvHash a b =
     Bitwise.xor a b * 16777619 |> Bitwise.shiftRightZfBy 0
 
 
-{-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
+{-| **DEPRECATED.** Please use [`getFailureReason`](#getFailureReason) instead.
+This function will be removed in the next major version.
+
+Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
 
 If it is a [`fail`](#fail), return a record containing the failure message,
 along with the given inputs if it was a fuzz test. (If no inputs were involved,
@@ -369,11 +381,44 @@ getFailure expectation =
         Test.Expectation.Pass ->
             Nothing
 
-        Test.Expectation.Fail record ->
+        Test.Expectation.Fail { given, description, reason } ->
             Just
-                { given = record.given
-                , message = failureMessage record
+                { given = given
+                , message = Test.Runner.Failure.format description reason
                 }
+
+
+{-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
+
+If it is a [`fail`](#fail), return a record containing the expectation
+description, the [`Reason`](#Reason) the test failed, and the given inputs if
+it was a fuzz test. (If it was not a fuzz test, the record's `given` field
+will be `Nothing`).
+
+For example:
+
+    getFailureReason (Expect.equal 1 2)
+    -- Just { reason = Equal 1 2, description = "Expect.equal", given = Nothing }
+
+    getFailureReason (Expect.equal 1 1)
+    -- Nothing
+
+-}
+getFailureReason :
+    Expectation
+    ->
+        Maybe
+            { given : Maybe String
+            , description : String
+            , reason : Reason
+            }
+getFailureReason expectation =
+    case expectation of
+        Test.Expectation.Pass ->
+            Nothing
+
+        Test.Expectation.Fail record ->
+            Just record
 
 
 {-| Determine if an expectation was created by a call to `Test.todo`. Runners
@@ -386,7 +431,7 @@ isTodo expectation =
             False
 
         Test.Expectation.Fail { reason } ->
-            reason == Test.Expectation.TODO
+            reason == TODO
 
 
 {-| A standard way to format descriptions and test labels, to keep things
