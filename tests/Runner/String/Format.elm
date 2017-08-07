@@ -125,41 +125,54 @@ listDiffToString index description { expected, actual } originals =
 
 equalityToString : { operation : String, expected : String, actual : String } -> String
 equalityToString { operation, expected, actual } =
+    -- TODO make sure this looks reasonable for multiline strings
     let
-        formattedExpected =
+        ( formattedExpected, belowFormattedExpected ) =
             Diff.diff (String.toList expected) (String.toList actual)
-                |> List.concatMap formatExpectedChange
-                |> String.join ""
+                |> List.map formatExpectedChange
+                |> List.unzip
 
-        formattedActual =
+        ( formattedActual, belowFormattedActual ) =
             Diff.diff (String.toList actual) (String.toList expected)
-                |> List.concatMap formatActualChange
-                |> String.join ""
+                |> List.map formatActualChange
+                |> List.unzip
+
+        combinedExpected =
+            String.join "\n"
+                [ String.join "" formattedExpected
+                , String.join "" belowFormattedExpected
+                ]
+
+        combinedActual =
+            String.join "\n"
+                [ String.join "" formattedActual
+                , String.join "" belowFormattedActual
+                ]
     in
-    verticalBar operation formattedExpected formattedActual
+    verticalBar operation combinedExpected combinedActual
 
 
-formatExpectedChange : Change Char -> List String
+formatExpectedChange : Change Char -> ( String, String )
 formatExpectedChange diff =
     case diff of
         Added char ->
-            []
+            ( "", "" )
 
         Removed char ->
-            [ "\x1B[43m", String.fromChar char, "\x1B[49m" ]
+            ( String.fromChar char, "▲" )
 
         NoChange char ->
-            [ String.fromChar char ]
+            ( String.fromChar char, " " )
 
 
-formatActualChange : Change Char -> List String
+formatActualChange : Change Char -> ( String, String )
 formatActualChange diff =
     case diff of
         Added char ->
-            []
+            ( "", "" )
 
         Removed char ->
-            [ "\x1B[43m", String.fromChar char, "\x1B[49m" ]
+            ( "▼", String.fromChar char )
 
         NoChange char ->
-            [ String.fromChar char ]
+            ( " ", String.fromChar char )
