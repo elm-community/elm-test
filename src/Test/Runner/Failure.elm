@@ -56,7 +56,12 @@ verticalBar comparison expected actual =
         |> String.join "\n"
 
 
-{-| -}
+{-| DEPRECATED. In the future, test runners should implement versions of this
+that make sense for their own environments.
+
+Format test run failures in a reasonable way.
+
+-}
 format :
     { description : String
     , given : Maybe String
