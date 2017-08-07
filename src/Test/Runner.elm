@@ -390,21 +390,28 @@ getFailure expectation =
 
 {-| Return `Nothing` if the given [`Expectation`](#Expectation) is a [`pass`](#pass).
 
-If it is a [`fail`](#fail), return a record containing the failure message,
-along with the given inputs if it was a fuzz test. (If no inputs were involved,
-the record's `given` field will be `Nothing`).
+If it is a [`fail`](#fail), return a record containing the expectation
+description, the [`Reason`](#Reason) the test failed, and the given inputs if
+it was a fuzz test. (If it was not a fuzz test, the record's `given` field
+will be `Nothing`).
 
-For example, if a fuzz test generates random integers, this might return
-`{ message = "it was supposed to be positive", given = "-1" }`
+For example:
 
-    getFailure (Expect.fail "this failed")
-    -- Just { message = "this failed", given = "" }
+    getFailureReason (Expect.equal 1 2)
+    -- Just { reason = Equal 1 2, description = "Expect.equal", given = Nothing }
 
-    getFailure (Expect.pass)
+    getFailureReason (Expect.equal 1 1)
     -- Nothing
 
 -}
-getFailureReason : Expectation -> Maybe { given : Maybe String, description : String, reason : Reason }
+getFailureReason :
+    Expectation
+    ->
+        Maybe
+            { given : Maybe String
+            , description : String
+            , reason : Reason
+            }
 getFailureReason expectation =
     case expectation of
         Test.Expectation.Pass ->
