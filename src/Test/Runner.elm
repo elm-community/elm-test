@@ -328,6 +328,7 @@ batchDistribute hashed runs test prev =
 
 {-| FNV-1a initial hash value
 -}
+fnvInit : Int
 fnvInit =
     2166136261
 
