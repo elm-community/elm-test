@@ -64,7 +64,7 @@ Here's how to set up and run your tests using the CLI test runner:
    sure whenever you change your dependencies in your current
    `elm-package.json`, you make the same change to `tests/elm-package.json`.
 5. Run `elm-test`.
-6. Edit `tests/Tests.elm` to introduce new tests.
+6. Edit `tests/Example.elm` to introduce new tests.
 
 ### Running tests on CI
 
