@@ -59,18 +59,19 @@ frequencyList lengthGenerator pairs =
                     |> map constant
 
                 -- single generator
-                , pairs
-                    |> frequency
-                    |> constant
+                , randomGenerator
+                    |> map List.singleton
+                    |> map frequency
 
-                -- pair
+                -- pair of generators
                 , map2
                     (\a b -> frequency [ a, b ])
                     randomGenerator
                     randomGenerator
 
-                -- all
-                , frequency pairs
+                -- all generators
+                , pairs
+                    |> frequency
                     |> constant
                 ]
                 |> andThen
