@@ -377,14 +377,14 @@ listShrinkRecurse listOfTrees =
 
         halved : LazyList (RoseTree (List a))
         halved =
-            if n >= 4 then
+            -- The list halving shortcut is useful only for large lists.
+            -- For small lists attempting to remove elements one by one is good enough.
+            if n >= 8 then
                 Lazy.lazy <|
                     \_ ->
                         Lazy.List.fromList [ dropFirstHalf listOfTrees, dropSecondHalf listOfTrees ]
                             |> Lazy.force
             else
-                -- For lists of three elements or less, halving and removing a single element is often going to be the same thing.
-                -- To prevent us from attempting the same shrunken value twice, we're disabling the halving strategy for these small lists.
                 Lazy.List.empty
 
         shrinkOne prefix list =
