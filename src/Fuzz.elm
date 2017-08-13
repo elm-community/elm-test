@@ -344,11 +344,13 @@ list fuzzer =
 listShrinkHelp : List (RoseTree a) -> RoseTree (List a)
 listShrinkHelp listOfTrees =
     {- This extends listShrinkRecurse algorithm with an attempt to shrink directly to the empty list. -}
-    let
-        (Rose root children) =
-            listShrinkRecurse listOfTrees
-    in
-    Rose root (Lazy.List.cons (RoseTree.singleton []) children)
+    listShrinkRecurse listOfTrees
+        |> mapChildren (Lazy.List.cons <| RoseTree.singleton [])
+
+
+mapChildren : (LazyList (RoseTree a) -> LazyList (RoseTree a)) -> RoseTree a -> RoseTree a
+mapChildren fn (Rose root children) =
+    Rose root (fn children)
 
 
 listShrinkRecurse : List (RoseTree a) -> RoseTree (List a)
