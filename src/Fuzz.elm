@@ -359,6 +359,18 @@ list fuzzer =
 
 listShrinkHelp : List (RoseTree a) -> RoseTree (List a)
 listShrinkHelp listOfTrees =
+    {- This extends listShrinkRecurse algorithm with an attempt to shrink directly to the empty list. -}
+    listShrinkRecurse listOfTrees
+        |> mapChildren (Lazy.List.cons <| RoseTree.singleton [])
+
+
+mapChildren : (LazyList (RoseTree a) -> LazyList (RoseTree a)) -> RoseTree a -> RoseTree a
+mapChildren fn (Rose root children) =
+    Rose root (fn children)
+
+
+listShrinkRecurse : List (RoseTree a) -> RoseTree (List a)
+listShrinkRecurse listOfTrees =
     {- Shrinking a list of RoseTrees
        We need to do two things. First, shrink individual values. Second, shorten the list.
        To shrink individual values, we create every list copy of the input list where any
@@ -373,13 +385,35 @@ listShrinkHelp listOfTrees =
         root =
             List.map RoseTree.root listOfTrees
 
+        dropFirstHalf : List (RoseTree a) -> RoseTree (List a)
+        dropFirstHalf list_ =
+            List.drop (List.length list_ // 2) list_
+                |> listShrinkRecurse
+
+        dropSecondHalf : List (RoseTree a) -> RoseTree (List a)
+        dropSecondHalf list_ =
+            List.take (List.length list_ // 2) list_
+                |> listShrinkRecurse
+
+        halved : LazyList (RoseTree (List a))
+        halved =
+            -- The list halving shortcut is useful only for large lists.
+            -- For small lists attempting to remove elements one by one is good enough.
+            if n >= 8 then
+                Lazy.lazy <|
+                    \_ ->
+                        Lazy.List.fromList [ dropFirstHalf listOfTrees, dropSecondHalf listOfTrees ]
+                            |> Lazy.force
+            else
+                Lazy.List.empty
+
         shrinkOne prefix list =
             case list of
                 [] ->
                     Lazy.List.empty
 
                 (Rose x shrunkenXs) :: more ->
-                    Lazy.List.map (\childTree -> prefix ++ (childTree :: more) |> listShrinkHelp) shrunkenXs
+                    Lazy.List.map (\childTree -> prefix ++ (childTree :: more) |> listShrinkRecurse) shrunkenXs
 
         shrunkenVals =
             Lazy.lazy <|
@@ -397,7 +431,7 @@ listShrinkHelp listOfTrees =
                     List.range 0 (n - 1)
                         |> Lazy.List.fromList
                         |> Lazy.List.map (\index -> removeOne index listOfTrees)
-                        |> Lazy.List.map listShrinkHelp
+                        |> Lazy.List.map listShrinkRecurse
                         |> Lazy.force
 
         removeOne index list =
@@ -405,9 +439,7 @@ listShrinkHelp listOfTrees =
                 (List.take index list)
                 (List.drop (index + 1) list)
     in
-    Lazy.List.append shortened shrunkenVals
-        |> Lazy.List.cons (RoseTree.singleton [])
-        |> Rose root
+    Rose root (halved +++ shortened +++ shrunkenVals)
 
 
 {-| Given a fuzzer of a type, create a fuzzer of an array of that type.

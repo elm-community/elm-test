@@ -183,6 +183,10 @@ shrinkingTests =
             ]
 
 
+type alias ShrinkResult a =
+    Maybe ( a, Test.Runner.Shrinkable a )
+
+
 manualFuzzerTests : Test
 manualFuzzerTests =
     describe "Test.Runner.{fuzz, shrink}"
@@ -259,4 +263,42 @@ manualFuzzerTests =
                         , List.head >> Expect.equal (Just "e")
                         , List.reverse >> List.head >> Expect.equal (Maybe.map Tuple.first pair)
                         ]
+        , fuzz randomSeedFuzzer "List shrinker finds the smallest counter example" <|
+            \seed ->
+                let
+                    fuzzer : Fuzzer (List Int)
+                    fuzzer =
+                        Fuzz.list Fuzz.int
+
+                    allEven : List Int -> Bool
+                    allEven xs =
+                        List.all (\x -> x % 2 == 0) xs
+
+                    initialShrink : ShrinkResult (List Int)
+                    initialShrink =
+                        Random.step (Test.Runner.fuzz fuzzer) seed
+                            |> Tuple.first
+                            |> Just
+
+                    shrink : Maybe (List Int) -> ShrinkResult (List Int) -> Maybe (List Int)
+                    shrink shrunken lastShrink =
+                        case lastShrink of
+                            Just ( valN, shrinkN ) ->
+                                shrink
+                                    (if allEven valN then
+                                        shrunken
+                                     else
+                                        Just valN
+                                    )
+                                    (Test.Runner.shrink (allEven valN) shrinkN)
+
+                            Nothing ->
+                                shrunken
+                in
+                case shrink Nothing initialShrink of
+                    Just shrunken ->
+                        Expect.equal [ 1 ] shrunken
+
+                    Nothing ->
+                        Expect.pass
         ]
