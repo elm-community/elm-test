@@ -35,6 +35,16 @@ floatWithinTests =
                         (radius * pi)
                             |> Expect.within (Relative 0.0001) (radius * 3.14)
             ]
+        , describe "negative use-cases"
+            [   test "negative floats with Absolute" <|
+                    \_ -> -2.9 |> Expect.within (Absolute 0.1) -3
+            ,   test "negative floats with Relative" <|
+                    \_ -> -2.9 |> Expect.within (Relative 0.1) -3
+            ,   test "negative floats with AbsoluteOrRelative" <|
+                    \_ -> -2.9 |> Expect.within (AbsoluteOrRelative 0.1 0.1) -3                
+            ,   test "negative floats with AbsoluteOrRelative passint with Relative" <|
+                    \_ -> -2.9 |> Expect.within (AbsoluteOrRelative 0.001 0.05) -3   
+            ]
         , describe "edge-cases"
             [ fuzz2 float float "self equality" <|
                 \epsilon value ->

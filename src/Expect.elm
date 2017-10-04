@@ -813,7 +813,7 @@ withinCompare tolerance a b =
             a - absolute tolerance <= b && b <= a + absolute tolerance
 
         withinRelativeTolerance =
-            (a * (1 - relative tolerance) <= b && b <= a * (1 + relative tolerance))
-                || (b * (1 - relative tolerance) <= a && a <= b * (1 + relative tolerance))
+            (a  - (abs (a * relative tolerance)) <= b && b <= a + (abs (a * relative tolerance)))
+                || (b - (abs (b * relative tolerance)) <= a && a <= b + (abs (b * relative tolerance)))
     in
-    (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
+        (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
