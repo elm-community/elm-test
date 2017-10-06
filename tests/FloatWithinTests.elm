@@ -53,10 +53,10 @@ floatWithinTests =
             ,   test "negative actual and positive nominal with Relative" <|
                     \_ -> -0.001 |> Expect.within (Relative 1.1) 3
             ,   expectToFail <|
-                    test "negative nominal should fail as avtual is close, but positive with Absolute" <|
+                    test "negative nominal should fail as actual is close, but positive with Absolute" <|
                         \_ -> 2.9 |> Expect.within (Absolute 0.1) -3
             ,   expectToFail <|    
-                    test "negative nominal should fail as avtual is close, but positive with Relative" <|
+                    test "negative nominal should fail as actual is close, but positive with Relative" <|
                         \_ -> 2.9 |> Expect.within (Relative 0.1) -3
             ]
         , describe "edge-cases"
