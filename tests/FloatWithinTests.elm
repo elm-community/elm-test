@@ -35,6 +35,30 @@ floatWithinTests =
                         (radius * pi)
                             |> Expect.within (Relative 0.0001) (radius * 3.14)
             ]
+        , describe "use-cases with negative nominal and/or actual values"
+            [   test "negative nominal and actual with Absolute" <|
+                    \_ -> -2.9 |> Expect.within (Absolute 0.1) -3
+            ,   test "negative nominal and actual with Relative" <|
+                    \_ -> -2.9 |> Expect.within (Relative 0.1) -3
+            ,   test "negative nominal and actual with AbsoluteOrRelative and pass on Absolute" <|
+                    \_ -> -2.9 |> Expect.within (AbsoluteOrRelative 0.1 0.0001) -3                
+            ,   test "negative nominal and actual with AbsoluteOrRelative and pass on Relative" <|
+                    \_ -> -2.9 |> Expect.within (AbsoluteOrRelative 0.001 0.05) -3
+            ,   test "negative nominal and positive actual with Absolute" <|
+                    \_ -> 0.001 |> Expect.within (Absolute 3.3) -3
+            ,   test "negative nominal and positive actual with Relative" <|
+                    \_ -> 0.001 |> Expect.within (Relative 1.1) -3
+            ,   test "negative actual and positive nominal with Absolute" <|
+                    \_ -> -0.001 |> Expect.within (Absolute 3.3) 3
+            ,   test "negative actual and positive nominal with Relative" <|
+                    \_ -> -0.001 |> Expect.within (Relative 1.1) 3
+            ,   expectToFail <|
+                    test "negative nominal should fail as actual is close, but positive with Absolute" <|
+                        \_ -> 2.9 |> Expect.within (Absolute 0.1) -3
+            ,   expectToFail <|    
+                    test "negative nominal should fail as actual is close, but positive with Relative" <|
+                        \_ -> 2.9 |> Expect.within (Relative 0.1) -3
+            ]
         , describe "edge-cases"
             [ fuzz2 float float "self equality" <|
                 \epsilon value ->
