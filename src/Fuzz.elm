@@ -19,7 +19,6 @@ reproduces a bug.
 
 ## Working with Fuzzers
 
-@docs Fuzzer, constant, map, map2, map3, map4, map5, andMap, andThen, frequency, conditional
 @docs Fuzzer, oneOf, constant, map, map2, map3, map4, map5, andMap, andThen, frequency, conditional
 
 
