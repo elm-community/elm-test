@@ -63,7 +63,7 @@ type alias Fuzzer a =
 {-| Build a custom `Fuzzer a` by providing a `Generator a` and a `Shrinker a`.
 Generators are defined in [`mgold/elm-random-pcg`](http://package.elm-lang.org/packages/mgold/elm-random-pcg/latest),
 which is not core's Random module but has a compatible interface. Shrinkers are
-defined in [`elm-community/shrink`](http://package.elm-lang.org/packages/elm-community/shrink/latest/).
+defined in [`eeue56/elm-shrink`](http://package.elm-lang.org/packages/eeue56/elm-shrink/latest/).
 
 Here is an example for a record:
 
