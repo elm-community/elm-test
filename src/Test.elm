@@ -1,4 +1,4 @@
-module Test exposing (FuzzOptions, Test, concat, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, only, skip, test, todo)
+module Test exposing (FuzzOptions, Test, concat, ddt, describe, fuzz, fuzz2, fuzz3, fuzz4, fuzz5, fuzzWith, only, skip, test, todo)
 
 {-| A module containing functions for creating and managing tests.
 
@@ -7,7 +7,7 @@ module Test exposing (FuzzOptions, Test, concat, describe, fuzz, fuzz2, fuzz3, f
 
 ## Organizing Tests
 
-@docs describe, concat, todo, skip, only
+@docs describe, concat, todo, skip, only, ddt
 
 
 ## Fuzz Testing
@@ -242,6 +242,38 @@ an `only` inside a `skip`, it will also get skipped.
 skip : Test -> Test
 skip =
     Internal.Skipped
+
+
+{-| Run a test function for a given data set.
+
+This is also known as
+[data-driven testing (DDT)](https://en.wikipedia.org/wiki/Data-driven_testing).
+
+A test function takes test data as input and returns an
+[`Expectation`](../Expect#Expectation).
+
+    ddt "String.reverse"
+        (\( input, expected ) ->
+            String.reverse input |> Expect.equal expected
+        )
+        [ ( "stressed", "dessert" )
+        , ( "anna", "anna" )
+        , ( "test", "tset" )
+        ]
+
+The index of the member from the test data will be prepended to the
+description provided, e.g., `String.reverse/1`. That way failing tests can be
+easily identified.
+
+-}
+ddt : String -> (a -> Expectation) -> List a -> Test
+ddt description expectation data =
+    List.map expectation data
+        |> List.indexedMap
+            (\idx expectation ->
+                test (description ++ "/" ++ toString idx) <| \_ -> expectation
+            )
+        |> describe description
 
 
 {-| Options [`fuzzWith`](#fuzzWith) accepts. Currently there is only one but this

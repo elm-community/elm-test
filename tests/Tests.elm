@@ -173,3 +173,15 @@ identicalNamesAreRejectedTests =
                     ]
                 ]
         ]
+
+
+ddtExample : Test
+ddtExample =
+    ddt "String.reverse"
+        (\( input, expected ) ->
+            String.reverse input |> Expect.equal expected
+        )
+        [ ( "stressed", "dessert" )
+        , ( "anna", "anna" )
+        , ( "test", "tset" )
+        ]
