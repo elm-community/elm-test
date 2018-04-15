@@ -1,0 +1,19 @@
+{
+    "type": "package",
+    "name": "elm-community/elm-test",
+    "summary": "Describe automated tests.",
+    "license": "BSD-3-Clause",
+    "version": "2.0.0",
+    "exposed-modules": [
+        "Test",
+        "Test.Runner",
+        "Test.Runner.Failure",
+        "Expect",
+        "Fuzz"
+    ],
+    "elm-version": "0.19.0 <= v < 0.20.0",
+    "dependencies": {
+        "elm-lang/core": "6.0.0 <= v < 7.0.0"
+    },
+    "test-dependencies": {}
+}
