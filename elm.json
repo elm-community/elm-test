@@ -13,7 +13,17 @@
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
-        "elm/core": "1.0.0 <= v < 2.0.0"
+        "direct": {
+            "eeue56/elm-lazy": "1.0.1 <= v < 2.0.0",
+            "eeue56/elm-lazy-list": "2.0.0 <= v < 3.0.0",
+            "eeue56/elm-shrink": "2.0.0 <= v < 3.0.0",
+            "elm/core": "1.0.0 <= v < 2.0.0",
+            "elm/random": "1.0.0 <= v < 2.0.0"
+        },
+        "indirect": {}
     },
-    "test-dependencies": {}
+    "test-dependencies": {
+        "direct": {},
+        "indirect": {}
+    }
 }
