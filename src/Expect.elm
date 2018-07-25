@@ -394,6 +394,7 @@ true : String -> Bool -> Expectation
 true message bool =
     if bool then
         pass
+
     else
         fail message
 
@@ -422,6 +423,7 @@ false : String -> Bool -> Expectation
 false message bool =
     if bool then
         fail message
+
     else
         pass
 
@@ -498,6 +500,7 @@ equalLists : List a -> List a -> Expectation
 equalLists expected actual =
     if expected == actual then
         pass
+
     else
         { description = "Expect.equalLists"
         , reason = ListDiff (List.map toString expected) (List.map toString actual)
@@ -536,11 +539,13 @@ equalDicts : Dict comparable a -> Dict comparable a -> Expectation
 equalDicts expected actual =
     if Dict.toList expected == Dict.toList actual then
         pass
+
     else
         let
             differ dict k v diffs =
                 if Dict.get k dict == Just v then
                     diffs
+
                 else
                     ( k, v ) :: diffs
 
@@ -584,6 +589,7 @@ equalSets : Set comparable -> Set comparable -> Expectation
 equalSets expected actual =
     if Set.toList expected == Set.toList actual then
         pass
+
     else
         let
             missingKeys =
@@ -696,6 +702,7 @@ all list query =
             { reason = Invalid EmptyList
             , description = "Expect.all was given an empty list. You must make at least one expectation to have a valid test!"
             }
+
     else
         allHelp list query
 
@@ -757,6 +764,7 @@ testWith : (String -> String -> Reason) -> String -> (a -> b -> Bool) -> b -> a 
 testWith makeReason label runTest expected actual =
     if runTest actual expected then
         pass
+
     else
         { description = label
         , reason = makeReason (toString expected) (toString actual)
@@ -798,10 +806,13 @@ nonNegativeToleranceError : FloatingPointTolerance -> String -> Expectation -> E
 nonNegativeToleranceError tolerance name result =
     if absolute tolerance < 0 && relative tolerance < 0 then
         Test.Expectation.fail { description = "Expect." ++ name ++ " was given negative absolute and relative tolerances", reason = Custom }
+
     else if absolute tolerance < 0 then
         Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative absolute tolerance", reason = Custom }
+
     else if relative tolerance < 0 then
         Test.Expectation.fail { description = "Expect." ++ name ++ " was given a negative relative tolerance", reason = Custom }
+
     else
         result
 
@@ -813,7 +824,7 @@ withinCompare tolerance a b =
             a - absolute tolerance <= b && b <= a + absolute tolerance
 
         withinRelativeTolerance =
-            (a  - (abs (a * relative tolerance)) <= b && b <= a + (abs (a * relative tolerance)))
-                || (b - (abs (b * relative tolerance)) <= a && a <= b + (abs (b * relative tolerance)))
+            (a - abs (a * relative tolerance) <= b && b <= a + abs (a * relative tolerance))
+                || (b - abs (b * relative tolerance) <= a && a <= b + abs (b * relative tolerance))
     in
-        (a == b) || withinAbsoluteTolerance || withinRelativeTolerance
+    (a == b) || withinAbsoluteTolerance || withinRelativeTolerance

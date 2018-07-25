@@ -95,6 +95,7 @@ fuzzerTests =
                             Just ( value, next ) ->
                                 if even value then
                                     testShrinkable next
+
                                 else
                                     Expect.fail <| "Shrunken value does not pass conditional: " ++ toString value
                 in
@@ -170,6 +171,7 @@ shrinkingTests =
                                 a :: b :: more ->
                                     if a > b then
                                         False
+
                                     else
                                         checkPair (b :: more)
 
@@ -200,6 +202,7 @@ manualFuzzerTests =
                                 (\n ->
                                     if failsTest n then
                                         n
+
                                     else
                                         n + 1
                                 )
@@ -217,6 +220,7 @@ manualFuzzerTests =
                             Just ( valN, shrinkN ) ->
                                 if failsTest valN then
                                     unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
+
                                 else
                                     unfold acc (Test.Runner.shrink True shrinkN)
 
@@ -251,6 +255,7 @@ manualFuzzerTests =
                             Just ( valN, shrinkN ) ->
                                 if failsTest valN then
                                     unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
+
                                 else
                                     unfold acc (Test.Runner.shrink True shrinkN)
 
@@ -287,6 +292,7 @@ manualFuzzerTests =
                                 shrink
                                     (if allEven valN then
                                         shrunken
+
                                      else
                                         Just valN
                                     )
