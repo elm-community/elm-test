@@ -11,14 +11,12 @@ module Expect
         , equalSets
         , err
         , fail
-        , false
         , greaterThan
         , lessThan
         , notEqual
         , notWithin
         , onFail
         , pass
-        , true
         , within
         )
 
@@ -33,8 +31,6 @@ module Expect
   - [`atMost`](#atMost) `(arg2 <= arg1)`
   - [`greaterThan`](#greaterThan) `(arg2 > arg1)`
   - [`atLeast`](#atLeast) `(arg2 >= arg1)`
-  - [`true`](#true) `(arg == True)`
-  - [`false`](#false) `(arg == False)`
   - [Floating Point Comparisons](#floating-point-comparisons)
 
 
@@ -54,11 +50,6 @@ These functions allow you to compare `Float` values up to a specified rounding e
 or both. For an in-depth look, see our [Guide to Floating Point Comparison](#guide-to-floating-point-comparison).
 
 @docs FloatingPointTolerance, within, notWithin
-
-
-## Booleans
-
-@docs true, false
 
 
 ## Collections
@@ -368,64 +359,6 @@ notWithin tolerance a b =
             (\a b -> not <| withinCompare tolerance a b)
             a
             b
-
-
-{-| Passes if the argument is 'True', and otherwise fails with the given message.
-
-    Expect.true "Expected the list to be empty." (List.isEmpty [])
-
-    -- Passes because (List.isEmpty []) is True
-
-Failures resemble code written in pipeline style, so you can tell
-which argument is which:
-
-    -- Fails because List.isEmpty returns False, but we expect True.
-    List.isEmpty [ 42 ]
-        |> Expect.true "Expected the list to be empty."
-
-    {-
-
-    Expected the list to be empty.
-
-    -}
-
--}
-true : String -> Bool -> Expectation
-true message bool =
-    if bool then
-        pass
-
-    else
-        fail message
-
-
-{-| Passes if the argument is 'False', and otherwise fails with the given message.
-
-    Expect.false "Expected the list not to be empty." (List.isEmpty [ 42 ])
-
-    -- Passes because (List.isEmpty [ 42 ]) is False
-
-Failures resemble code written in pipeline style, so you can tell
-which argument is which:
-
-    -- Fails because (List.isEmpty []) is True
-    List.isEmpty []
-        |> Expect.false "Expected the list not to be empty."
-
-    {-
-
-    Expected the list not to be empty.
-
-    -}
-
--}
-false : String -> Bool -> Expectation
-false message bool =
-    if bool then
-        fail message
-
-    else
-        pass
 
 
 {-| Passes if the

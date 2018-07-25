@@ -114,15 +114,15 @@ testTests =
         , describe "Test.todo"
             [ expectToFail <| todo "a TODO test fails"
             , test "Passes are not TODO"
-                (\_ -> Expect.pass |> Test.Runner.isTodo |> Expect.false "was true")
+                (\_ -> Expect.pass |> Test.Runner.isTodo |> Expect.equal False)
             , test "Simple failures are not TODO" <|
                 \_ ->
-                    Expect.fail "reason" |> Test.Runner.isTodo |> Expect.false "was true"
+                    Expect.fail "reason" |> Test.Runner.isTodo |> Expect.equal False
             , test "Failures with TODO reason are TODO" <|
                 \_ ->
                     Test.Expectation.fail { description = "", reason = TODO }
                         |> Test.Runner.isTodo
-                        |> Expect.true "was false"
+                        |> Expect.equal True
             ]
         , identicalNamesAreRejectedTests
         ]
