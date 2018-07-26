@@ -95,6 +95,7 @@ fuzzerTests =
                             Just ( value, next ) ->
                                 if even value then
                                     testShrinkable next
+
                                 else
                                     Expect.fail <| "Shrunken value does not pass conditional: " ++ toString value
                 in
@@ -134,26 +135,33 @@ fuzzerTests =
 
 shrinkingTests : Test
 shrinkingTests =
+    let
+    -- To test shrinking, we have to fail some tests so we can shrink their inputs.
+    -- The best place we found for storing the expected last state(s) of the shrinking procedure is the description field, which is why we have this function here.
+    -- Previously, we (ab)used Expect.true for this, but since that was removed, here we are.
+        expectTrueAndExpectShrinkResultToEqualString label a =
+            Expect.equal True a |> Expect.onFail label
+    in
     testShrinking <|
         describe "tests that fail intentionally to test shrinking"
             [ fuzz2 int int "Every pair of ints has a zero" <|
                 \i j ->
                     (i == 0)
                         || (j == 0)
-                        |> Expect.true "(1,1)"
+                        |> expectTrueAndExpectShrinkResultToEqualString "(1,1)"
             , fuzz3 int int int "Every triple of ints has a zero" <|
                 \i j k ->
                     (i == 0)
                         || (j == 0)
                         || (k == 0)
-                        |> Expect.true "(1,1,1)"
+                        |> expectTrueAndExpectShrinkResultToEqualString "(1,1,1)"
             , fuzz4 int int int int "Every 4-tuple of ints has a zero" <|
                 \i j k l ->
                     (i == 0)
                         || (j == 0)
                         || (k == 0)
                         || (l == 0)
-                        |> Expect.true "(1,1,1,1)"
+                        |> expectTrueAndExpectShrinkResultToEqualString "(1,1,1,1)"
             , fuzz5 int int int int int "Every 5-tuple of ints has a zero" <|
                 \i j k l m ->
                     (i == 0)
@@ -161,7 +169,7 @@ shrinkingTests =
                         || (k == 0)
                         || (l == 0)
                         || (m == 0)
-                        |> Expect.true "(1,1,1,1,1)"
+                        |> expectTrueAndExpectShrinkResultToEqualString "(1,1,1,1,1)"
             , fuzz (list int) "All lists are sorted" <|
                 \aList ->
                     let
@@ -170,16 +178,17 @@ shrinkingTests =
                                 a :: b :: more ->
                                     if a > b then
                                         False
+
                                     else
                                         checkPair (b :: more)
 
                                 _ ->
                                     True
                     in
-                    checkPair aList |> Expect.true "[1,0]|[0,-1]"
+                    checkPair aList |> expectTrueAndExpectShrinkResultToEqualString "[1,0]|[0,-1]"
             , fuzz (intRange 1 8 |> andThen (\i -> intRange 0 (2 ^ i))) "Fuzz.andThen shrinks a number" <|
                 \i ->
-                    i <= 2 |> Expect.true "3"
+                    i <= 2 |> expectTrueAndExpectShrinkResultToEqualString "3"
             ]
 
 
@@ -200,6 +209,7 @@ manualFuzzerTests =
                                 (\n ->
                                     if failsTest n then
                                         n
+
                                     else
                                         n + 1
                                 )
@@ -217,6 +227,7 @@ manualFuzzerTests =
                             Just ( valN, shrinkN ) ->
                                 if failsTest valN then
                                     unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
+
                                 else
                                     unfold acc (Test.Runner.shrink True shrinkN)
 
@@ -225,7 +236,7 @@ manualFuzzerTests =
                 in
                 unfold [] pair
                     |> Expect.all
-                        [ List.all failsTest >> Expect.true "Not all elements were even"
+                        [ List.all failsTest >> Expect.equal True >> Expect.onFail "Not all elements were even"
                         , List.head
                             >> Maybe.map (Expect.all [ Expect.lessThan 5, Expect.atLeast 0 ])
                             >> Maybe.withDefault (Expect.fail "Did not cause failure")
@@ -251,6 +262,7 @@ manualFuzzerTests =
                             Just ( valN, shrinkN ) ->
                                 if failsTest valN then
                                     unfold (valN :: acc) (Test.Runner.shrink False shrinkN)
+
                                 else
                                     unfold acc (Test.Runner.shrink True shrinkN)
 
@@ -259,7 +271,7 @@ manualFuzzerTests =
                 in
                 unfold [] pair
                     |> Expect.all
-                        [ List.all failsTest >> Expect.true "Not all contained the letter e"
+                        [ List.all failsTest >> Expect.equal True >> Expect.onFail "Not all contained the letter e"
                         , List.head >> Expect.equal (Just "e")
                         , List.reverse >> List.head >> Expect.equal (Maybe.map Tuple.first pair)
                         ]
@@ -287,6 +299,7 @@ manualFuzzerTests =
                                 shrink
                                     (if allEven valN then
                                         shrunken
+
                                      else
                                         Just valN
                                     )
