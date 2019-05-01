@@ -1,4 +1,4 @@
-**For Elm 0.19** use https://github.com/elm-explorations/test
+**For Elm 0.19** use [https://github.com/elm-explorations/test](https://github.com/elm-explorations/test)
 
 # elm-test [![Travis build Status](https://travis-ci.org/elm-community/elm-test.svg?branch=master)](http://travis-ci.org/elm-community/elm-test)
 
