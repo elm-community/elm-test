@@ -130,6 +130,7 @@ fuzzerTests =
             , shrinkingTests
             , manualFuzzerTests
             ]
+        , unicodeStringFuzzerTests
         ]
 
 
@@ -314,4 +315,38 @@ manualFuzzerTests =
 
                     Nothing ->
                         Expect.pass
+        ]
+
+
+unicodeStringFuzzerTests : Test
+unicodeStringFuzzerTests =
+    describe "unicode string fuzzer"
+        [ expectToFail <|
+            fuzz string "generates ascii" <|
+                \str -> str |> String.contains "E" |> Expect.true "Expected to find ascii letter E"
+        , expectToFail <|
+            fuzz string "generates whitespace" <|
+                \str -> str |> String.contains "\t" |> Expect.true "Expected to find a tab character"
+        , expectToFail <|
+            fuzz string "generates combining diacritical marks" <|
+                \str -> str |> String.contains "̃" |> Expect.true "Expected to find the combining diactricial mark character tilde"
+        , expectToFail <|
+            fuzz string "generates emoji" <|
+                \str -> str |> String.contains "🔥" |> Expect.true "Expected to find 🔥 emoji"
+        , expectToFail <|
+            fuzz string "generates long strings with a single character" <|
+                \str ->
+                    let
+                        countSequentialUniquesAtStart s =
+                            case s of
+                                a :: b :: cs ->
+                                    if a == b then
+                                        1 + countSequentialUniquesAtStart (b :: cs)
+                                    else
+                                        0
+
+                                _ ->
+                                    0
+                    in
+                    str |> String.toList |> countSequentialUniquesAtStart |> (\x -> x < 7) |> Expect.true "expected a string with 7-length duplicates"
         ]
